@@ -3,7 +3,7 @@ package param
 import (
 	"encoding/json"
 	"fmt"
-	shimjson "github.com/stainless-sdks/bem-go/internal/encoding/json"
+	shimjson "github.com/bem-team/bem-go-sdk/internal/encoding/json"
 	"time"
 )
 

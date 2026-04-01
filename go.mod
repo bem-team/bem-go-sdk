@@ -1,4 +1,4 @@
-module github.com/stainless-sdks/bem-go
+module github.com/bem-team/bem-go-sdk
 
 go 1.22
 

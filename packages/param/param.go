@@ -2,7 +2,7 @@ package param
 
 import (
 	"encoding/json"
-	"github.com/stainless-sdks/bem-go/internal/encoding/json/sentinel"
+	"github.com/bem-team/bem-go-sdk/internal/encoding/json/sentinel"
 	"reflect"
 )
 

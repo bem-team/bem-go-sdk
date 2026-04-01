@@ -1,8 +1,8 @@
 package sentinel_test
 
 import (
-	"github.com/stainless-sdks/bem-go/internal/encoding/json/sentinel"
-	"github.com/stainless-sdks/bem-go/packages/param"
+	"github.com/bem-team/bem-go-sdk/internal/encoding/json/sentinel"
+	"github.com/bem-team/bem-go-sdk/packages/param"
 	"reflect"
 	"slices"
 	"testing"

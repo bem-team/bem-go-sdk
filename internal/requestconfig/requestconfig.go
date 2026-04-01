@@ -18,10 +18,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/stainless-sdks/bem-go/internal"
-	"github.com/stainless-sdks/bem-go/internal/apierror"
-	"github.com/stainless-sdks/bem-go/internal/apiform"
-	"github.com/stainless-sdks/bem-go/internal/apiquery"
+	"github.com/bem-team/bem-go-sdk/internal"
+	"github.com/bem-team/bem-go-sdk/internal/apierror"
+	"github.com/bem-team/bem-go-sdk/internal/apiform"
+	"github.com/bem-team/bem-go-sdk/internal/apiquery"
 )
 
 func getDefaultHeaders() map[string]string {

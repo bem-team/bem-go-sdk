@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"slices"
 
-	"github.com/stainless-sdks/bem-go/internal/apijson"
-	shimjson "github.com/stainless-sdks/bem-go/internal/encoding/json"
-	"github.com/stainless-sdks/bem-go/internal/requestconfig"
-	"github.com/stainless-sdks/bem-go/option"
-	"github.com/stainless-sdks/bem-go/packages/param"
+	"github.com/bem-team/bem-go-sdk/internal/apijson"
+	shimjson "github.com/bem-team/bem-go-sdk/internal/encoding/json"
+	"github.com/bem-team/bem-go-sdk/internal/requestconfig"
+	"github.com/bem-team/bem-go-sdk/option"
+	"github.com/bem-team/bem-go-sdk/packages/param"
 )
 
 // Functions are the core building blocks of data transformation in Bem. Each

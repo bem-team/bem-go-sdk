@@ -10,13 +10,13 @@ import (
 	"net/url"
 	"slices"
 
-	"github.com/stainless-sdks/bem-go/internal/apijson"
-	"github.com/stainless-sdks/bem-go/internal/apiquery"
-	"github.com/stainless-sdks/bem-go/internal/requestconfig"
-	"github.com/stainless-sdks/bem-go/option"
-	"github.com/stainless-sdks/bem-go/packages/pagination"
-	"github.com/stainless-sdks/bem-go/packages/param"
-	"github.com/stainless-sdks/bem-go/packages/respjson"
+	"github.com/bem-team/bem-go-sdk/internal/apijson"
+	"github.com/bem-team/bem-go-sdk/internal/apiquery"
+	"github.com/bem-team/bem-go-sdk/internal/requestconfig"
+	"github.com/bem-team/bem-go-sdk/option"
+	"github.com/bem-team/bem-go-sdk/packages/pagination"
+	"github.com/bem-team/bem-go-sdk/packages/param"
+	"github.com/bem-team/bem-go-sdk/packages/respjson"
 )
 
 // Workflow operations

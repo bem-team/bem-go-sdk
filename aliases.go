@@ -3,8 +3,8 @@
 package bem
 
 import (
-	"github.com/stainless-sdks/bem-go/internal/apierror"
-	"github.com/stainless-sdks/bem-go/packages/param"
+	"github.com/bem-team/bem-go-sdk/internal/apierror"
+	"github.com/bem-team/bem-go-sdk/packages/param"
 )
 
 // aliased to make [param.APIUnion] private when embedding

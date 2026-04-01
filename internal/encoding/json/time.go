@@ -2,7 +2,7 @@
 package json
 
 import (
-	"github.com/stainless-sdks/bem-go/internal/encoding/json/shims"
+	"github.com/bem-team/bem-go-sdk/internal/encoding/json/shims"
 	"reflect"
 	"time"
 )

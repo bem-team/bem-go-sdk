@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/stainless-sdks/bem-go/internal/apijson"
-	"github.com/stainless-sdks/bem-go/packages/respjson"
+	"github.com/bem-team/bem-go-sdk/internal/apijson"
+	"github.com/bem-team/bem-go-sdk/packages/respjson"
 )
 
 // Error represents an error that originates from the API, i.e. when a request is

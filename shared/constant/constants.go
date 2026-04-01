@@ -3,7 +3,7 @@
 package constant
 
 import (
-	shimjson "github.com/stainless-sdks/bem-go/internal/encoding/json"
+	shimjson "github.com/bem-team/bem-go-sdk/internal/encoding/json"
 )
 
 type Constant[T any] interface {

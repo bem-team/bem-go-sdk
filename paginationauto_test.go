@@ -7,9 +7,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stainless-sdks/bem-go"
-	"github.com/stainless-sdks/bem-go/internal/testutil"
-	"github.com/stainless-sdks/bem-go/option"
+	"github.com/bem-team/bem-go-sdk"
+	"github.com/bem-team/bem-go-sdk/internal/testutil"
+	"github.com/bem-team/bem-go-sdk/option"
 )
 
 func TestAutoPagination(t *testing.T) {

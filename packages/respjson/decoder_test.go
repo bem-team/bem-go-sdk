@@ -3,8 +3,8 @@ package respjson_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/stainless-sdks/bem-go/internal/apijson"
-	rj "github.com/stainless-sdks/bem-go/packages/respjson"
+	"github.com/bem-team/bem-go-sdk/internal/apijson"
+	rj "github.com/bem-team/bem-go-sdk/packages/respjson"
 	"reflect"
 	"testing"
 )

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	shimjson "github.com/stainless-sdks/bem-go/internal/encoding/json"
+	shimjson "github.com/bem-team/bem-go-sdk/internal/encoding/json"
 
 	"github.com/tidwall/sjson"
 )

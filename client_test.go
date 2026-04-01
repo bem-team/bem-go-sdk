@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stainless-sdks/bem-go"
-	"github.com/stainless-sdks/bem-go/internal"
-	"github.com/stainless-sdks/bem-go/option"
+	"github.com/bem-team/bem-go-sdk"
+	"github.com/bem-team/bem-go-sdk/internal"
+	"github.com/bem-team/bem-go-sdk/option"
 )
 
 type closureTransport struct {

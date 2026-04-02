@@ -550,7 +550,7 @@ type WorkflowCallParams struct {
 	// Single input file (for transform, analyze, route, and split functions).
 	File any `json:"file,omitzero"`
 	// Multiple input files (for join functions).
-	Files []string `json:"files,omitzero"`
+	Files []any `json:"files,omitzero"`
 	paramObj
 }
 

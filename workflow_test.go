@@ -206,7 +206,7 @@ func TestWorkflowCallWithOptionalParams(t *testing.T) {
 		bem.WorkflowCallParams{
 			CallReferenceID: bem.String("callReferenceID"),
 			File:            map[string]any{},
-			Files:           []string{"string"},
+			Files:           []any{map[string]any{}},
 			Wait:            bem.String("wait"),
 		},
 	)

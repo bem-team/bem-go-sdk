@@ -27,25 +27,21 @@ func TestWorkflowNewWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.Workflows.New(context.TODO(), bem.WorkflowNewParams{
+		MainNodeName: "mainNodeName",
+		Name:         "name",
+		Nodes: []bem.WorkflowNewParamsNode{{
+			Function: bem.FunctionVersionIdentifierParam{
+				ID:         bem.String("id"),
+				Name:       bem.String("name"),
+				VersionNum: bem.Int(0),
+			},
+			Name: bem.String("name"),
+		}},
 		DisplayName: bem.String("displayName"),
-		MainFunction: bem.FunctionVersionIdentifierParam{
-			ID:         bem.String("id"),
-			Name:       bem.String("name"),
-			VersionNum: bem.Int(0),
-		},
-		Name: bem.String("name"),
-		Relationships: []bem.WorkflowRequestRelationshipParam{{
-			DestinationFunction: bem.FunctionVersionIdentifierParam{
-				ID:         bem.String("id"),
-				Name:       bem.String("name"),
-				VersionNum: bem.Int(0),
-			},
-			SourceFunction: bem.FunctionVersionIdentifierParam{
-				ID:         bem.String("id"),
-				Name:       bem.String("name"),
-				VersionNum: bem.Int(0),
-			},
-			DestinationName: bem.String("destinationName"),
+		Edges: []bem.WorkflowNewParamsEdge{{
+			DestinationNodeName: "destinationNodeName",
+			SourceNodeName:      "sourceNodeName",
+			DestinationName:     bem.String("destinationName"),
 		}},
 		Tags: []string{"string"},
 	})
@@ -99,24 +95,20 @@ func TestWorkflowUpdateWithOptionalParams(t *testing.T) {
 		"workflowName",
 		bem.WorkflowUpdateParams{
 			DisplayName: bem.String("displayName"),
-			MainFunction: bem.FunctionVersionIdentifierParam{
-				ID:         bem.String("id"),
-				Name:       bem.String("name"),
-				VersionNum: bem.Int(0),
-			},
-			Name: bem.String("name"),
-			Relationships: []bem.WorkflowRequestRelationshipParam{{
-				DestinationFunction: bem.FunctionVersionIdentifierParam{
+			Edges: []bem.WorkflowUpdateParamsEdge{{
+				DestinationNodeName: "destinationNodeName",
+				SourceNodeName:      "sourceNodeName",
+				DestinationName:     bem.String("destinationName"),
+			}},
+			MainNodeName: bem.String("mainNodeName"),
+			Name:         bem.String("name"),
+			Nodes: []bem.WorkflowUpdateParamsNode{{
+				Function: bem.FunctionVersionIdentifierParam{
 					ID:         bem.String("id"),
 					Name:       bem.String("name"),
 					VersionNum: bem.Int(0),
 				},
-				SourceFunction: bem.FunctionVersionIdentifierParam{
-					ID:         bem.String("id"),
-					Name:       bem.String("name"),
-					VersionNum: bem.Int(0),
-				},
-				DestinationName: bem.String("destinationName"),
+				Name: bem.String("name"),
 			}},
 			Tags: []string{"string"},
 		},

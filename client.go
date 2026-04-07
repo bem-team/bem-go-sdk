@@ -80,6 +80,16 @@ type Client struct {
 	Outputs OutputService
 	// Workflow operations
 	Workflows WorkflowService
+	// Infer JSON Schemas from uploaded documents using AI.
+	//
+	// Upload a file (PDF, image, spreadsheet, email, etc.) and receive a
+	// general-purpose JSON Schema that captures the document's structure. The inferred
+	// schema can be used directly as the `outputSchema` when creating Transform
+	// functions.
+	//
+	// The schema is designed to be broadly applicable to documents of the same type,
+	// not just the specific file uploaded.
+	InferSchema InferSchemaService
 }
 
 // DefaultClientOptions read from the environment (BEM_API_KEY, BEM_BASE_URL). This
@@ -109,6 +119,7 @@ func NewClient(opts ...option.RequestOption) (r Client) {
 	r.Errors = NewErrorService(opts...)
 	r.Outputs = NewOutputService(opts...)
 	r.Workflows = NewWorkflowService(opts...)
+	r.InferSchema = NewInferSchemaService(opts...)
 
 	return
 }

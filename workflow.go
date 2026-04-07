@@ -81,7 +81,7 @@ func (r *WorkflowService) Update(ctx context.Context, workflowName string, body 
 }
 
 // List Workflows
-func (r *WorkflowService) List(ctx context.Context, query WorkflowListParams, opts ...option.RequestOption) (res *pagination.WorkflowsPage[WorkflowListResponse], err error) {
+func (r *WorkflowService) List(ctx context.Context, query WorkflowListParams, opts ...option.RequestOption) (res *pagination.WorkflowsPage[Workflow], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
@@ -99,7 +99,7 @@ func (r *WorkflowService) List(ctx context.Context, query WorkflowListParams, op
 }
 
 // List Workflows
-func (r *WorkflowService) ListAutoPaging(ctx context.Context, query WorkflowListParams, opts ...option.RequestOption) *pagination.WorkflowsPageAutoPager[WorkflowListResponse] {
+func (r *WorkflowService) ListAutoPaging(ctx context.Context, query WorkflowListParams, opts ...option.RequestOption) *pagination.WorkflowsPageAutoPager[Workflow] {
 	return pagination.NewWorkflowsPageAutoPager(r.List(ctx, query, opts...))
 }
 
@@ -208,11 +208,130 @@ func (r *FunctionVersionIdentifierParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
+// V3 read representation of a workflow version.
+type Workflow struct {
+	// Unique identifier of the workflow.
+	ID string `json:"id" api:"required"`
+	// The date and time the workflow was created.
+	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
+	// All directed edges in this workflow version's DAG.
+	Edges []WorkflowEdgeResponse `json:"edges" api:"required"`
+	// Name of the entry-point call-site node.
+	MainNodeName string `json:"mainNodeName" api:"required"`
+	// Unique name of the workflow within the environment.
+	Name string `json:"name" api:"required"`
+	// All call-site nodes in this workflow version's DAG.
+	Nodes []WorkflowNodeResponse `json:"nodes" api:"required"`
+	// The date and time the workflow was last updated.
+	UpdatedAt time.Time `json:"updatedAt" api:"required" format:"date-time"`
+	// Version number of this workflow version.
+	VersionNum int64 `json:"versionNum" api:"required"`
+	// Audit trail information.
+	Audit WorkflowAudit `json:"audit"`
+	// Human-readable display name.
+	DisplayName string `json:"displayName"`
+	// Inbound email address associated with the workflow, if any.
+	EmailAddress string `json:"emailAddress"`
+	// Tags associated with the workflow.
+	Tags []string `json:"tags"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		ID           respjson.Field
+		CreatedAt    respjson.Field
+		Edges        respjson.Field
+		MainNodeName respjson.Field
+		Name         respjson.Field
+		Nodes        respjson.Field
+		UpdatedAt    respjson.Field
+		VersionNum   respjson.Field
+		Audit        respjson.Field
+		DisplayName  respjson.Field
+		EmailAddress respjson.Field
+		Tags         respjson.Field
+		ExtraFields  map[string]respjson.Field
+		raw          string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r Workflow) RawJSON() string { return r.JSON.raw }
+func (r *Workflow) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type WorkflowAudit struct {
+	// Information about who created the current version.
+	VersionCreatedBy UserActionSummary `json:"versionCreatedBy"`
+	// Information about who created the workflow.
+	WorkflowCreatedBy UserActionSummary `json:"workflowCreatedBy"`
+	// Information about who last updated the workflow.
+	WorkflowLastUpdatedBy UserActionSummary `json:"workflowLastUpdatedBy"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		VersionCreatedBy      respjson.Field
+		WorkflowCreatedBy     respjson.Field
+		WorkflowLastUpdatedBy respjson.Field
+		ExtraFields           map[string]respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r WorkflowAudit) RawJSON() string { return r.JSON.raw }
+func (r *WorkflowAudit) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Read representation of a directed edge between call-site nodes.
+type WorkflowEdgeResponse struct {
+	// Name of the destination node.
+	DestinationNodeName string `json:"destinationNodeName" api:"required"`
+	// Name of the source node.
+	SourceNodeName string `json:"sourceNodeName" api:"required"`
+	// Labelled outlet on the source node, if any.
+	DestinationName string `json:"destinationName"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DestinationNodeName respjson.Field
+		SourceNodeName      respjson.Field
+		DestinationName     respjson.Field
+		ExtraFields         map[string]respjson.Field
+		raw                 string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r WorkflowEdgeResponse) RawJSON() string { return r.JSON.raw }
+func (r *WorkflowEdgeResponse) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Read representation of a call-site node.
+type WorkflowNodeResponse struct {
+	// Function (and version) executing at this call site.
+	Function FunctionVersionIdentifier `json:"function" api:"required"`
+	// Name of this call site, unique within the workflow version.
+	Name string `json:"name" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Function    respjson.Field
+		Name        respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r WorkflowNodeResponse) RawJSON() string { return r.JSON.raw }
+func (r *WorkflowNodeResponse) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
 type WorkflowNewResponse struct {
 	// Error message if the workflow creation failed.
 	Error string `json:"error"`
 	// V3 read representation of a workflow version.
-	Workflow WorkflowNewResponseWorkflow `json:"workflow"`
+	Workflow Workflow `json:"workflow"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Error       respjson.Field
@@ -228,131 +347,11 @@ func (r *WorkflowNewResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// V3 read representation of a workflow version.
-type WorkflowNewResponseWorkflow struct {
-	// Unique identifier of the workflow.
-	ID string `json:"id" api:"required"`
-	// The date and time the workflow was created.
-	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
-	// All directed edges in this workflow version's DAG.
-	Edges []WorkflowNewResponseWorkflowEdge `json:"edges" api:"required"`
-	// Name of the entry-point call-site node.
-	MainNodeName string `json:"mainNodeName" api:"required"`
-	// Unique name of the workflow within the environment.
-	Name string `json:"name" api:"required"`
-	// All call-site nodes in this workflow version's DAG.
-	Nodes []WorkflowNewResponseWorkflowNode `json:"nodes" api:"required"`
-	// The date and time the workflow was last updated.
-	UpdatedAt time.Time `json:"updatedAt" api:"required" format:"date-time"`
-	// Version number of this workflow version.
-	VersionNum int64 `json:"versionNum" api:"required"`
-	// Audit trail information.
-	Audit WorkflowNewResponseWorkflowAudit `json:"audit"`
-	// Human-readable display name.
-	DisplayName string `json:"displayName"`
-	// Inbound email address associated with the workflow, if any.
-	EmailAddress string `json:"emailAddress"`
-	// Tags associated with the workflow.
-	Tags []string `json:"tags"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		ID           respjson.Field
-		CreatedAt    respjson.Field
-		Edges        respjson.Field
-		MainNodeName respjson.Field
-		Name         respjson.Field
-		Nodes        respjson.Field
-		UpdatedAt    respjson.Field
-		VersionNum   respjson.Field
-		Audit        respjson.Field
-		DisplayName  respjson.Field
-		EmailAddress respjson.Field
-		Tags         respjson.Field
-		ExtraFields  map[string]respjson.Field
-		raw          string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowNewResponseWorkflow) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowNewResponseWorkflow) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Read representation of a directed edge between call-site nodes.
-type WorkflowNewResponseWorkflowEdge struct {
-	// Name of the destination node.
-	DestinationNodeName string `json:"destinationNodeName" api:"required"`
-	// Name of the source node.
-	SourceNodeName string `json:"sourceNodeName" api:"required"`
-	// Labelled outlet on the source node, if any.
-	DestinationName string `json:"destinationName"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		DestinationNodeName respjson.Field
-		SourceNodeName      respjson.Field
-		DestinationName     respjson.Field
-		ExtraFields         map[string]respjson.Field
-		raw                 string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowNewResponseWorkflowEdge) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowNewResponseWorkflowEdge) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Read representation of a call-site node.
-type WorkflowNewResponseWorkflowNode struct {
-	// Function (and version) executing at this call site.
-	Function FunctionVersionIdentifier `json:"function" api:"required"`
-	// Name of this call site, unique within the workflow version.
-	Name string `json:"name" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Function    respjson.Field
-		Name        respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowNewResponseWorkflowNode) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowNewResponseWorkflowNode) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Audit trail information.
-type WorkflowNewResponseWorkflowAudit struct {
-	// Information about who created the current version.
-	VersionCreatedBy UserActionSummary `json:"versionCreatedBy"`
-	// Information about who created the workflow.
-	WorkflowCreatedBy UserActionSummary `json:"workflowCreatedBy"`
-	// Information about who last updated the workflow.
-	WorkflowLastUpdatedBy UserActionSummary `json:"workflowLastUpdatedBy"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		VersionCreatedBy      respjson.Field
-		WorkflowCreatedBy     respjson.Field
-		WorkflowLastUpdatedBy respjson.Field
-		ExtraFields           map[string]respjson.Field
-		raw                   string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowNewResponseWorkflowAudit) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowNewResponseWorkflowAudit) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 type WorkflowGetResponse struct {
 	// Error message if the workflow retrieval failed.
 	Error string `json:"error"`
 	// V3 read representation of a workflow version.
-	Workflow WorkflowGetResponseWorkflow `json:"workflow"`
+	Workflow Workflow `json:"workflow"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Error       respjson.Field
@@ -368,131 +367,11 @@ func (r *WorkflowGetResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// V3 read representation of a workflow version.
-type WorkflowGetResponseWorkflow struct {
-	// Unique identifier of the workflow.
-	ID string `json:"id" api:"required"`
-	// The date and time the workflow was created.
-	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
-	// All directed edges in this workflow version's DAG.
-	Edges []WorkflowGetResponseWorkflowEdge `json:"edges" api:"required"`
-	// Name of the entry-point call-site node.
-	MainNodeName string `json:"mainNodeName" api:"required"`
-	// Unique name of the workflow within the environment.
-	Name string `json:"name" api:"required"`
-	// All call-site nodes in this workflow version's DAG.
-	Nodes []WorkflowGetResponseWorkflowNode `json:"nodes" api:"required"`
-	// The date and time the workflow was last updated.
-	UpdatedAt time.Time `json:"updatedAt" api:"required" format:"date-time"`
-	// Version number of this workflow version.
-	VersionNum int64 `json:"versionNum" api:"required"`
-	// Audit trail information.
-	Audit WorkflowGetResponseWorkflowAudit `json:"audit"`
-	// Human-readable display name.
-	DisplayName string `json:"displayName"`
-	// Inbound email address associated with the workflow, if any.
-	EmailAddress string `json:"emailAddress"`
-	// Tags associated with the workflow.
-	Tags []string `json:"tags"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		ID           respjson.Field
-		CreatedAt    respjson.Field
-		Edges        respjson.Field
-		MainNodeName respjson.Field
-		Name         respjson.Field
-		Nodes        respjson.Field
-		UpdatedAt    respjson.Field
-		VersionNum   respjson.Field
-		Audit        respjson.Field
-		DisplayName  respjson.Field
-		EmailAddress respjson.Field
-		Tags         respjson.Field
-		ExtraFields  map[string]respjson.Field
-		raw          string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowGetResponseWorkflow) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowGetResponseWorkflow) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Read representation of a directed edge between call-site nodes.
-type WorkflowGetResponseWorkflowEdge struct {
-	// Name of the destination node.
-	DestinationNodeName string `json:"destinationNodeName" api:"required"`
-	// Name of the source node.
-	SourceNodeName string `json:"sourceNodeName" api:"required"`
-	// Labelled outlet on the source node, if any.
-	DestinationName string `json:"destinationName"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		DestinationNodeName respjson.Field
-		SourceNodeName      respjson.Field
-		DestinationName     respjson.Field
-		ExtraFields         map[string]respjson.Field
-		raw                 string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowGetResponseWorkflowEdge) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowGetResponseWorkflowEdge) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Read representation of a call-site node.
-type WorkflowGetResponseWorkflowNode struct {
-	// Function (and version) executing at this call site.
-	Function FunctionVersionIdentifier `json:"function" api:"required"`
-	// Name of this call site, unique within the workflow version.
-	Name string `json:"name" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Function    respjson.Field
-		Name        respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowGetResponseWorkflowNode) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowGetResponseWorkflowNode) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Audit trail information.
-type WorkflowGetResponseWorkflowAudit struct {
-	// Information about who created the current version.
-	VersionCreatedBy UserActionSummary `json:"versionCreatedBy"`
-	// Information about who created the workflow.
-	WorkflowCreatedBy UserActionSummary `json:"workflowCreatedBy"`
-	// Information about who last updated the workflow.
-	WorkflowLastUpdatedBy UserActionSummary `json:"workflowLastUpdatedBy"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		VersionCreatedBy      respjson.Field
-		WorkflowCreatedBy     respjson.Field
-		WorkflowLastUpdatedBy respjson.Field
-		ExtraFields           map[string]respjson.Field
-		raw                   string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowGetResponseWorkflowAudit) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowGetResponseWorkflowAudit) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 type WorkflowUpdateResponse struct {
 	// Error message if the workflow update failed.
 	Error string `json:"error"`
 	// V3 read representation of a workflow version.
-	Workflow WorkflowUpdateResponseWorkflow `json:"workflow"`
+	Workflow Workflow `json:"workflow"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Error       respjson.Field
@@ -508,246 +387,6 @@ func (r *WorkflowUpdateResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// V3 read representation of a workflow version.
-type WorkflowUpdateResponseWorkflow struct {
-	// Unique identifier of the workflow.
-	ID string `json:"id" api:"required"`
-	// The date and time the workflow was created.
-	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
-	// All directed edges in this workflow version's DAG.
-	Edges []WorkflowUpdateResponseWorkflowEdge `json:"edges" api:"required"`
-	// Name of the entry-point call-site node.
-	MainNodeName string `json:"mainNodeName" api:"required"`
-	// Unique name of the workflow within the environment.
-	Name string `json:"name" api:"required"`
-	// All call-site nodes in this workflow version's DAG.
-	Nodes []WorkflowUpdateResponseWorkflowNode `json:"nodes" api:"required"`
-	// The date and time the workflow was last updated.
-	UpdatedAt time.Time `json:"updatedAt" api:"required" format:"date-time"`
-	// Version number of this workflow version.
-	VersionNum int64 `json:"versionNum" api:"required"`
-	// Audit trail information.
-	Audit WorkflowUpdateResponseWorkflowAudit `json:"audit"`
-	// Human-readable display name.
-	DisplayName string `json:"displayName"`
-	// Inbound email address associated with the workflow, if any.
-	EmailAddress string `json:"emailAddress"`
-	// Tags associated with the workflow.
-	Tags []string `json:"tags"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		ID           respjson.Field
-		CreatedAt    respjson.Field
-		Edges        respjson.Field
-		MainNodeName respjson.Field
-		Name         respjson.Field
-		Nodes        respjson.Field
-		UpdatedAt    respjson.Field
-		VersionNum   respjson.Field
-		Audit        respjson.Field
-		DisplayName  respjson.Field
-		EmailAddress respjson.Field
-		Tags         respjson.Field
-		ExtraFields  map[string]respjson.Field
-		raw          string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowUpdateResponseWorkflow) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowUpdateResponseWorkflow) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Read representation of a directed edge between call-site nodes.
-type WorkflowUpdateResponseWorkflowEdge struct {
-	// Name of the destination node.
-	DestinationNodeName string `json:"destinationNodeName" api:"required"`
-	// Name of the source node.
-	SourceNodeName string `json:"sourceNodeName" api:"required"`
-	// Labelled outlet on the source node, if any.
-	DestinationName string `json:"destinationName"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		DestinationNodeName respjson.Field
-		SourceNodeName      respjson.Field
-		DestinationName     respjson.Field
-		ExtraFields         map[string]respjson.Field
-		raw                 string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowUpdateResponseWorkflowEdge) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowUpdateResponseWorkflowEdge) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Read representation of a call-site node.
-type WorkflowUpdateResponseWorkflowNode struct {
-	// Function (and version) executing at this call site.
-	Function FunctionVersionIdentifier `json:"function" api:"required"`
-	// Name of this call site, unique within the workflow version.
-	Name string `json:"name" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Function    respjson.Field
-		Name        respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowUpdateResponseWorkflowNode) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowUpdateResponseWorkflowNode) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Audit trail information.
-type WorkflowUpdateResponseWorkflowAudit struct {
-	// Information about who created the current version.
-	VersionCreatedBy UserActionSummary `json:"versionCreatedBy"`
-	// Information about who created the workflow.
-	WorkflowCreatedBy UserActionSummary `json:"workflowCreatedBy"`
-	// Information about who last updated the workflow.
-	WorkflowLastUpdatedBy UserActionSummary `json:"workflowLastUpdatedBy"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		VersionCreatedBy      respjson.Field
-		WorkflowCreatedBy     respjson.Field
-		WorkflowLastUpdatedBy respjson.Field
-		ExtraFields           map[string]respjson.Field
-		raw                   string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowUpdateResponseWorkflowAudit) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowUpdateResponseWorkflowAudit) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// V3 read representation of a workflow version.
-type WorkflowListResponse struct {
-	// Unique identifier of the workflow.
-	ID string `json:"id" api:"required"`
-	// The date and time the workflow was created.
-	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
-	// All directed edges in this workflow version's DAG.
-	Edges []WorkflowListResponseEdge `json:"edges" api:"required"`
-	// Name of the entry-point call-site node.
-	MainNodeName string `json:"mainNodeName" api:"required"`
-	// Unique name of the workflow within the environment.
-	Name string `json:"name" api:"required"`
-	// All call-site nodes in this workflow version's DAG.
-	Nodes []WorkflowListResponseNode `json:"nodes" api:"required"`
-	// The date and time the workflow was last updated.
-	UpdatedAt time.Time `json:"updatedAt" api:"required" format:"date-time"`
-	// Version number of this workflow version.
-	VersionNum int64 `json:"versionNum" api:"required"`
-	// Audit trail information.
-	Audit WorkflowListResponseAudit `json:"audit"`
-	// Human-readable display name.
-	DisplayName string `json:"displayName"`
-	// Inbound email address associated with the workflow, if any.
-	EmailAddress string `json:"emailAddress"`
-	// Tags associated with the workflow.
-	Tags []string `json:"tags"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		ID           respjson.Field
-		CreatedAt    respjson.Field
-		Edges        respjson.Field
-		MainNodeName respjson.Field
-		Name         respjson.Field
-		Nodes        respjson.Field
-		UpdatedAt    respjson.Field
-		VersionNum   respjson.Field
-		Audit        respjson.Field
-		DisplayName  respjson.Field
-		EmailAddress respjson.Field
-		Tags         respjson.Field
-		ExtraFields  map[string]respjson.Field
-		raw          string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowListResponse) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowListResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Read representation of a directed edge between call-site nodes.
-type WorkflowListResponseEdge struct {
-	// Name of the destination node.
-	DestinationNodeName string `json:"destinationNodeName" api:"required"`
-	// Name of the source node.
-	SourceNodeName string `json:"sourceNodeName" api:"required"`
-	// Labelled outlet on the source node, if any.
-	DestinationName string `json:"destinationName"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		DestinationNodeName respjson.Field
-		SourceNodeName      respjson.Field
-		DestinationName     respjson.Field
-		ExtraFields         map[string]respjson.Field
-		raw                 string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowListResponseEdge) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowListResponseEdge) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Read representation of a call-site node.
-type WorkflowListResponseNode struct {
-	// Function (and version) executing at this call site.
-	Function FunctionVersionIdentifier `json:"function" api:"required"`
-	// Name of this call site, unique within the workflow version.
-	Name string `json:"name" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Function    respjson.Field
-		Name        respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowListResponseNode) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowListResponseNode) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Audit trail information.
-type WorkflowListResponseAudit struct {
-	// Information about who created the current version.
-	VersionCreatedBy UserActionSummary `json:"versionCreatedBy"`
-	// Information about who created the workflow.
-	WorkflowCreatedBy UserActionSummary `json:"workflowCreatedBy"`
-	// Information about who last updated the workflow.
-	WorkflowLastUpdatedBy UserActionSummary `json:"workflowLastUpdatedBy"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		VersionCreatedBy      respjson.Field
-		WorkflowCreatedBy     respjson.Field
-		WorkflowLastUpdatedBy respjson.Field
-		ExtraFields           map[string]respjson.Field
-		raw                   string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowListResponseAudit) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowListResponseAudit) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 type WorkflowCopyResponse struct {
 	// Functions that were copied when copying to a different environment. Empty when
 	// copying within the same environment.
@@ -757,7 +396,7 @@ type WorkflowCopyResponse struct {
 	// Error message if the workflow copy failed.
 	Error string `json:"error"`
 	// V3 read representation of a workflow version.
-	Workflow WorkflowCopyResponseWorkflow `json:"workflow"`
+	Workflow Workflow `json:"workflow"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		CopiedFunctions respjson.Field
@@ -804,126 +443,6 @@ type WorkflowCopyResponseCopiedFunction struct {
 // Returns the unmodified JSON received from the API
 func (r WorkflowCopyResponseCopiedFunction) RawJSON() string { return r.JSON.raw }
 func (r *WorkflowCopyResponseCopiedFunction) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// V3 read representation of a workflow version.
-type WorkflowCopyResponseWorkflow struct {
-	// Unique identifier of the workflow.
-	ID string `json:"id" api:"required"`
-	// The date and time the workflow was created.
-	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
-	// All directed edges in this workflow version's DAG.
-	Edges []WorkflowCopyResponseWorkflowEdge `json:"edges" api:"required"`
-	// Name of the entry-point call-site node.
-	MainNodeName string `json:"mainNodeName" api:"required"`
-	// Unique name of the workflow within the environment.
-	Name string `json:"name" api:"required"`
-	// All call-site nodes in this workflow version's DAG.
-	Nodes []WorkflowCopyResponseWorkflowNode `json:"nodes" api:"required"`
-	// The date and time the workflow was last updated.
-	UpdatedAt time.Time `json:"updatedAt" api:"required" format:"date-time"`
-	// Version number of this workflow version.
-	VersionNum int64 `json:"versionNum" api:"required"`
-	// Audit trail information.
-	Audit WorkflowCopyResponseWorkflowAudit `json:"audit"`
-	// Human-readable display name.
-	DisplayName string `json:"displayName"`
-	// Inbound email address associated with the workflow, if any.
-	EmailAddress string `json:"emailAddress"`
-	// Tags associated with the workflow.
-	Tags []string `json:"tags"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		ID           respjson.Field
-		CreatedAt    respjson.Field
-		Edges        respjson.Field
-		MainNodeName respjson.Field
-		Name         respjson.Field
-		Nodes        respjson.Field
-		UpdatedAt    respjson.Field
-		VersionNum   respjson.Field
-		Audit        respjson.Field
-		DisplayName  respjson.Field
-		EmailAddress respjson.Field
-		Tags         respjson.Field
-		ExtraFields  map[string]respjson.Field
-		raw          string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowCopyResponseWorkflow) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowCopyResponseWorkflow) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Read representation of a directed edge between call-site nodes.
-type WorkflowCopyResponseWorkflowEdge struct {
-	// Name of the destination node.
-	DestinationNodeName string `json:"destinationNodeName" api:"required"`
-	// Name of the source node.
-	SourceNodeName string `json:"sourceNodeName" api:"required"`
-	// Labelled outlet on the source node, if any.
-	DestinationName string `json:"destinationName"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		DestinationNodeName respjson.Field
-		SourceNodeName      respjson.Field
-		DestinationName     respjson.Field
-		ExtraFields         map[string]respjson.Field
-		raw                 string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowCopyResponseWorkflowEdge) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowCopyResponseWorkflowEdge) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Read representation of a call-site node.
-type WorkflowCopyResponseWorkflowNode struct {
-	// Function (and version) executing at this call site.
-	Function FunctionVersionIdentifier `json:"function" api:"required"`
-	// Name of this call site, unique within the workflow version.
-	Name string `json:"name" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Function    respjson.Field
-		Name        respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowCopyResponseWorkflowNode) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowCopyResponseWorkflowNode) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Audit trail information.
-type WorkflowCopyResponseWorkflowAudit struct {
-	// Information about who created the current version.
-	VersionCreatedBy UserActionSummary `json:"versionCreatedBy"`
-	// Information about who created the workflow.
-	WorkflowCreatedBy UserActionSummary `json:"workflowCreatedBy"`
-	// Information about who last updated the workflow.
-	WorkflowLastUpdatedBy UserActionSummary `json:"workflowLastUpdatedBy"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		VersionCreatedBy      respjson.Field
-		WorkflowCreatedBy     respjson.Field
-		WorkflowLastUpdatedBy respjson.Field
-		ExtraFields           map[string]respjson.Field
-		raw                   string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowCopyResponseWorkflowAudit) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowCopyResponseWorkflowAudit) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

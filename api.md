@@ -130,3 +130,13 @@ Methods:
 
 - <code title="get /v3/workflows/{workflowName}/versions/{versionNum}">client.Workflows.Versions.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WorkflowVersionService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, versionNum <a href="https://pkg.go.dev/builtin#int64">int64</a>, query <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WorkflowVersionGetParams">WorkflowVersionGetParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WorkflowVersionGetResponse">WorkflowVersionGetResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="get /v3/workflows/{workflowName}/versions">client.Workflows.Versions.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WorkflowVersionService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, workflowName <a href="https://pkg.go.dev/builtin#string">string</a>, query <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WorkflowVersionListParams">WorkflowVersionListParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk/packages/pagination">pagination</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk/packages/pagination#WorkflowVersionsPage">WorkflowVersionsPage</a>[<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#Workflow">Workflow</a>], <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+
+# InferSchema
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#InferSchemaNewResponse">InferSchemaNewResponse</a>
+
+Methods:
+
+- <code title="post /v3/infer-schema">client.InferSchema.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#InferSchemaService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#InferSchemaNewParams">InferSchemaNewParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#InferSchemaNewResponse">InferSchemaNewResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>

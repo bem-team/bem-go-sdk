@@ -196,10 +196,21 @@ func TestWorkflowCallWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"workflowName",
 		bem.WorkflowCallParams{
+			Input: bem.WorkflowCallParamsInput{
+				BatchFiles: bem.WorkflowCallParamsInputBatchFiles{
+					Inputs: []bem.WorkflowCallParamsInputBatchFilesInput{{
+						InputContent:    "inputContent",
+						InputType:       "csv",
+						ItemReferenceID: bem.String("itemReferenceID"),
+					}},
+				},
+				SingleFile: bem.WorkflowCallParamsInputSingleFile{
+					InputContent: "inputContent",
+					InputType:    "csv",
+				},
+			},
+			Wait:            bem.Bool(true),
 			CallReferenceID: bem.String("callReferenceID"),
-			File:            map[string]any{},
-			Files:           []any{map[string]any{}},
-			Wait:            bem.String("wait"),
 		},
 	)
 	if err != nil {

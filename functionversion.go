@@ -80,8 +80,8 @@ func (r *FunctionVersionService) List(ctx context.Context, functionName string, 
 
 // FunctionVersionUnion contains all possible properties and values from
 // [FunctionVersionTransform], [FunctionVersionAnalyze], [FunctionVersionRoute],
-// [FunctionVersionSplit], [FunctionVersionJoin], [FunctionVersionEnrich],
-// [FunctionVersionPayloadShaping].
+// [FunctionVersionSend], [FunctionVersionSplit], [FunctionVersionJoin],
+// [FunctionVersionEnrich], [FunctionVersionPayloadShaping].
 //
 // Use the [FunctionVersionUnion.AsAny] method to switch on the variant.
 //
@@ -94,7 +94,7 @@ type FunctionVersionUnion struct {
 	OutputSchemaName string `json:"outputSchemaName"`
 	// This field is from variant [FunctionVersionTransform].
 	TabularChunkingEnabled bool `json:"tabularChunkingEnabled"`
-	// Any of "transform", "analyze", "route", "split", "join", "enrich",
+	// Any of "transform", "analyze", "route", "send", "split", "join", "enrich",
 	// "payload_shaping".
 	Type       string `json:"type"`
 	VersionNum int64  `json:"versionNum"`
@@ -107,6 +107,18 @@ type FunctionVersionUnion struct {
 	Description     string              `json:"description"`
 	// This field is from variant [FunctionVersionRoute].
 	Routes []RouteListItem `json:"routes"`
+	// This field is from variant [FunctionVersionSend].
+	DestinationType string `json:"destinationType"`
+	// This field is from variant [FunctionVersionSend].
+	GoogleDriveFolderID string `json:"googleDriveFolderId"`
+	// This field is from variant [FunctionVersionSend].
+	S3Bucket string `json:"s3Bucket"`
+	// This field is from variant [FunctionVersionSend].
+	S3Prefix string `json:"s3Prefix"`
+	// This field is from variant [FunctionVersionSend].
+	WebhookSigningEnabled bool `json:"webhookSigningEnabled"`
+	// This field is from variant [FunctionVersionSend].
+	WebhookURL string `json:"webhookUrl"`
 	// This field is from variant [FunctionVersionSplit].
 	SplitType string `json:"splitType"`
 	// This field is from variant [FunctionVersionSplit].
@@ -135,6 +147,12 @@ type FunctionVersionUnion struct {
 		UsedInWorkflows         respjson.Field
 		Description             respjson.Field
 		Routes                  respjson.Field
+		DestinationType         respjson.Field
+		GoogleDriveFolderID     respjson.Field
+		S3Bucket                respjson.Field
+		S3Prefix                respjson.Field
+		WebhookSigningEnabled   respjson.Field
+		WebhookURL              respjson.Field
 		SplitType               respjson.Field
 		PrintPageSplitConfig    respjson.Field
 		SemanticPageSplitConfig respjson.Field
@@ -154,6 +172,7 @@ type anyFunctionVersion interface {
 func (FunctionVersionTransform) implFunctionVersionUnion()      {}
 func (FunctionVersionAnalyze) implFunctionVersionUnion()        {}
 func (FunctionVersionRoute) implFunctionVersionUnion()          {}
+func (FunctionVersionSend) implFunctionVersionUnion()           {}
 func (FunctionVersionSplit) implFunctionVersionUnion()          {}
 func (FunctionVersionJoin) implFunctionVersionUnion()           {}
 func (FunctionVersionEnrich) implFunctionVersionUnion()         {}
@@ -165,6 +184,7 @@ func (FunctionVersionPayloadShaping) implFunctionVersionUnion() {}
 //	case bem.FunctionVersionTransform:
 //	case bem.FunctionVersionAnalyze:
 //	case bem.FunctionVersionRoute:
+//	case bem.FunctionVersionSend:
 //	case bem.FunctionVersionSplit:
 //	case bem.FunctionVersionJoin:
 //	case bem.FunctionVersionEnrich:
@@ -180,6 +200,8 @@ func (u FunctionVersionUnion) AsAny() anyFunctionVersion {
 		return u.AsAnalyze()
 	case "route":
 		return u.AsRoute()
+	case "send":
+		return u.AsSend()
 	case "split":
 		return u.AsSplit()
 	case "join":
@@ -203,6 +225,11 @@ func (u FunctionVersionUnion) AsAnalyze() (v FunctionVersionAnalyze) {
 }
 
 func (u FunctionVersionUnion) AsRoute() (v FunctionVersionRoute) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u FunctionVersionUnion) AsSend() (v FunctionVersionSend) {
 	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
 	return
 }
@@ -382,6 +409,61 @@ type FunctionVersionRoute struct {
 // Returns the unmodified JSON received from the API
 func (r FunctionVersionRoute) RawJSON() string { return r.JSON.raw }
 func (r *FunctionVersionRoute) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type FunctionVersionSend struct {
+	// Destination type for a Send function.
+	//
+	// Any of "webhook", "s3", "google_drive".
+	DestinationType string `json:"destinationType" api:"required"`
+	// Unique identifier of function.
+	FunctionID string `json:"functionID" api:"required"`
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName string        `json:"functionName" api:"required"`
+	Type         constant.Send `json:"type" default:"send"`
+	// Version number of function.
+	VersionNum int64 `json:"versionNum" api:"required"`
+	// Audit trail information for the function version.
+	Audit FunctionAudit `json:"audit"`
+	// The date and time the function version was created.
+	CreatedAt time.Time `json:"createdAt" format:"date-time"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName         string `json:"displayName"`
+	GoogleDriveFolderID string `json:"googleDriveFolderId"`
+	S3Bucket            string `json:"s3Bucket"`
+	S3Prefix            string `json:"s3Prefix"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags"`
+	// List of workflows that use this function.
+	UsedInWorkflows       []WorkflowUsageInfo `json:"usedInWorkflows"`
+	WebhookSigningEnabled bool                `json:"webhookSigningEnabled"`
+	WebhookURL            string              `json:"webhookUrl"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DestinationType       respjson.Field
+		FunctionID            respjson.Field
+		FunctionName          respjson.Field
+		Type                  respjson.Field
+		VersionNum            respjson.Field
+		Audit                 respjson.Field
+		CreatedAt             respjson.Field
+		DisplayName           respjson.Field
+		GoogleDriveFolderID   respjson.Field
+		S3Bucket              respjson.Field
+		S3Prefix              respjson.Field
+		Tags                  respjson.Field
+		UsedInWorkflows       respjson.Field
+		WebhookSigningEnabled respjson.Field
+		WebhookURL            respjson.Field
+		ExtraFields           map[string]respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r FunctionVersionSend) RawJSON() string { return r.JSON.raw }
+func (r *FunctionVersionSend) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

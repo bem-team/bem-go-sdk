@@ -3,18 +3,15 @@
 package bem
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"mime/multipart"
 	"net/http"
 	"net/url"
 	"slices"
 	"time"
 
-	"github.com/bem-team/bem-go-sdk/internal/apiform"
 	"github.com/bem-team/bem-go-sdk/internal/apijson"
 	"github.com/bem-team/bem-go-sdk/internal/apiquery"
 	"github.com/bem-team/bem-go-sdk/internal/requestconfig"
@@ -116,16 +113,25 @@ func (r *WorkflowService) Delete(ctx context.Context, workflowName string, opts 
 	return err
 }
 
-// **Invoke a workflow by submitting a multipart form request.**
+// **Invoke a workflow.**
 //
-// Workflows can only be called via multipart form in V3. Submit the input file
-// along with an optional reference ID for tracking.
+// Submit the input file as either a multipart form request or a JSON request with
+// base64-encoded file content. The workflow name is derived from the URL path.
+//
+// ## Input Formats
+//
+//   - **Multipart form** (`multipart/form-data`): attach the file directly via the
+//     `file` or `files` fields. Set `wait` in the form body to control synchronous
+//     behaviour.
+//   - **JSON** (`application/json`): base64-encode the file content and set it in
+//     `input.singleFile.inputContent` or `input.batchFiles.inputs[*].inputContent`.
+//     Pass `wait=true` as a query parameter to control synchronous behaviour.
 //
 // ## Synchronous vs Asynchronous
 //
 // By default the call is created asynchronously and this endpoint returns
-// `202 Accepted` immediately with a `pending` call object. Set the `wait` field to
-// `true` to block until the call completes (up to 30 seconds):
+// `202 Accepted` immediately with a `pending` call object. Set `wait` to `true` to
+// block until the call completes (up to 30 seconds):
 //
 //   - On success: returns `200 OK` with the completed call, `outputs` populated
 //   - On failure: returns `500 Internal Server Error` with the call and an `error`
@@ -136,14 +142,14 @@ func (r *WorkflowService) Delete(ctx context.Context, workflowName string, opts 
 //
 // Poll `GET /v3/calls/{callID}` to check status, or configure a webhook
 // subscription to receive events when the call finishes.
-func (r *WorkflowService) Call(ctx context.Context, workflowName string, body WorkflowCallParams, opts ...option.RequestOption) (res *CallGetResponse, err error) {
+func (r *WorkflowService) Call(ctx context.Context, workflowName string, params WorkflowCallParams, opts ...option.RequestOption) (res *CallGetResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if workflowName == "" {
 		err = errors.New("missing required workflowName parameter")
 		return nil, err
 	}
 	path := fmt.Sprintf("v3/workflows/%s/call", url.PathEscape(workflowName))
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
 	return res, err
 }
 
@@ -609,34 +615,111 @@ const (
 )
 
 type WorkflowCallParams struct {
-	// Your reference ID for tracking this call.
-	CallReferenceID param.Opt[string] `json:"callReferenceID,omitzero"`
+	// Input to the workflow call. Provide exactly one of `singleFile` or `batchFiles`.
+	Input WorkflowCallParamsInput `json:"input,omitzero" api:"required"`
 	// When `true`, the endpoint blocks until the call completes (up to 30 seconds) and
 	// returns the finished call object. Default: `false`.
-	Wait param.Opt[string] `json:"wait,omitzero"`
-	// Single input file (for transform, analyze, route, and split functions).
-	File any `json:"file,omitzero"`
-	// Multiple input files (for join functions).
-	Files []any `json:"files,omitzero"`
+	Wait param.Opt[bool] `query:"wait,omitzero" json:"-"`
+	// Your reference ID for tracking this call.
+	CallReferenceID param.Opt[string] `json:"callReferenceID,omitzero"`
 	paramObj
 }
 
-func (r WorkflowCallParams) MarshalMultipart() (data []byte, contentType string, err error) {
-	buf := bytes.NewBuffer(nil)
-	writer := multipart.NewWriter(buf)
-	err = apiform.MarshalRoot(r, writer)
-	if err == nil {
-		err = apiform.WriteExtras(writer, r.ExtraFields())
-	}
-	if err != nil {
-		writer.Close()
-		return nil, "", err
-	}
-	err = writer.Close()
-	if err != nil {
-		return nil, "", err
-	}
-	return buf.Bytes(), writer.FormDataContentType(), nil
+func (r WorkflowCallParams) MarshalJSON() (data []byte, err error) {
+	type shadow WorkflowCallParams
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *WorkflowCallParams) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// URLQuery serializes [WorkflowCallParams]'s query parameters as `url.Values`.
+func (r WorkflowCallParams) URLQuery() (v url.Values, err error) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+// Input to the workflow call. Provide exactly one of `singleFile` or `batchFiles`.
+type WorkflowCallParamsInput struct {
+	BatchFiles WorkflowCallParamsInputBatchFiles `json:"batchFiles,omitzero"`
+	SingleFile WorkflowCallParamsInputSingleFile `json:"singleFile,omitzero"`
+	paramObj
+}
+
+func (r WorkflowCallParamsInput) MarshalJSON() (data []byte, err error) {
+	type shadow WorkflowCallParamsInput
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *WorkflowCallParamsInput) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type WorkflowCallParamsInputBatchFiles struct {
+	Inputs []WorkflowCallParamsInputBatchFilesInput `json:"inputs,omitzero"`
+	paramObj
+}
+
+func (r WorkflowCallParamsInputBatchFiles) MarshalJSON() (data []byte, err error) {
+	type shadow WorkflowCallParamsInputBatchFiles
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *WorkflowCallParamsInputBatchFiles) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The properties InputContent, InputType are required.
+type WorkflowCallParamsInputBatchFilesInput struct {
+	// Base64-encoded file content
+	InputContent string `json:"inputContent" api:"required"`
+	// The input type of the content you're sending for transformation.
+	//
+	// Any of "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a",
+	// "mp3", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
+	InputType       string            `json:"inputType,omitzero" api:"required"`
+	ItemReferenceID param.Opt[string] `json:"itemReferenceID,omitzero"`
+	paramObj
+}
+
+func (r WorkflowCallParamsInputBatchFilesInput) MarshalJSON() (data []byte, err error) {
+	type shadow WorkflowCallParamsInputBatchFilesInput
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *WorkflowCallParamsInputBatchFilesInput) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[WorkflowCallParamsInputBatchFilesInput](
+		"inputType", "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a", "mp3", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml",
+	)
+}
+
+// The properties InputContent, InputType are required.
+type WorkflowCallParamsInputSingleFile struct {
+	// Base64-encoded file content
+	InputContent string `json:"inputContent" api:"required"`
+	// The input type of the content you're sending for transformation.
+	//
+	// Any of "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a",
+	// "mp3", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
+	InputType string `json:"inputType,omitzero" api:"required"`
+	paramObj
+}
+
+func (r WorkflowCallParamsInputSingleFile) MarshalJSON() (data []byte, err error) {
+	type shadow WorkflowCallParamsInputSingleFile
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *WorkflowCallParamsInputSingleFile) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[WorkflowCallParamsInputSingleFile](
+		"inputType", "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a", "mp3", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml",
+	)
 }
 
 type WorkflowCopyParams struct {

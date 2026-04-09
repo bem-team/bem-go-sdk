@@ -343,7 +343,9 @@ type CreateFunctionSendParam struct {
 	S3Bucket param.Opt[string] `json:"s3Bucket,omitzero"`
 	// Optional S3 key prefix (folder path).
 	S3Prefix param.Opt[string] `json:"s3Prefix,omitzero"`
-	// Whether to sign webhook payloads with an HMAC-SHA256 signature.
+	// Whether to sign webhook deliveries with an HMAC-SHA256 `bem-signature` header.
+	// Defaults to `true` when omitted — signing is on by default for new send
+	// functions. Set explicitly to `false` to disable.
 	WebhookSigningEnabled param.Opt[bool] `json:"webhookSigningEnabled,omitzero"`
 	// Webhook URL to POST the payload to. Required when destinationType is webhook.
 	WebhookURL param.Opt[string] `json:"webhookUrl,omitzero"`
@@ -1237,7 +1239,7 @@ type FunctionSend struct {
 	Tags []string `json:"tags"`
 	// List of workflows that use this function.
 	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
-	// Whether webhook payloads are signed with an HMAC-SHA256 signature.
+	// Whether webhook payloads are signed with an HMAC-SHA256 `bem-signature` header.
 	WebhookSigningEnabled bool `json:"webhookSigningEnabled"`
 	// Webhook URL to POST the payload to. Present when destinationType is webhook.
 	WebhookURL string `json:"webhookUrl"`
@@ -1923,7 +1925,9 @@ type UpdateFunctionSendParam struct {
 	S3Bucket param.Opt[string] `json:"s3Bucket,omitzero"`
 	// Optional S3 key prefix (folder path).
 	S3Prefix param.Opt[string] `json:"s3Prefix,omitzero"`
-	// Whether to sign webhook payloads with an HMAC-SHA256 signature.
+	// Whether to sign webhook deliveries with an HMAC-SHA256 `bem-signature` header.
+	// Defaults to `true` when omitted — signing is on by default for new send
+	// functions. Set explicitly to `false` to disable.
 	WebhookSigningEnabled param.Opt[bool] `json:"webhookSigningEnabled,omitzero"`
 	// Webhook URL to POST the payload to. Required when destinationType is webhook.
 	WebhookURL param.Opt[string] `json:"webhookUrl,omitzero"`

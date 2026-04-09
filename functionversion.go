@@ -436,9 +436,11 @@ type FunctionVersionSend struct {
 	// Array of tags to categorize and organize functions.
 	Tags []string `json:"tags"`
 	// List of workflows that use this function.
-	UsedInWorkflows       []WorkflowUsageInfo `json:"usedInWorkflows"`
-	WebhookSigningEnabled bool                `json:"webhookSigningEnabled"`
-	WebhookURL            string              `json:"webhookUrl"`
+	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
+	// Whether webhook deliveries are signed with an HMAC-SHA256 `bem-signature`
+	// header.
+	WebhookSigningEnabled bool   `json:"webhookSigningEnabled"`
+	WebhookURL            string `json:"webhookUrl"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		DestinationType       respjson.Field

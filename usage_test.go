@@ -25,9 +25,12 @@ func TestUsage(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	functionResponse, err := client.Functions.New(context.TODO(), bem.FunctionNewParamsCreateTransformFunction{
-		FunctionName: "functionName",
-		Type:         bem.FunctionNewParamsCreateTransformFunctionTypeTransform,
+	functionResponse, err := client.Functions.New(context.TODO(), bem.FunctionNewParams{
+		CreateFunction: bem.CreateFunctionUnionParam{
+			OfTransform: &bem.CreateFunctionTransformParam{
+				FunctionName: "functionName",
+			},
+		},
 	})
 	if err != nil {
 		t.Fatalf("err should be nil: %s", err.Error())

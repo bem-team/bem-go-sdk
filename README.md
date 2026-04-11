@@ -65,9 +65,12 @@ func main() {
 	client := bem.NewClient(
 		option.WithAPIKey("My API Key"), // defaults to os.LookupEnv("BEM_API_KEY")
 	)
-	functionResponse, err := client.Functions.New(context.TODO(), bem.FunctionNewParamsCreateTransformFunction{
-		FunctionName: "functionName",
-		Type:         bem.FunctionNewParamsCreateTransformFunctionTypeTransform,
+	functionResponse, err := client.Functions.New(context.TODO(), bem.FunctionNewParams{
+		CreateFunction: bem.CreateFunctionUnionParam{
+			OfTransform: &bem.CreateFunctionTransformParam{
+				FunctionName: "functionName",
+			},
+		},
 	})
 	if err != nil {
 		panic(err.Error())

@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/stainless-sdks/bem-go/internal/apijson"
-	"github.com/stainless-sdks/bem-go/internal/requestconfig"
-	"github.com/stainless-sdks/bem-go/option"
-	"github.com/stainless-sdks/bem-go/packages/param"
-	"github.com/stainless-sdks/bem-go/packages/respjson"
+	"github.com/bem-team/bem-go-sdk/internal/apijson"
+	"github.com/bem-team/bem-go-sdk/internal/requestconfig"
+	"github.com/bem-team/bem-go-sdk/option"
+	"github.com/bem-team/bem-go-sdk/packages/param"
+	"github.com/bem-team/bem-go-sdk/packages/respjson"
 )
 
 // aliased to make [param.APIUnion] private when embedding

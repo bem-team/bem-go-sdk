@@ -7,7 +7,7 @@ package apijson
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/stainless-sdks/bem-go/packages/param"
+	"github.com/bem-team/bem-go-sdk/packages/param"
 	"reflect"
 	"strconv"
 	"sync"

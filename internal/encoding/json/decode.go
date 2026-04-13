@@ -14,7 +14,7 @@ import (
 	"encoding"
 	"encoding/base64"
 	"fmt"
-	"github.com/stainless-sdks/bem-go/internal/encoding/json/shims"
+	"github.com/bem-team/bem-go-sdk/internal/encoding/json/shims"
 	"reflect"
 	"strconv"
 	"strings"

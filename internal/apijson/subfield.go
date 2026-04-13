@@ -1,7 +1,7 @@
 package apijson
 
 import (
-	"github.com/stainless-sdks/bem-go/packages/respjson"
+	"github.com/bem-team/bem-go-sdk/packages/respjson"
 	"reflect"
 )
 

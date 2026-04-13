@@ -12,15 +12,15 @@ import (
 	"slices"
 	"time"
 
-	"github.com/stainless-sdks/bem-go/internal/apijson"
-	"github.com/stainless-sdks/bem-go/internal/apiquery"
-	shimjson "github.com/stainless-sdks/bem-go/internal/encoding/json"
-	"github.com/stainless-sdks/bem-go/internal/requestconfig"
-	"github.com/stainless-sdks/bem-go/option"
-	"github.com/stainless-sdks/bem-go/packages/pagination"
-	"github.com/stainless-sdks/bem-go/packages/param"
-	"github.com/stainless-sdks/bem-go/packages/respjson"
-	"github.com/stainless-sdks/bem-go/shared/constant"
+	"github.com/bem-team/bem-go-sdk/internal/apijson"
+	"github.com/bem-team/bem-go-sdk/internal/apiquery"
+	shimjson "github.com/bem-team/bem-go-sdk/internal/encoding/json"
+	"github.com/bem-team/bem-go-sdk/internal/requestconfig"
+	"github.com/bem-team/bem-go-sdk/option"
+	"github.com/bem-team/bem-go-sdk/packages/pagination"
+	"github.com/bem-team/bem-go-sdk/packages/param"
+	"github.com/bem-team/bem-go-sdk/packages/respjson"
+	"github.com/bem-team/bem-go-sdk/shared/constant"
 )
 
 // Functions are the core building blocks of data transformation in Bem. Each
@@ -178,6 +178,12 @@ func CreateFunctionParamOfRoute(functionName string) CreateFunctionUnionParam {
 	return CreateFunctionUnionParam{OfRoute: &route}
 }
 
+func CreateFunctionParamOfSend(functionName string) CreateFunctionUnionParam {
+	var send CreateFunctionSendParam
+	send.FunctionName = functionName
+	return CreateFunctionUnionParam{OfSend: &send}
+}
+
 func CreateFunctionParamOfSplit(functionName string) CreateFunctionUnionParam {
 	var split CreateFunctionSplitParam
 	split.FunctionName = functionName
@@ -209,6 +215,7 @@ type CreateFunctionUnionParam struct {
 	OfTransform      *CreateFunctionTransformParam      `json:",omitzero,inline"`
 	OfAnalyze        *CreateFunctionAnalyzeParam        `json:",omitzero,inline"`
 	OfRoute          *CreateFunctionRouteParam          `json:",omitzero,inline"`
+	OfSend           *CreateFunctionSendParam           `json:",omitzero,inline"`
 	OfSplit          *CreateFunctionSplitParam          `json:",omitzero,inline"`
 	OfJoin           *CreateFunctionJoinParam           `json:",omitzero,inline"`
 	OfPayloadShaping *CreateFunctionPayloadShapingParam `json:",omitzero,inline"`
@@ -220,6 +227,7 @@ func (u CreateFunctionUnionParam) MarshalJSON() ([]byte, error) {
 	return param.MarshalUnion(u, u.OfTransform,
 		u.OfAnalyze,
 		u.OfRoute,
+		u.OfSend,
 		u.OfSplit,
 		u.OfJoin,
 		u.OfPayloadShaping,
@@ -235,6 +243,7 @@ func init() {
 		apijson.Discriminator[CreateFunctionTransformParam]("transform"),
 		apijson.Discriminator[CreateFunctionAnalyzeParam]("analyze"),
 		apijson.Discriminator[CreateFunctionRouteParam]("route"),
+		apijson.Discriminator[CreateFunctionSendParam]("send"),
 		apijson.Discriminator[CreateFunctionSplitParam]("split"),
 		apijson.Discriminator[CreateFunctionJoinParam]("join"),
 		apijson.Discriminator[CreateFunctionPayloadShapingParam]("payload_shaping"),
@@ -319,6 +328,50 @@ func (r CreateFunctionRouteParam) MarshalJSON() (data []byte, err error) {
 }
 func (r *CreateFunctionRouteParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
+}
+
+// The properties FunctionName, Type are required.
+type CreateFunctionSendParam struct {
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName string `json:"functionName" api:"required"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Google Drive folder ID. Required when destinationType is google_drive. Managed
+	// via Paragon OAuth.
+	GoogleDriveFolderID param.Opt[string] `json:"googleDriveFolderId,omitzero"`
+	// S3 bucket to upload the payload to. Required when destinationType is s3.
+	S3Bucket param.Opt[string] `json:"s3Bucket,omitzero"`
+	// Optional S3 key prefix (folder path).
+	S3Prefix param.Opt[string] `json:"s3Prefix,omitzero"`
+	// Whether to sign webhook deliveries with an HMAC-SHA256 `bem-signature` header.
+	// Defaults to `true` when omitted — signing is on by default for new send
+	// functions. Set explicitly to `false` to disable.
+	WebhookSigningEnabled param.Opt[bool] `json:"webhookSigningEnabled,omitzero"`
+	// Webhook URL to POST the payload to. Required when destinationType is webhook.
+	WebhookURL param.Opt[string] `json:"webhookUrl,omitzero"`
+	// Destination type for a Send function.
+	//
+	// Any of "webhook", "s3", "google_drive".
+	DestinationType string `json:"destinationType,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "send".
+	Type constant.Send `json:"type" default:"send"`
+	paramObj
+}
+
+func (r CreateFunctionSendParam) MarshalJSON() (data []byte, err error) {
+	type shadow CreateFunctionSendParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *CreateFunctionSendParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[CreateFunctionSendParam](
+		"destinationType", "webhook", "s3", "google_drive",
+	)
 }
 
 // The properties FunctionName, Type are required.
@@ -835,8 +888,8 @@ func (r *EnrichStepParam) UnmarshalJSON(data []byte) error {
 }
 
 // FunctionUnion contains all possible properties and values from
-// [FunctionTransform], [FunctionAnalyze], [FunctionRoute], [FunctionSplit],
-// [FunctionJoin], [FunctionPayloadShaping], [FunctionEnrich].
+// [FunctionTransform], [FunctionAnalyze], [FunctionRoute], [FunctionSend],
+// [FunctionSplit], [FunctionJoin], [FunctionPayloadShaping], [FunctionEnrich].
 //
 // Use the [FunctionUnion.AsAny] method to switch on the variant.
 //
@@ -849,8 +902,8 @@ type FunctionUnion struct {
 	OutputSchemaName string `json:"outputSchemaName"`
 	// This field is from variant [FunctionTransform].
 	TabularChunkingEnabled bool `json:"tabularChunkingEnabled"`
-	// Any of "transform", "analyze", "route", "split", "join", "payload_shaping",
-	// "enrich".
+	// Any of "transform", "analyze", "route", "send", "split", "join",
+	// "payload_shaping", "enrich".
 	Type       string `json:"type"`
 	VersionNum int64  `json:"versionNum"`
 	// This field is from variant [FunctionTransform].
@@ -861,6 +914,18 @@ type FunctionUnion struct {
 	Description     string              `json:"description"`
 	// This field is from variant [FunctionRoute].
 	Routes []RouteListItem `json:"routes"`
+	// This field is from variant [FunctionSend].
+	DestinationType string `json:"destinationType"`
+	// This field is from variant [FunctionSend].
+	GoogleDriveFolderID string `json:"googleDriveFolderId"`
+	// This field is from variant [FunctionSend].
+	S3Bucket string `json:"s3Bucket"`
+	// This field is from variant [FunctionSend].
+	S3Prefix string `json:"s3Prefix"`
+	// This field is from variant [FunctionSend].
+	WebhookSigningEnabled bool `json:"webhookSigningEnabled"`
+	// This field is from variant [FunctionSend].
+	WebhookURL string `json:"webhookUrl"`
 	// This field is from variant [FunctionSplit].
 	SplitType string `json:"splitType"`
 	// This field is from variant [FunctionSplit].
@@ -888,6 +953,12 @@ type FunctionUnion struct {
 		UsedInWorkflows         respjson.Field
 		Description             respjson.Field
 		Routes                  respjson.Field
+		DestinationType         respjson.Field
+		GoogleDriveFolderID     respjson.Field
+		S3Bucket                respjson.Field
+		S3Prefix                respjson.Field
+		WebhookSigningEnabled   respjson.Field
+		WebhookURL              respjson.Field
 		SplitType               respjson.Field
 		PrintPageSplitConfig    respjson.Field
 		SemanticPageSplitConfig respjson.Field
@@ -907,6 +978,7 @@ type anyFunction interface {
 func (FunctionTransform) implFunctionUnion()      {}
 func (FunctionAnalyze) implFunctionUnion()        {}
 func (FunctionRoute) implFunctionUnion()          {}
+func (FunctionSend) implFunctionUnion()           {}
 func (FunctionSplit) implFunctionUnion()          {}
 func (FunctionJoin) implFunctionUnion()           {}
 func (FunctionPayloadShaping) implFunctionUnion() {}
@@ -918,6 +990,7 @@ func (FunctionEnrich) implFunctionUnion()         {}
 //	case bem.FunctionTransform:
 //	case bem.FunctionAnalyze:
 //	case bem.FunctionRoute:
+//	case bem.FunctionSend:
 //	case bem.FunctionSplit:
 //	case bem.FunctionJoin:
 //	case bem.FunctionPayloadShaping:
@@ -933,6 +1006,8 @@ func (u FunctionUnion) AsAny() anyFunction {
 		return u.AsAnalyze()
 	case "route":
 		return u.AsRoute()
+	case "send":
+		return u.AsSend()
 	case "split":
 		return u.AsSplit()
 	case "join":
@@ -956,6 +1031,11 @@ func (u FunctionUnion) AsAnalyze() (v FunctionAnalyze) {
 }
 
 func (u FunctionUnion) AsRoute() (v FunctionRoute) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u FunctionUnion) AsSend() (v FunctionSend) {
 	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
 	return
 }
@@ -1126,6 +1206,67 @@ type FunctionRoute struct {
 // Returns the unmodified JSON received from the API
 func (r FunctionRoute) RawJSON() string { return r.JSON.raw }
 func (r *FunctionRoute) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// A function that delivers workflow outputs to an external destination. Send
+// functions receive the output of an upstream workflow node and forward it to a
+// webhook, S3 bucket, or Google Drive folder.
+type FunctionSend struct {
+	// Destination type for a Send function.
+	//
+	// Any of "webhook", "s3", "google_drive".
+	DestinationType string `json:"destinationType" api:"required"`
+	// Unique identifier of function.
+	FunctionID string `json:"functionID" api:"required"`
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName string        `json:"functionName" api:"required"`
+	Type         constant.Send `json:"type" default:"send"`
+	// Version number of function.
+	VersionNum int64 `json:"versionNum" api:"required"`
+	// Audit trail information for the function.
+	Audit FunctionAudit `json:"audit"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName string `json:"displayName"`
+	// Google Drive folder ID. Present when destinationType is google_drive. Managed
+	// via Paragon OAuth.
+	GoogleDriveFolderID string `json:"googleDriveFolderId"`
+	// S3 bucket to upload the payload to. Present when destinationType is s3.
+	S3Bucket string `json:"s3Bucket"`
+	// S3 key prefix (folder path). Optional, present when destinationType is s3.
+	S3Prefix string `json:"s3Prefix"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags"`
+	// List of workflows that use this function.
+	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
+	// Whether webhook payloads are signed with an HMAC-SHA256 `bem-signature` header.
+	WebhookSigningEnabled bool `json:"webhookSigningEnabled"`
+	// Webhook URL to POST the payload to. Present when destinationType is webhook.
+	WebhookURL string `json:"webhookUrl"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DestinationType       respjson.Field
+		FunctionID            respjson.Field
+		FunctionName          respjson.Field
+		Type                  respjson.Field
+		VersionNum            respjson.Field
+		Audit                 respjson.Field
+		DisplayName           respjson.Field
+		GoogleDriveFolderID   respjson.Field
+		S3Bucket              respjson.Field
+		S3Prefix              respjson.Field
+		Tags                  respjson.Field
+		UsedInWorkflows       respjson.Field
+		WebhookSigningEnabled respjson.Field
+		WebhookURL            respjson.Field
+		ExtraFields           map[string]respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r FunctionSend) RawJSON() string { return r.JSON.raw }
+func (r *FunctionSend) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -1401,10 +1542,9 @@ func (r *FunctionAudit) UnmarshalJSON(data []byte) error {
 // individual function responses in a `{"function": ...}` envelope for consistency
 // with other V3 resource endpoints.
 type FunctionResponse struct {
-	// A function that transforms and customizes input payloads using JMESPath
-	// expressions. Payload shaping allows you to extract specific data, perform
-	// calculations, and reshape complex input structures into simplified, standardized
-	// output formats tailored to your downstream systems or business requirements.
+	// A function that delivers workflow outputs to an external destination. Send
+	// functions receive the output of an upstream workflow node and forward it to a
+	// webhook, S3 bucket, or Google Drive folder.
 	Function FunctionUnion `json:"function" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -1426,6 +1566,7 @@ type FunctionType string
 const (
 	FunctionTypeTransform      FunctionType = "transform"
 	FunctionTypeRoute          FunctionType = "route"
+	FunctionTypeSend           FunctionType = "send"
 	FunctionTypeSplit          FunctionType = "split"
 	FunctionTypeJoin           FunctionType = "join"
 	FunctionTypeAnalyze        FunctionType = "analyze"
@@ -1656,6 +1797,7 @@ type UpdateFunctionUnionParam struct {
 	OfTransform      *UpdateFunctionTransformParam      `json:",omitzero,inline"`
 	OfAnalyze        *UpdateFunctionAnalyzeParam        `json:",omitzero,inline"`
 	OfRoute          *UpdateFunctionRouteParam          `json:",omitzero,inline"`
+	OfSend           *UpdateFunctionSendParam           `json:",omitzero,inline"`
 	OfSplit          *UpdateFunctionSplitParam          `json:",omitzero,inline"`
 	OfJoin           *UpdateFunctionJoinParam           `json:",omitzero,inline"`
 	OfPayloadShaping *UpdateFunctionPayloadShapingParam `json:",omitzero,inline"`
@@ -1667,6 +1809,7 @@ func (u UpdateFunctionUnionParam) MarshalJSON() ([]byte, error) {
 	return param.MarshalUnion(u, u.OfTransform,
 		u.OfAnalyze,
 		u.OfRoute,
+		u.OfSend,
 		u.OfSplit,
 		u.OfJoin,
 		u.OfPayloadShaping,
@@ -1682,6 +1825,7 @@ func init() {
 		apijson.Discriminator[UpdateFunctionTransformParam]("transform"),
 		apijson.Discriminator[UpdateFunctionAnalyzeParam]("analyze"),
 		apijson.Discriminator[UpdateFunctionRouteParam]("route"),
+		apijson.Discriminator[UpdateFunctionSendParam]("send"),
 		apijson.Discriminator[UpdateFunctionSplitParam]("split"),
 		apijson.Discriminator[UpdateFunctionJoinParam]("join"),
 		apijson.Discriminator[UpdateFunctionPayloadShapingParam]("payload_shaping"),
@@ -1766,6 +1910,50 @@ func (r UpdateFunctionRouteParam) MarshalJSON() (data []byte, err error) {
 }
 func (r *UpdateFunctionRouteParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
+}
+
+// The property Type is required.
+type UpdateFunctionSendParam struct {
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName param.Opt[string] `json:"functionName,omitzero"`
+	// Google Drive folder ID. Required when destinationType is google_drive. Managed
+	// via Paragon OAuth.
+	GoogleDriveFolderID param.Opt[string] `json:"googleDriveFolderId,omitzero"`
+	// S3 bucket to upload the payload to. Required when destinationType is s3.
+	S3Bucket param.Opt[string] `json:"s3Bucket,omitzero"`
+	// Optional S3 key prefix (folder path).
+	S3Prefix param.Opt[string] `json:"s3Prefix,omitzero"`
+	// Whether to sign webhook deliveries with an HMAC-SHA256 `bem-signature` header.
+	// Defaults to `true` when omitted — signing is on by default for new send
+	// functions. Set explicitly to `false` to disable.
+	WebhookSigningEnabled param.Opt[bool] `json:"webhookSigningEnabled,omitzero"`
+	// Webhook URL to POST the payload to. Required when destinationType is webhook.
+	WebhookURL param.Opt[string] `json:"webhookUrl,omitzero"`
+	// Destination type for a Send function.
+	//
+	// Any of "webhook", "s3", "google_drive".
+	DestinationType string `json:"destinationType,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "send".
+	Type constant.Send `json:"type" default:"send"`
+	paramObj
+}
+
+func (r UpdateFunctionSendParam) MarshalJSON() (data []byte, err error) {
+	type shadow UpdateFunctionSendParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *UpdateFunctionSendParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[UpdateFunctionSendParam](
+		"destinationType", "webhook", "s3", "google_drive",
+	)
 }
 
 // The property Type is required.

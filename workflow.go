@@ -3,25 +3,22 @@
 package bem
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"mime/multipart"
 	"net/http"
 	"net/url"
 	"slices"
 	"time"
 
-	"github.com/stainless-sdks/bem-go/internal/apiform"
-	"github.com/stainless-sdks/bem-go/internal/apijson"
-	"github.com/stainless-sdks/bem-go/internal/apiquery"
-	"github.com/stainless-sdks/bem-go/internal/requestconfig"
-	"github.com/stainless-sdks/bem-go/option"
-	"github.com/stainless-sdks/bem-go/packages/pagination"
-	"github.com/stainless-sdks/bem-go/packages/param"
-	"github.com/stainless-sdks/bem-go/packages/respjson"
+	"github.com/bem-team/bem-go-sdk/internal/apijson"
+	"github.com/bem-team/bem-go-sdk/internal/apiquery"
+	"github.com/bem-team/bem-go-sdk/internal/requestconfig"
+	"github.com/bem-team/bem-go-sdk/option"
+	"github.com/bem-team/bem-go-sdk/packages/pagination"
+	"github.com/bem-team/bem-go-sdk/packages/param"
+	"github.com/bem-team/bem-go-sdk/packages/respjson"
 )
 
 // Workflow operations
@@ -116,16 +113,25 @@ func (r *WorkflowService) Delete(ctx context.Context, workflowName string, opts 
 	return err
 }
 
-// **Invoke a workflow by submitting a multipart form request.**
+// **Invoke a workflow.**
 //
-// Workflows can only be called via multipart form in V3. Submit the input file
-// along with an optional reference ID for tracking.
+// Submit the input file as either a multipart form request or a JSON request with
+// base64-encoded file content. The workflow name is derived from the URL path.
+//
+// ## Input Formats
+//
+//   - **Multipart form** (`multipart/form-data`): attach the file directly via the
+//     `file` or `files` fields. Set `wait` in the form body to control synchronous
+//     behaviour.
+//   - **JSON** (`application/json`): base64-encode the file content and set it in
+//     `input.singleFile.inputContent` or `input.batchFiles.inputs[*].inputContent`.
+//     Pass `wait=true` as a query parameter to control synchronous behaviour.
 //
 // ## Synchronous vs Asynchronous
 //
 // By default the call is created asynchronously and this endpoint returns
-// `202 Accepted` immediately with a `pending` call object. Set the `wait` field to
-// `true` to block until the call completes (up to 30 seconds):
+// `202 Accepted` immediately with a `pending` call object. Set `wait` to `true` to
+// block until the call completes (up to 30 seconds):
 //
 //   - On success: returns `200 OK` with the completed call, `outputs` populated
 //   - On failure: returns `500 Internal Server Error` with the call and an `error`
@@ -136,14 +142,14 @@ func (r *WorkflowService) Delete(ctx context.Context, workflowName string, opts 
 //
 // Poll `GET /v3/calls/{callID}` to check status, or configure a webhook
 // subscription to receive events when the call finishes.
-func (r *WorkflowService) Call(ctx context.Context, workflowName string, body WorkflowCallParams, opts ...option.RequestOption) (res *CallGetResponse, err error) {
+func (r *WorkflowService) Call(ctx context.Context, workflowName string, params WorkflowCallParams, opts ...option.RequestOption) (res *CallGetResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if workflowName == "" {
 		err = errors.New("missing required workflowName parameter")
 		return nil, err
 	}
 	path := fmt.Sprintf("v3/workflows/%s/call", url.PathEscape(workflowName))
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
 	return res, err
 }
 
@@ -208,42 +214,48 @@ func (r *FunctionVersionIdentifierParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
+// V3 read representation of a workflow version.
 type Workflow struct {
-	// Unique identifier of workflow.
-	ID           string                    `json:"id" api:"required"`
-	MainFunction FunctionVersionIdentifier `json:"mainFunction" api:"required"`
-	// Unique name of workflow. Must be UNIQUE on a per-environment basis.
-	Name string `json:"name" api:"required"`
-	// Version number of workflow version.
-	VersionNum int64 `json:"versionNum" api:"required"`
-	// Audit trail information for the workflow.
-	Audit WorkflowAudit `json:"audit"`
+	// Unique identifier of the workflow.
+	ID string `json:"id" api:"required"`
 	// The date and time the workflow was created.
-	CreatedAt time.Time `json:"createdAt" format:"date-time"`
-	// Display name of workflow.
-	DisplayName string `json:"displayName"`
-	// Email address of workflow.
-	EmailAddress  string                 `json:"emailAddress"`
-	Relationships []WorkflowRelationship `json:"relationships"`
-	// Array of tags to categorize and organize workflows.
-	Tags []string `json:"tags"`
+	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
+	// All directed edges in this workflow version's DAG.
+	Edges []WorkflowEdgeResponse `json:"edges" api:"required"`
+	// Name of the entry-point call-site node.
+	MainNodeName string `json:"mainNodeName" api:"required"`
+	// Unique name of the workflow within the environment.
+	Name string `json:"name" api:"required"`
+	// All call-site nodes in this workflow version's DAG.
+	Nodes []WorkflowNodeResponse `json:"nodes" api:"required"`
 	// The date and time the workflow was last updated.
-	UpdatedAt time.Time `json:"updatedAt" format:"date-time"`
+	UpdatedAt time.Time `json:"updatedAt" api:"required" format:"date-time"`
+	// Version number of this workflow version.
+	VersionNum int64 `json:"versionNum" api:"required"`
+	// Audit trail information.
+	Audit WorkflowAudit `json:"audit"`
+	// Human-readable display name.
+	DisplayName string `json:"displayName"`
+	// Inbound email address associated with the workflow, if any.
+	EmailAddress string `json:"emailAddress"`
+	// Tags associated with the workflow.
+	Tags []string `json:"tags"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		ID            respjson.Field
-		MainFunction  respjson.Field
-		Name          respjson.Field
-		VersionNum    respjson.Field
-		Audit         respjson.Field
-		CreatedAt     respjson.Field
-		DisplayName   respjson.Field
-		EmailAddress  respjson.Field
-		Relationships respjson.Field
-		Tags          respjson.Field
-		UpdatedAt     respjson.Field
-		ExtraFields   map[string]respjson.Field
-		raw           string
+		ID           respjson.Field
+		CreatedAt    respjson.Field
+		Edges        respjson.Field
+		MainNodeName respjson.Field
+		Name         respjson.Field
+		Nodes        respjson.Field
+		UpdatedAt    respjson.Field
+		VersionNum   respjson.Field
+		Audit        respjson.Field
+		DisplayName  respjson.Field
+		EmailAddress respjson.Field
+		Tags         respjson.Field
+		ExtraFields  map[string]respjson.Field
+		raw          string
 	} `json:"-"`
 }
 
@@ -253,7 +265,6 @@ func (r *Workflow) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Audit trail information for the workflow.
 type WorkflowAudit struct {
 	// Information about who created the current version.
 	VersionCreatedBy UserActionSummary `json:"versionCreatedBy"`
@@ -277,15 +288,18 @@ func (r *WorkflowAudit) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type WorkflowRelationship struct {
-	DestinationFunction FunctionVersionIdentifier `json:"destinationFunction" api:"required"`
-	SourceFunction      FunctionVersionIdentifier `json:"sourceFunction" api:"required"`
-	// Name of destination.
+// Read representation of a directed edge between call-site nodes.
+type WorkflowEdgeResponse struct {
+	// Name of the destination node.
+	DestinationNodeName string `json:"destinationNodeName" api:"required"`
+	// Name of the source node.
+	SourceNodeName string `json:"sourceNodeName" api:"required"`
+	// Labelled outlet on the source node, if any.
 	DestinationName string `json:"destinationName"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		DestinationFunction respjson.Field
-		SourceFunction      respjson.Field
+		DestinationNodeName respjson.Field
+		SourceNodeName      respjson.Field
 		DestinationName     respjson.Field
 		ExtraFields         map[string]respjson.Field
 		raw                 string
@@ -293,31 +307,36 @@ type WorkflowRelationship struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r WorkflowRelationship) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowRelationship) UnmarshalJSON(data []byte) error {
+func (r WorkflowEdgeResponse) RawJSON() string { return r.JSON.raw }
+func (r *WorkflowEdgeResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// The properties DestinationFunction, SourceFunction are required.
-type WorkflowRequestRelationshipParam struct {
-	DestinationFunction FunctionVersionIdentifierParam `json:"destinationFunction,omitzero" api:"required"`
-	SourceFunction      FunctionVersionIdentifierParam `json:"sourceFunction,omitzero" api:"required"`
-	// Name of destination.
-	DestinationName param.Opt[string] `json:"destinationName,omitzero"`
-	paramObj
+// Read representation of a call-site node.
+type WorkflowNodeResponse struct {
+	// Function (and version) executing at this call site.
+	Function FunctionVersionIdentifier `json:"function" api:"required"`
+	// Name of this call site, unique within the workflow version.
+	Name string `json:"name" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Function    respjson.Field
+		Name        respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
 }
 
-func (r WorkflowRequestRelationshipParam) MarshalJSON() (data []byte, err error) {
-	type shadow WorkflowRequestRelationshipParam
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *WorkflowRequestRelationshipParam) UnmarshalJSON(data []byte) error {
+// Returns the unmodified JSON received from the API
+func (r WorkflowNodeResponse) RawJSON() string { return r.JSON.raw }
+func (r *WorkflowNodeResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
 type WorkflowNewResponse struct {
 	// Error message if the workflow creation failed.
-	Error    string   `json:"error"`
+	Error string `json:"error"`
+	// V3 read representation of a workflow version.
 	Workflow Workflow `json:"workflow"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -336,7 +355,8 @@ func (r *WorkflowNewResponse) UnmarshalJSON(data []byte) error {
 
 type WorkflowGetResponse struct {
 	// Error message if the workflow retrieval failed.
-	Error    string   `json:"error"`
+	Error string `json:"error"`
+	// V3 read representation of a workflow version.
 	Workflow Workflow `json:"workflow"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -355,7 +375,8 @@ func (r *WorkflowGetResponse) UnmarshalJSON(data []byte) error {
 
 type WorkflowUpdateResponse struct {
 	// Error message if the workflow update failed.
-	Error    string   `json:"error"`
+	Error string `json:"error"`
+	// V3 read representation of a workflow version.
 	Workflow Workflow `json:"workflow"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -373,14 +394,14 @@ func (r *WorkflowUpdateResponse) UnmarshalJSON(data []byte) error {
 }
 
 type WorkflowCopyResponse struct {
-	// Information about functions that were copied when copying to a different
-	// environment. Empty when copying within the same environment.
+	// Functions that were copied when copying to a different environment. Empty when
+	// copying within the same environment.
 	CopiedFunctions []WorkflowCopyResponseCopiedFunction `json:"copiedFunctions"`
-	// The environment where the workflow was copied to.
+	// The environment the workflow was copied to.
 	Environment string `json:"environment"`
 	// Error message if the workflow copy failed.
 	Error string `json:"error"`
-	// The newly created workflow.
+	// V3 read representation of a workflow version.
 	Workflow Workflow `json:"workflow"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -432,33 +453,17 @@ func (r *WorkflowCopyResponseCopiedFunction) UnmarshalJSON(data []byte) error {
 }
 
 type WorkflowNewParams struct {
-	// Display name of workflow.
+	// Name of the entry-point node. Must not be a destination of any edge.
+	MainNodeName string `json:"mainNodeName" api:"required"`
+	// Unique name for the workflow. Must match `^[a-zA-Z0-9_-]{1,128}$`.
+	Name string `json:"name" api:"required"`
+	// Call-site nodes in the DAG. At least one is required.
+	Nodes []WorkflowNewParamsNode `json:"nodes,omitzero" api:"required"`
+	// Human-readable display name.
 	DisplayName param.Opt[string] `json:"displayName,omitzero"`
-	// Name of workflow. Can be updated to rename the workflow. Must be unique within
-	// the environment and match the pattern ^[a-zA-Z0-9_-]{1,128}$.
-	Name param.Opt[string] `json:"name,omitzero"`
-	// Main function for the workflow. The `mainFunction` and `relationships` fields
-	// act as a unit and must be provided together, or neither provided.
-	//
-	//   - If `mainFunction` is provided without `relationships`, relationships will
-	//     default to an empty array.
-	//   - If `relationships` is provided, `mainFunction` must also be provided
-	//     (validation error if missing).
-	//   - If neither is provided, both mainFunction and relationships remain unchanged
-	//     from the current workflow version.
-	MainFunction FunctionVersionIdentifierParam `json:"mainFunction,omitzero"`
-	// Relationships between functions in the workflow. The `mainFunction` and
-	// `relationships` fields act as a unit and must be provided together, or neither
-	// provided.
-	//
-	//   - If `relationships` is provided, `mainFunction` must also be provided
-	//     (validation error if missing).
-	//   - If `mainFunction` is provided without `relationships`, relationships will
-	//     default to an empty array.
-	//   - If neither is provided, both mainFunction and relationships remain unchanged
-	//     from the current workflow version.
-	Relationships []WorkflowRequestRelationshipParam `json:"relationships,omitzero"`
-	// Array of tags to categorize and organize workflows.
+	// Directed edges between nodes. Omit or leave empty for single-node workflows.
+	Edges []WorkflowNewParamsEdge `json:"edges,omitzero"`
+	// Tags to categorize and organize the workflow.
 	Tags []string `json:"tags,omitzero"`
 	paramObj
 }
@@ -471,34 +476,60 @@ func (r *WorkflowNewParams) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type WorkflowUpdateParams struct {
-	// Display name of workflow.
-	DisplayName param.Opt[string] `json:"displayName,omitzero"`
-	// Name of workflow. Can be updated to rename the workflow. Must be unique within
-	// the environment and match the pattern ^[a-zA-Z0-9_-]{1,128}$.
+// A single function call-site node in a workflow DAG.
+//
+// The property Function is required.
+type WorkflowNewParamsNode struct {
+	// The function (and version) to execute at this call site.
+	Function FunctionVersionIdentifierParam `json:"function,omitzero" api:"required"`
+	// Name for this call site. Must be unique within the workflow version. Defaults to
+	// the function's own name when omitted.
 	Name param.Opt[string] `json:"name,omitzero"`
-	// Main function for the workflow. The `mainFunction` and `relationships` fields
-	// act as a unit and must be provided together, or neither provided.
-	//
-	//   - If `mainFunction` is provided without `relationships`, relationships will
-	//     default to an empty array.
-	//   - If `relationships` is provided, `mainFunction` must also be provided
-	//     (validation error if missing).
-	//   - If neither is provided, both mainFunction and relationships remain unchanged
-	//     from the current workflow version.
-	MainFunction FunctionVersionIdentifierParam `json:"mainFunction,omitzero"`
-	// Relationships between functions in the workflow. The `mainFunction` and
-	// `relationships` fields act as a unit and must be provided together, or neither
-	// provided.
-	//
-	//   - If `relationships` is provided, `mainFunction` must also be provided
-	//     (validation error if missing).
-	//   - If `mainFunction` is provided without `relationships`, relationships will
-	//     default to an empty array.
-	//   - If neither is provided, both mainFunction and relationships remain unchanged
-	//     from the current workflow version.
-	Relationships []WorkflowRequestRelationshipParam `json:"relationships,omitzero"`
-	// Array of tags to categorize and organize workflows.
+	paramObj
+}
+
+func (r WorkflowNewParamsNode) MarshalJSON() (data []byte, err error) {
+	type shadow WorkflowNewParamsNode
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *WorkflowNewParamsNode) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// A directed edge between two named call-site nodes.
+//
+// The properties DestinationNodeName, SourceNodeName are required.
+type WorkflowNewParamsEdge struct {
+	// Name of the destination node.
+	DestinationNodeName string `json:"destinationNodeName" api:"required"`
+	// Name of the source node.
+	SourceNodeName string `json:"sourceNodeName" api:"required"`
+	// Labelled outlet on the source node that activates this edge. Omit for the
+	// default (unlabelled) outlet.
+	DestinationName param.Opt[string] `json:"destinationName,omitzero"`
+	paramObj
+}
+
+func (r WorkflowNewParamsEdge) MarshalJSON() (data []byte, err error) {
+	type shadow WorkflowNewParamsEdge
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *WorkflowNewParamsEdge) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type WorkflowUpdateParams struct {
+	// Human-readable display name.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// `mainNodeName`, `nodes`, and `edges` must be provided together to update the DAG
+	// topology. If none are provided the topology is copied unchanged from the current
+	// version.
+	MainNodeName param.Opt[string] `json:"mainNodeName,omitzero"`
+	// New name for the workflow (renames it). Must match `^[a-zA-Z0-9_-]{1,128}$`.
+	Name  param.Opt[string]          `json:"name,omitzero"`
+	Edges []WorkflowUpdateParamsEdge `json:"edges,omitzero"`
+	Nodes []WorkflowUpdateParamsNode `json:"nodes,omitzero"`
+	// Tags to categorize and organize the workflow.
 	Tags []string `json:"tags,omitzero"`
 	paramObj
 }
@@ -508,6 +539,48 @@ func (r WorkflowUpdateParams) MarshalJSON() (data []byte, err error) {
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *WorkflowUpdateParams) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// A directed edge between two named call-site nodes.
+//
+// The properties DestinationNodeName, SourceNodeName are required.
+type WorkflowUpdateParamsEdge struct {
+	// Name of the destination node.
+	DestinationNodeName string `json:"destinationNodeName" api:"required"`
+	// Name of the source node.
+	SourceNodeName string `json:"sourceNodeName" api:"required"`
+	// Labelled outlet on the source node that activates this edge. Omit for the
+	// default (unlabelled) outlet.
+	DestinationName param.Opt[string] `json:"destinationName,omitzero"`
+	paramObj
+}
+
+func (r WorkflowUpdateParamsEdge) MarshalJSON() (data []byte, err error) {
+	type shadow WorkflowUpdateParamsEdge
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *WorkflowUpdateParamsEdge) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// A single function call-site node in a workflow DAG.
+//
+// The property Function is required.
+type WorkflowUpdateParamsNode struct {
+	// The function (and version) to execute at this call site.
+	Function FunctionVersionIdentifierParam `json:"function,omitzero" api:"required"`
+	// Name for this call site. Must be unique within the workflow version. Defaults to
+	// the function's own name when omitted.
+	Name param.Opt[string] `json:"name,omitzero"`
+	paramObj
+}
+
+func (r WorkflowUpdateParamsNode) MarshalJSON() (data []byte, err error) {
+	type shadow WorkflowUpdateParamsNode
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *WorkflowUpdateParamsNode) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -542,34 +615,111 @@ const (
 )
 
 type WorkflowCallParams struct {
-	// Your reference ID for tracking this call.
-	CallReferenceID param.Opt[string] `json:"callReferenceID,omitzero"`
+	// Input to the workflow call. Provide exactly one of `singleFile` or `batchFiles`.
+	Input WorkflowCallParamsInput `json:"input,omitzero" api:"required"`
 	// When `true`, the endpoint blocks until the call completes (up to 30 seconds) and
 	// returns the finished call object. Default: `false`.
-	Wait param.Opt[string] `json:"wait,omitzero"`
-	// Single input file (for transform, analyze, route, and split functions).
-	File any `json:"file,omitzero"`
-	// Multiple input files (for join functions).
-	Files []string `json:"files,omitzero"`
+	Wait param.Opt[bool] `query:"wait,omitzero" json:"-"`
+	// Your reference ID for tracking this call.
+	CallReferenceID param.Opt[string] `json:"callReferenceID,omitzero"`
 	paramObj
 }
 
-func (r WorkflowCallParams) MarshalMultipart() (data []byte, contentType string, err error) {
-	buf := bytes.NewBuffer(nil)
-	writer := multipart.NewWriter(buf)
-	err = apiform.MarshalRoot(r, writer)
-	if err == nil {
-		err = apiform.WriteExtras(writer, r.ExtraFields())
-	}
-	if err != nil {
-		writer.Close()
-		return nil, "", err
-	}
-	err = writer.Close()
-	if err != nil {
-		return nil, "", err
-	}
-	return buf.Bytes(), writer.FormDataContentType(), nil
+func (r WorkflowCallParams) MarshalJSON() (data []byte, err error) {
+	type shadow WorkflowCallParams
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *WorkflowCallParams) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// URLQuery serializes [WorkflowCallParams]'s query parameters as `url.Values`.
+func (r WorkflowCallParams) URLQuery() (v url.Values, err error) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+// Input to the workflow call. Provide exactly one of `singleFile` or `batchFiles`.
+type WorkflowCallParamsInput struct {
+	BatchFiles WorkflowCallParamsInputBatchFiles `json:"batchFiles,omitzero"`
+	SingleFile WorkflowCallParamsInputSingleFile `json:"singleFile,omitzero"`
+	paramObj
+}
+
+func (r WorkflowCallParamsInput) MarshalJSON() (data []byte, err error) {
+	type shadow WorkflowCallParamsInput
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *WorkflowCallParamsInput) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type WorkflowCallParamsInputBatchFiles struct {
+	Inputs []WorkflowCallParamsInputBatchFilesInput `json:"inputs,omitzero"`
+	paramObj
+}
+
+func (r WorkflowCallParamsInputBatchFiles) MarshalJSON() (data []byte, err error) {
+	type shadow WorkflowCallParamsInputBatchFiles
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *WorkflowCallParamsInputBatchFiles) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The properties InputContent, InputType are required.
+type WorkflowCallParamsInputBatchFilesInput struct {
+	// Base64-encoded file content
+	InputContent string `json:"inputContent" api:"required"`
+	// The input type of the content you're sending for transformation.
+	//
+	// Any of "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a",
+	// "mp3", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
+	InputType       string            `json:"inputType,omitzero" api:"required"`
+	ItemReferenceID param.Opt[string] `json:"itemReferenceID,omitzero"`
+	paramObj
+}
+
+func (r WorkflowCallParamsInputBatchFilesInput) MarshalJSON() (data []byte, err error) {
+	type shadow WorkflowCallParamsInputBatchFilesInput
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *WorkflowCallParamsInputBatchFilesInput) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[WorkflowCallParamsInputBatchFilesInput](
+		"inputType", "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a", "mp3", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml",
+	)
+}
+
+// The properties InputContent, InputType are required.
+type WorkflowCallParamsInputSingleFile struct {
+	// Base64-encoded file content
+	InputContent string `json:"inputContent" api:"required"`
+	// The input type of the content you're sending for transformation.
+	//
+	// Any of "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a",
+	// "mp3", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
+	InputType string `json:"inputType,omitzero" api:"required"`
+	paramObj
+}
+
+func (r WorkflowCallParamsInputSingleFile) MarshalJSON() (data []byte, err error) {
+	type shadow WorkflowCallParamsInputSingleFile
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *WorkflowCallParamsInputSingleFile) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[WorkflowCallParamsInputSingleFile](
+		"inputType", "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a", "mp3", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml",
+	)
 }
 
 type WorkflowCopyParams struct {

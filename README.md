@@ -2,7 +2,7 @@
 
 <!-- x-release-please-start-version -->
 
-<a href="https://pkg.go.dev/github.com/stainless-sdks/bem-go"><img src="https://pkg.go.dev/badge/github.com/stainless-sdks/bem-go.svg" alt="Go Reference"></a>
+<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk"><img src="https://pkg.go.dev/badge/github.com/bem-team/bem-go-sdk.svg" alt="Go Reference"></a>
 
 <!-- x-release-please-end -->
 
@@ -11,19 +11,36 @@ from applications written in Go.
 
 It is generated with [Stainless](https://www.stainless.com/).
 
+## MCP Server
+
+Use the Bem MCP Server to enable AI assistants to interact with this API, allowing them to explore endpoints, make test requests, and use documentation to help integrate this SDK into your application.
+
+[![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en-US/install-mcp?name=bem-ai-sdk-mcp&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImJlbS1haS1zZGstbWNwIl0sImVudiI6eyJCRU1fQVBJX0tFWSI6Ik15IEFQSSBLZXkifX0)
+[![Install in VS Code](https://img.shields.io/badge/_-Add_to_VS_Code-blue?style=for-the-badge&logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCA0MCA0MCI+PHBhdGggZmlsbD0iI0VFRSIgZmlsbC1ydWxlPSJldmVub2RkIiBkPSJNMzAuMjM1IDM5Ljg4NGEyLjQ5MSAyLjQ5MSAwIDAgMS0xLjc4MS0uNzNMMTIuNyAyNC43OGwtMy40NiAyLjYyNC0zLjQwNiAyLjU4MmExLjY2NSAxLjY2NSAwIDAgMS0xLjA4Mi4zMzggMS42NjQgMS42NjQgMCAwIDEtMS4wNDYtLjQzMWwtMi4yLTJhMS42NjYgMS42NjYgMCAwIDEgMC0yLjQ2M0w3LjQ1OCAyMCA0LjY3IDE3LjQ1MyAxLjUwNyAxNC41N2ExLjY2NSAxLjY2NSAwIDAgMSAwLTIuNDYzbDIuMi0yYTEuNjY1IDEuNjY1IDAgMCAxIDIuMTMtLjA5N2w2Ljg2MyA1LjIwOUwyOC40NTIuODQ0YTIuNDg4IDIuNDg4IDAgMCAxIDEuODQxLS43MjljLjM1MS4wMDkuNjk5LjA5MSAxLjAxOS4yNDVsOC4yMzYgMy45NjFhMi41IDIuNSAwIDAgMSAxLjQxNSAyLjI1M3YuMDk5LS4wNDVWMzMuMzd2LS4wNDUuMDk1YTIuNTAxIDIuNTAxIDAgMCAxLTEuNDE2IDIuMjU3bC04LjIzNSAzLjk2MWEyLjQ5MiAyLjQ5MiAwIDAgMS0xLjA3Ny4yNDZabS43MTYtMjguOTQ3LTExLjk0OCA5LjA2MiAxMS45NTIgOS4wNjUtLjAwNC0xOC4xMjdaIi8+PC9zdmc+)](https://vscode.stainless.com/mcp/%7B%22name%22%3A%22bem-ai-sdk-mcp%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22bem-ai-sdk-mcp%22%5D%2C%22env%22%3A%7B%22BEM_API_KEY%22%3A%22My%20API%20Key%22%7D%7D)
+
+> Note: You may need to set environment variables in your MCP client.
+
 ## Installation
+
+<!-- x-release-please-start-version -->
 
 ```go
 import (
-	"github.com/stainless-sdks/bem-go" // imported as bem
+	"github.com/bem-team/bem-go-sdk" // imported as bem
 )
 ```
 
+<!-- x-release-please-end -->
+
 Or to pin the version:
 
+<!-- x-release-please-start-version -->
+
 ```sh
-go get -u 'github.com/stainless-sdks/bem-go@v0.0.1'
+go get -u 'github.com/bem-team/bem-go-sdk@v0.1.0'
 ```
+
+<!-- x-release-please-end -->
 
 ## Requirements
 
@@ -40,17 +57,20 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/stainless-sdks/bem-go"
-	"github.com/stainless-sdks/bem-go/option"
+	"github.com/bem-team/bem-go-sdk"
+	"github.com/bem-team/bem-go-sdk/option"
 )
 
 func main() {
 	client := bem.NewClient(
 		option.WithAPIKey("My API Key"), // defaults to os.LookupEnv("BEM_API_KEY")
 	)
-	functionResponse, err := client.Functions.New(context.TODO(), bem.FunctionNewParamsCreateTransformFunction{
-		FunctionName: "functionName",
-		Type:         bem.FunctionNewParamsCreateTransformFunctionTypeTransform,
+	functionResponse, err := client.Functions.New(context.TODO(), bem.FunctionNewParams{
+		CreateFunction: bem.CreateFunctionUnionParam{
+			OfTransform: &bem.CreateFunctionTransformParam{
+				FunctionName: "functionName",
+			},
+		},
 	})
 	if err != nil {
 		panic(err.Error())
@@ -271,7 +291,7 @@ client.Functions.New(context.TODO(), ...,
 
 The request option `option.WithDebugLog(nil)` may be helpful while debugging.
 
-See the [full list of request options](https://pkg.go.dev/github.com/stainless-sdks/bem-go/option).
+See the [full list of request options](https://pkg.go.dev/github.com/bem-team/bem-go-sdk/option).
 
 ### Pagination
 
@@ -526,7 +546,7 @@ This package generally follows [SemVer](https://semver.org/spec/v2.0.0.html) con
 
 We take backwards-compatibility seriously and work hard to ensure you can rely on a smooth upgrade experience.
 
-We are keen for your feedback; please open an [issue](https://www.github.com/stainless-sdks/bem-go/issues) with questions, bugs, or suggestions.
+We are keen for your feedback; please open an [issue](https://www.github.com/bem-team/bem-go-sdk/issues) with questions, bugs, or suggestions.
 
 ## Contributing
 

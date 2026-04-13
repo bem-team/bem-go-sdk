@@ -4,6 +4,7 @@ package bem_test
 
 import (
 	"context"
+	"errors"
 	"os"
 	"testing"
 
@@ -12,7 +13,7 @@ import (
 	"github.com/bem-team/bem-go-sdk/option"
 )
 
-func TestAutoPagination(t *testing.T) {
+func TestInferSchemaNew(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -25,13 +26,14 @@ func TestAutoPagination(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	iter := client.Functions.ListAutoPaging(context.TODO(), bem.FunctionListParams{})
-	// The mock server isn't going to give us real pagination
-	for i := 0; i < 3 && iter.Next(); i++ {
-		function := iter.Current()
-		t.Logf("%+v\n", function)
-	}
-	if err := iter.Err(); err != nil {
+	_, err := client.InferSchema.New(context.TODO(), bem.InferSchemaNewParams{
+		File: map[string]any{},
+	})
+	if err != nil {
+		var apierr *bem.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
 		t.Fatalf("err should be nil: %s", err.Error())
 	}
 }

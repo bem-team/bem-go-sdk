@@ -12,13 +12,13 @@ import (
 	"slices"
 	"time"
 
-	"github.com/stainless-sdks/bem-go/internal/apijson"
-	"github.com/stainless-sdks/bem-go/internal/apiquery"
-	"github.com/stainless-sdks/bem-go/internal/requestconfig"
-	"github.com/stainless-sdks/bem-go/option"
-	"github.com/stainless-sdks/bem-go/packages/pagination"
-	"github.com/stainless-sdks/bem-go/packages/param"
-	"github.com/stainless-sdks/bem-go/packages/respjson"
+	"github.com/bem-team/bem-go-sdk/internal/apijson"
+	"github.com/bem-team/bem-go-sdk/internal/apiquery"
+	"github.com/bem-team/bem-go-sdk/internal/requestconfig"
+	"github.com/bem-team/bem-go-sdk/option"
+	"github.com/bem-team/bem-go-sdk/packages/pagination"
+	"github.com/bem-team/bem-go-sdk/packages/param"
+	"github.com/bem-team/bem-go-sdk/packages/respjson"
 )
 
 // Retrieve terminal non-error output events from workflow calls.
@@ -176,7 +176,7 @@ func (r *AnyTypeUnion) UnmarshalJSON(data []byte) error {
 
 // EventUnion contains all possible properties and values from [EventTransform],
 // [EventRoute], [EventSplitCollection], [EventSplitItem], [ErrorEvent],
-// [EventJoin], [EventEnrich], [EventCollectionProcessing].
+// [EventJoin], [EventEnrich], [EventCollectionProcessing], [EventSend].
 //
 // Use the [EventUnion.AsAny] method to switch on the variant.
 //
@@ -197,7 +197,7 @@ type EventUnion struct {
 	CorrectedContent EventTransformCorrectedContentUnion `json:"correctedContent"`
 	CreatedAt        time.Time                           `json:"createdAt"`
 	// Any of "transform", "route", "split_collection", "split_item", "error", "join",
-	// "enrich", "collection_processing".
+	// "enrich", "collection_processing", "send".
 	EventType             string `json:"eventType"`
 	FieldConfidences      any    `json:"fieldConfidences"`
 	FunctionCallID        string `json:"functionCallID"`
@@ -216,7 +216,8 @@ type EventUnion struct {
 	LastPublishErrorAt string `json:"lastPublishErrorAt"`
 	// This field is a union of [EventTransformMetadata], [EventRouteMetadata],
 	// [EventSplitCollectionMetadata], [EventSplitItemMetadata], [ErrorEventMetadata],
-	// [EventJoinMetadata], [EventEnrichMetadata], [EventCollectionProcessingMetadata]
+	// [EventJoinMetadata], [EventEnrichMetadata], [EventCollectionProcessingMetadata],
+	// [EventSendMetadata]
 	Metadata EventUnionMetadata `json:"metadata"`
 	// This field is from variant [EventTransform].
 	Metrics EventTransformMetrics `json:"metrics"`
@@ -262,7 +263,19 @@ type EventUnion struct {
 	CollectionItemIDs []string `json:"collectionItemIDs"`
 	// This field is from variant [EventCollectionProcessing].
 	ErrorMessage string `json:"errorMessage"`
-	JSON         struct {
+	// This field is from variant [EventSend].
+	DeliveryStatus string `json:"deliveryStatus"`
+	// This field is from variant [EventSend].
+	DestinationType string `json:"destinationType"`
+	// This field is from variant [EventSend].
+	DeliveredContent any `json:"deliveredContent"`
+	// This field is from variant [EventSend].
+	GoogleDriveOutput EventSendGoogleDriveOutput `json:"googleDriveOutput"`
+	// This field is from variant [EventSend].
+	S3Output EventSendS3Output `json:"s3Output"`
+	// This field is from variant [EventSend].
+	WebhookOutput EventSendWebhookOutput `json:"webhookOutput"`
+	JSON          struct {
 		EventID               respjson.Field
 		FunctionID            respjson.Field
 		FunctionName          respjson.Field
@@ -310,6 +323,12 @@ type EventUnion struct {
 		Status                respjson.Field
 		CollectionItemIDs     respjson.Field
 		ErrorMessage          respjson.Field
+		DeliveryStatus        respjson.Field
+		DestinationType       respjson.Field
+		DeliveredContent      respjson.Field
+		GoogleDriveOutput     respjson.Field
+		S3Output              respjson.Field
+		WebhookOutput         respjson.Field
 		raw                   string
 	} `json:"-"`
 }
@@ -328,6 +347,7 @@ func (ErrorEvent) implEventUnion()                {}
 func (EventJoin) implEventUnion()                 {}
 func (EventEnrich) implEventUnion()               {}
 func (EventCollectionProcessing) implEventUnion() {}
+func (EventSend) implEventUnion()                 {}
 
 // Use the following switch statement to find the correct variant
 //
@@ -340,6 +360,7 @@ func (EventCollectionProcessing) implEventUnion() {}
 //	case bem.EventJoin:
 //	case bem.EventEnrich:
 //	case bem.EventCollectionProcessing:
+//	case bem.EventSend:
 //	default:
 //	  fmt.Errorf("no variant present")
 //	}
@@ -361,6 +382,8 @@ func (u EventUnion) AsAny() anyEvent {
 		return u.AsEnrich()
 	case "collection_processing":
 		return u.AsCollectionProcessing()
+	case "send":
+		return u.AsSend()
 	}
 	return nil
 }
@@ -401,6 +424,11 @@ func (u EventUnion) AsEnrich() (v EventEnrich) {
 }
 
 func (u EventUnion) AsCollectionProcessing() (v EventCollectionProcessing) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u EventUnion) AsSend() (v EventSend) {
 	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
 	return
 }
@@ -1474,6 +1502,169 @@ type EventCollectionProcessingMetadata struct {
 // Returns the unmodified JSON received from the API
 func (r EventCollectionProcessingMetadata) RawJSON() string { return r.JSON.raw }
 func (r *EventCollectionProcessingMetadata) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type EventSend struct {
+	// Outcome of a Send function's delivery attempt.
+	//
+	// Any of "success", "skip".
+	DeliveryStatus string `json:"deliveryStatus" api:"required"`
+	// Destination type for a Send function.
+	//
+	// Any of "webhook", "s3", "google_drive".
+	DestinationType string `json:"destinationType" api:"required"`
+	// Unique ID generated by bem to identify the event.
+	EventID string `json:"eventID" api:"required"`
+	// Unique identifier of function that this event is associated with.
+	FunctionID string `json:"functionID" api:"required"`
+	// Unique name of function that this event is associated with.
+	FunctionName string `json:"functionName" api:"required"`
+	// The unique ID you use internally to refer to this data point, propagated from
+	// the original function input.
+	ReferenceID string `json:"referenceID" api:"required"`
+	// Unique identifier of workflow call that this event is associated with.
+	CallID string `json:"callID"`
+	// Timestamp indicating when the event was created.
+	CreatedAt time.Time `json:"createdAt" format:"date-time"`
+	// The full protocol event JSON that was delivered — identical to what subscription
+	// publish would deliver for the same event. For ad-hoc calls with a JSON file
+	// input, contains the raw input JSON. For ad-hoc calls with a binary file input,
+	// contains {"s3URL": "<presigned-url>"}.
+	DeliveredContent any `json:"deliveredContent"`
+	// Any of "send".
+	EventType string `json:"eventType"`
+	// Unique identifier of function call that this event is associated with.
+	FunctionCallID string `json:"functionCallID"`
+	// The attempt number of the function call that created this event. 1 indexed.
+	FunctionCallTryNumber int64 `json:"functionCallTryNumber"`
+	// Version number of function that this event is associated with.
+	FunctionVersionNum int64 `json:"functionVersionNum"`
+	// Metadata returned when a Send function delivers to Google Drive.
+	GoogleDriveOutput EventSendGoogleDriveOutput `json:"googleDriveOutput"`
+	// The inbound email that triggered this event.
+	InboundEmail InboundEmailEvent `json:"inboundEmail"`
+	Metadata     EventSendMetadata `json:"metadata"`
+	// Metadata returned when a Send function delivers to an S3 bucket.
+	S3Output EventSendS3Output `json:"s3Output"`
+	// Metadata returned when a Send function delivers to a webhook.
+	WebhookOutput EventSendWebhookOutput `json:"webhookOutput"`
+	// Unique identifier of workflow that this event is associated with.
+	WorkflowID string `json:"workflowID"`
+	// Name of workflow that this event is associated with.
+	WorkflowName string `json:"workflowName"`
+	// Version number of workflow that this event is associated with.
+	WorkflowVersionNum int64 `json:"workflowVersionNum"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DeliveryStatus        respjson.Field
+		DestinationType       respjson.Field
+		EventID               respjson.Field
+		FunctionID            respjson.Field
+		FunctionName          respjson.Field
+		ReferenceID           respjson.Field
+		CallID                respjson.Field
+		CreatedAt             respjson.Field
+		DeliveredContent      respjson.Field
+		EventType             respjson.Field
+		FunctionCallID        respjson.Field
+		FunctionCallTryNumber respjson.Field
+		FunctionVersionNum    respjson.Field
+		GoogleDriveOutput     respjson.Field
+		InboundEmail          respjson.Field
+		Metadata              respjson.Field
+		S3Output              respjson.Field
+		WebhookOutput         respjson.Field
+		WorkflowID            respjson.Field
+		WorkflowName          respjson.Field
+		WorkflowVersionNum    respjson.Field
+		ExtraFields           map[string]respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r EventSend) RawJSON() string { return r.JSON.raw }
+func (r *EventSend) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Metadata returned when a Send function delivers to Google Drive.
+type EventSendGoogleDriveOutput struct {
+	// Name of the file created in Google Drive.
+	FileName string `json:"fileName" api:"required"`
+	// ID of the Google Drive folder the file was placed in.
+	FolderID string `json:"folderID" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		FileName    respjson.Field
+		FolderID    respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r EventSendGoogleDriveOutput) RawJSON() string { return r.JSON.raw }
+func (r *EventSendGoogleDriveOutput) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type EventSendMetadata struct {
+	DurationFunctionToEventSeconds float64 `json:"durationFunctionToEventSeconds"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DurationFunctionToEventSeconds respjson.Field
+		ExtraFields                    map[string]respjson.Field
+		raw                            string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r EventSendMetadata) RawJSON() string { return r.JSON.raw }
+func (r *EventSendMetadata) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Metadata returned when a Send function delivers to an S3 bucket.
+type EventSendS3Output struct {
+	// Name of the S3 bucket the payload was written to.
+	BucketName string `json:"bucketName" api:"required"`
+	// Object key under which the payload was stored.
+	Key string `json:"key" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		BucketName  respjson.Field
+		Key         respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r EventSendS3Output) RawJSON() string { return r.JSON.raw }
+func (r *EventSendS3Output) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Metadata returned when a Send function delivers to a webhook.
+type EventSendWebhookOutput struct {
+	// Raw HTTP response body returned by the webhook endpoint.
+	HTTPResponseBody string `json:"httpResponseBody" api:"required"`
+	// HTTP status code returned by the webhook endpoint.
+	HTTPStatusCode int64 `json:"httpStatusCode" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		HTTPResponseBody respjson.Field
+		HTTPStatusCode   respjson.Field
+		ExtraFields      map[string]respjson.Field
+		raw              string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r EventSendWebhookOutput) RawJSON() string { return r.JSON.raw }
+func (r *EventSendWebhookOutput) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

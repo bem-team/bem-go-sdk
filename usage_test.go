@@ -7,9 +7,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stainless-sdks/bem-go"
-	"github.com/stainless-sdks/bem-go/internal/testutil"
-	"github.com/stainless-sdks/bem-go/option"
+	"github.com/bem-team/bem-go-sdk"
+	"github.com/bem-team/bem-go-sdk/internal/testutil"
+	"github.com/bem-team/bem-go-sdk/option"
 )
 
 func TestUsage(t *testing.T) {
@@ -25,9 +25,12 @@ func TestUsage(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	functionResponse, err := client.Functions.New(context.TODO(), bem.FunctionNewParamsCreateTransformFunction{
-		FunctionName: "functionName",
-		Type:         bem.FunctionNewParamsCreateTransformFunctionTypeTransform,
+	functionResponse, err := client.Functions.New(context.TODO(), bem.FunctionNewParams{
+		CreateFunction: bem.CreateFunctionUnionParam{
+			OfTransform: &bem.CreateFunctionTransformParam{
+				FunctionName: "functionName",
+			},
+		},
 	})
 	if err != nil {
 		t.Fatalf("err should be nil: %s", err.Error())

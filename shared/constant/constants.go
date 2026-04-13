@@ -3,7 +3,7 @@
 package constant
 
 import (
-	shimjson "github.com/stainless-sdks/bem-go/internal/encoding/json"
+	shimjson "github.com/bem-team/bem-go-sdk/internal/encoding/json"
 )
 
 type Constant[T any] interface {
@@ -23,6 +23,7 @@ type Enrich string         // Always "enrich"
 type Join string           // Always "join"
 type PayloadShaping string // Always "payload_shaping"
 type Route string          // Always "route"
+type Send string           // Always "send"
 type Split string          // Always "split"
 type Transform string      // Always "transform"
 
@@ -31,6 +32,7 @@ func (c Enrich) Default() Enrich                 { return "enrich" }
 func (c Join) Default() Join                     { return "join" }
 func (c PayloadShaping) Default() PayloadShaping { return "payload_shaping" }
 func (c Route) Default() Route                   { return "route" }
+func (c Send) Default() Send                     { return "send" }
 func (c Split) Default() Split                   { return "split" }
 func (c Transform) Default() Transform           { return "transform" }
 
@@ -39,6 +41,7 @@ func (c Enrich) MarshalJSON() ([]byte, error)         { return marshalString(c) 
 func (c Join) MarshalJSON() ([]byte, error)           { return marshalString(c) }
 func (c PayloadShaping) MarshalJSON() ([]byte, error) { return marshalString(c) }
 func (c Route) MarshalJSON() ([]byte, error)          { return marshalString(c) }
+func (c Send) MarshalJSON() ([]byte, error)           { return marshalString(c) }
 func (c Split) MarshalJSON() ([]byte, error)          { return marshalString(c) }
 func (c Transform) MarshalJSON() ([]byte, error)      { return marshalString(c) }
 

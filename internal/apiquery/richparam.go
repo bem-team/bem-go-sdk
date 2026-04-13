@@ -1,7 +1,7 @@
 package apiquery
 
 import (
-	"github.com/stainless-sdks/bem-go/packages/param"
+	"github.com/bem-team/bem-go-sdk/packages/param"
 	"reflect"
 )
 

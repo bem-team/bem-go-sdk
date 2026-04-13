@@ -8,9 +8,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/stainless-sdks/bem-go"
-	"github.com/stainless-sdks/bem-go/internal/testutil"
-	"github.com/stainless-sdks/bem-go/option"
+	"github.com/bem-team/bem-go-sdk"
+	"github.com/bem-team/bem-go-sdk/internal/testutil"
+	"github.com/bem-team/bem-go-sdk/option"
 )
 
 func TestWorkflowNewWithOptionalParams(t *testing.T) {
@@ -27,25 +27,21 @@ func TestWorkflowNewWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.Workflows.New(context.TODO(), bem.WorkflowNewParams{
+		MainNodeName: "mainNodeName",
+		Name:         "name",
+		Nodes: []bem.WorkflowNewParamsNode{{
+			Function: bem.FunctionVersionIdentifierParam{
+				ID:         bem.String("id"),
+				Name:       bem.String("name"),
+				VersionNum: bem.Int(0),
+			},
+			Name: bem.String("name"),
+		}},
 		DisplayName: bem.String("displayName"),
-		MainFunction: bem.FunctionVersionIdentifierParam{
-			ID:         bem.String("id"),
-			Name:       bem.String("name"),
-			VersionNum: bem.Int(0),
-		},
-		Name: bem.String("name"),
-		Relationships: []bem.WorkflowRequestRelationshipParam{{
-			DestinationFunction: bem.FunctionVersionIdentifierParam{
-				ID:         bem.String("id"),
-				Name:       bem.String("name"),
-				VersionNum: bem.Int(0),
-			},
-			SourceFunction: bem.FunctionVersionIdentifierParam{
-				ID:         bem.String("id"),
-				Name:       bem.String("name"),
-				VersionNum: bem.Int(0),
-			},
-			DestinationName: bem.String("destinationName"),
+		Edges: []bem.WorkflowNewParamsEdge{{
+			DestinationNodeName: "destinationNodeName",
+			SourceNodeName:      "sourceNodeName",
+			DestinationName:     bem.String("destinationName"),
 		}},
 		Tags: []string{"string"},
 	})
@@ -99,24 +95,20 @@ func TestWorkflowUpdateWithOptionalParams(t *testing.T) {
 		"workflowName",
 		bem.WorkflowUpdateParams{
 			DisplayName: bem.String("displayName"),
-			MainFunction: bem.FunctionVersionIdentifierParam{
-				ID:         bem.String("id"),
-				Name:       bem.String("name"),
-				VersionNum: bem.Int(0),
-			},
-			Name: bem.String("name"),
-			Relationships: []bem.WorkflowRequestRelationshipParam{{
-				DestinationFunction: bem.FunctionVersionIdentifierParam{
+			Edges: []bem.WorkflowUpdateParamsEdge{{
+				DestinationNodeName: "destinationNodeName",
+				SourceNodeName:      "sourceNodeName",
+				DestinationName:     bem.String("destinationName"),
+			}},
+			MainNodeName: bem.String("mainNodeName"),
+			Name:         bem.String("name"),
+			Nodes: []bem.WorkflowUpdateParamsNode{{
+				Function: bem.FunctionVersionIdentifierParam{
 					ID:         bem.String("id"),
 					Name:       bem.String("name"),
 					VersionNum: bem.Int(0),
 				},
-				SourceFunction: bem.FunctionVersionIdentifierParam{
-					ID:         bem.String("id"),
-					Name:       bem.String("name"),
-					VersionNum: bem.Int(0),
-				},
-				DestinationName: bem.String("destinationName"),
+				Name: bem.String("name"),
 			}},
 			Tags: []string{"string"},
 		},
@@ -204,10 +196,21 @@ func TestWorkflowCallWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"workflowName",
 		bem.WorkflowCallParams{
+			Input: bem.WorkflowCallParamsInput{
+				BatchFiles: bem.WorkflowCallParamsInputBatchFiles{
+					Inputs: []bem.WorkflowCallParamsInputBatchFilesInput{{
+						InputContent:    "inputContent",
+						InputType:       "csv",
+						ItemReferenceID: bem.String("itemReferenceID"),
+					}},
+				},
+				SingleFile: bem.WorkflowCallParamsInputSingleFile{
+					InputContent: "inputContent",
+					InputType:    "csv",
+				},
+			},
+			Wait:            bem.Bool(true),
 			CallReferenceID: bem.String("callReferenceID"),
-			File:            map[string]any{},
-			Files:           []string{"string"},
-			Wait:            bem.String("wait"),
 		},
 	)
 	if err != nil {

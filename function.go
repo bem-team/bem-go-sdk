@@ -166,6 +166,12 @@ func CreateFunctionParamOfTransform(functionName string) CreateFunctionUnionPara
 	return CreateFunctionUnionParam{OfTransform: &transform}
 }
 
+func CreateFunctionParamOfExtract(functionName string) CreateFunctionUnionParam {
+	var extract CreateFunctionExtractParam
+	extract.FunctionName = functionName
+	return CreateFunctionUnionParam{OfExtract: &extract}
+}
+
 func CreateFunctionParamOfAnalyze(functionName string) CreateFunctionUnionParam {
 	var analyze CreateFunctionAnalyzeParam
 	analyze.FunctionName = functionName
@@ -213,6 +219,7 @@ func CreateFunctionParamOfEnrich(functionName string) CreateFunctionUnionParam {
 // Use [param.IsOmitted] to confirm if a field is set.
 type CreateFunctionUnionParam struct {
 	OfTransform      *CreateFunctionTransformParam      `json:",omitzero,inline"`
+	OfExtract        *CreateFunctionExtractParam        `json:",omitzero,inline"`
 	OfAnalyze        *CreateFunctionAnalyzeParam        `json:",omitzero,inline"`
 	OfRoute          *CreateFunctionRouteParam          `json:",omitzero,inline"`
 	OfSend           *CreateFunctionSendParam           `json:",omitzero,inline"`
@@ -225,6 +232,7 @@ type CreateFunctionUnionParam struct {
 
 func (u CreateFunctionUnionParam) MarshalJSON() ([]byte, error) {
 	return param.MarshalUnion(u, u.OfTransform,
+		u.OfExtract,
 		u.OfAnalyze,
 		u.OfRoute,
 		u.OfSend,
@@ -241,6 +249,7 @@ func init() {
 	apijson.RegisterUnion[CreateFunctionUnionParam](
 		"type",
 		apijson.Discriminator[CreateFunctionTransformParam]("transform"),
+		apijson.Discriminator[CreateFunctionExtractParam]("extract"),
 		apijson.Discriminator[CreateFunctionAnalyzeParam]("analyze"),
 		apijson.Discriminator[CreateFunctionRouteParam]("route"),
 		apijson.Discriminator[CreateFunctionSendParam]("send"),
@@ -276,6 +285,34 @@ func (r CreateFunctionTransformParam) MarshalJSON() (data []byte, err error) {
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *CreateFunctionTransformParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The properties FunctionName, Type are required.
+type CreateFunctionExtractParam struct {
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName string `json:"functionName" api:"required"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Name of output schema object.
+	OutputSchemaName param.Opt[string] `json:"outputSchemaName,omitzero"`
+	// Whether tabular chunking is enabled. When true, tables in CSV/Excel files are
+	// processed in row batches rather than all at once.
+	TabularChunkingEnabled param.Opt[bool] `json:"tabularChunkingEnabled,omitzero"`
+	// Desired output structure defined in standard JSON Schema convention.
+	OutputSchema any `json:"outputSchema,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "extract".
+	Type constant.Extract `json:"type" default:"extract"`
+	paramObj
+}
+
+func (r CreateFunctionExtractParam) MarshalJSON() (data []byte, err error) {
+	type shadow CreateFunctionExtractParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *CreateFunctionExtractParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -888,21 +925,21 @@ func (r *EnrichStepParam) UnmarshalJSON(data []byte) error {
 }
 
 // FunctionUnion contains all possible properties and values from
-// [FunctionTransform], [FunctionAnalyze], [FunctionRoute], [FunctionSend],
-// [FunctionSplit], [FunctionJoin], [FunctionPayloadShaping], [FunctionEnrich].
+// [FunctionTransform], [FunctionExtract], [FunctionAnalyze], [FunctionRoute],
+// [FunctionSend], [FunctionSplit], [FunctionJoin], [FunctionPayloadShaping],
+// [FunctionEnrich].
 //
 // Use the [FunctionUnion.AsAny] method to switch on the variant.
 //
 // Use the methods beginning with 'As' to cast the union to one of its variants.
 type FunctionUnion struct {
-	EmailAddress     string `json:"emailAddress"`
-	FunctionID       string `json:"functionID"`
-	FunctionName     string `json:"functionName"`
-	OutputSchema     any    `json:"outputSchema"`
-	OutputSchemaName string `json:"outputSchemaName"`
-	// This field is from variant [FunctionTransform].
-	TabularChunkingEnabled bool `json:"tabularChunkingEnabled"`
-	// Any of "transform", "analyze", "route", "send", "split", "join",
+	EmailAddress           string `json:"emailAddress"`
+	FunctionID             string `json:"functionID"`
+	FunctionName           string `json:"functionName"`
+	OutputSchema           any    `json:"outputSchema"`
+	OutputSchemaName       string `json:"outputSchemaName"`
+	TabularChunkingEnabled bool   `json:"tabularChunkingEnabled"`
+	// Any of "transform", "extract", "analyze", "route", "send", "split", "join",
 	// "payload_shaping", "enrich".
 	Type       string `json:"type"`
 	VersionNum int64  `json:"versionNum"`
@@ -976,6 +1013,7 @@ type anyFunction interface {
 }
 
 func (FunctionTransform) implFunctionUnion()      {}
+func (FunctionExtract) implFunctionUnion()        {}
 func (FunctionAnalyze) implFunctionUnion()        {}
 func (FunctionRoute) implFunctionUnion()          {}
 func (FunctionSend) implFunctionUnion()           {}
@@ -988,6 +1026,7 @@ func (FunctionEnrich) implFunctionUnion()         {}
 //
 //	switch variant := FunctionUnion.AsAny().(type) {
 //	case bem.FunctionTransform:
+//	case bem.FunctionExtract:
 //	case bem.FunctionAnalyze:
 //	case bem.FunctionRoute:
 //	case bem.FunctionSend:
@@ -1002,6 +1041,8 @@ func (u FunctionUnion) AsAny() anyFunction {
 	switch u.Type {
 	case "transform":
 		return u.AsTransform()
+	case "extract":
+		return u.AsExtract()
 	case "analyze":
 		return u.AsAnalyze()
 	case "route":
@@ -1021,6 +1062,11 @@ func (u FunctionUnion) AsAny() anyFunction {
 }
 
 func (u FunctionUnion) AsTransform() (v FunctionTransform) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u FunctionUnion) AsExtract() (v FunctionExtract) {
 	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
 	return
 }
@@ -1115,6 +1161,56 @@ type FunctionTransform struct {
 // Returns the unmodified JSON received from the API
 func (r FunctionTransform) RawJSON() string { return r.JSON.raw }
 func (r *FunctionTransform) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// A function that extracts structured JSON from documents and images. Accepts a
+// wide range of input types including PDFs, images, spreadsheets, emails, and
+// more.
+type FunctionExtract struct {
+	// Unique identifier of function.
+	FunctionID string `json:"functionID" api:"required"`
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName string `json:"functionName" api:"required"`
+	// Desired output structure defined in standard JSON Schema convention.
+	OutputSchema any `json:"outputSchema" api:"required"`
+	// Name of output schema object.
+	OutputSchemaName string `json:"outputSchemaName" api:"required"`
+	// Whether tabular chunking is enabled. When true, tables in CSV/Excel files are
+	// processed in row batches rather than all at once.
+	TabularChunkingEnabled bool             `json:"tabularChunkingEnabled" api:"required"`
+	Type                   constant.Extract `json:"type" default:"extract"`
+	// Version number of function.
+	VersionNum int64 `json:"versionNum" api:"required"`
+	// Audit trail information for the function.
+	Audit FunctionAudit `json:"audit"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName string `json:"displayName"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags"`
+	// List of workflows that use this function.
+	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		FunctionID             respjson.Field
+		FunctionName           respjson.Field
+		OutputSchema           respjson.Field
+		OutputSchemaName       respjson.Field
+		TabularChunkingEnabled respjson.Field
+		Type                   respjson.Field
+		VersionNum             respjson.Field
+		Audit                  respjson.Field
+		DisplayName            respjson.Field
+		Tags                   respjson.Field
+		UsedInWorkflows        respjson.Field
+		ExtraFields            map[string]respjson.Field
+		raw                    string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r FunctionExtract) RawJSON() string { return r.JSON.raw }
+func (r *FunctionExtract) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -1542,9 +1638,9 @@ func (r *FunctionAudit) UnmarshalJSON(data []byte) error {
 // individual function responses in a `{"function": ...}` envelope for consistency
 // with other V3 resource endpoints.
 type FunctionResponse struct {
-	// A function that delivers workflow outputs to an external destination. Send
-	// functions receive the output of an upstream workflow node and forward it to a
-	// webhook, S3 bucket, or Google Drive folder.
+	// A function that extracts structured JSON from documents and images. Accepts a
+	// wide range of input types including PDFs, images, spreadsheets, emails, and
+	// more.
 	Function FunctionUnion `json:"function" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -1565,6 +1661,7 @@ type FunctionType string
 
 const (
 	FunctionTypeTransform      FunctionType = "transform"
+	FunctionTypeExtract        FunctionType = "extract"
 	FunctionTypeRoute          FunctionType = "route"
 	FunctionTypeSend           FunctionType = "send"
 	FunctionTypeSplit          FunctionType = "split"
@@ -1795,6 +1892,7 @@ func (r *SplitFunctionSemanticPageItemClassParam) UnmarshalJSON(data []byte) err
 // Use [param.IsOmitted] to confirm if a field is set.
 type UpdateFunctionUnionParam struct {
 	OfTransform      *UpdateFunctionTransformParam      `json:",omitzero,inline"`
+	OfExtract        *UpdateFunctionExtractParam        `json:",omitzero,inline"`
 	OfAnalyze        *UpdateFunctionAnalyzeParam        `json:",omitzero,inline"`
 	OfRoute          *UpdateFunctionRouteParam          `json:",omitzero,inline"`
 	OfSend           *UpdateFunctionSendParam           `json:",omitzero,inline"`
@@ -1807,6 +1905,7 @@ type UpdateFunctionUnionParam struct {
 
 func (u UpdateFunctionUnionParam) MarshalJSON() ([]byte, error) {
 	return param.MarshalUnion(u, u.OfTransform,
+		u.OfExtract,
 		u.OfAnalyze,
 		u.OfRoute,
 		u.OfSend,
@@ -1823,6 +1922,7 @@ func init() {
 	apijson.RegisterUnion[UpdateFunctionUnionParam](
 		"type",
 		apijson.Discriminator[UpdateFunctionTransformParam]("transform"),
+		apijson.Discriminator[UpdateFunctionExtractParam]("extract"),
 		apijson.Discriminator[UpdateFunctionAnalyzeParam]("analyze"),
 		apijson.Discriminator[UpdateFunctionRouteParam]("route"),
 		apijson.Discriminator[UpdateFunctionSendParam]("send"),
@@ -1858,6 +1958,34 @@ func (r UpdateFunctionTransformParam) MarshalJSON() (data []byte, err error) {
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *UpdateFunctionTransformParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The property Type is required.
+type UpdateFunctionExtractParam struct {
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName param.Opt[string] `json:"functionName,omitzero"`
+	// Name of output schema object.
+	OutputSchemaName param.Opt[string] `json:"outputSchemaName,omitzero"`
+	// Whether tabular chunking is enabled. When true, tables in CSV/Excel files are
+	// processed in row batches rather than all at once.
+	TabularChunkingEnabled param.Opt[bool] `json:"tabularChunkingEnabled,omitzero"`
+	// Desired output structure defined in standard JSON Schema convention.
+	OutputSchema any `json:"outputSchema,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "extract".
+	Type constant.Extract `json:"type" default:"extract"`
+	paramObj
+}
+
+func (r UpdateFunctionExtractParam) MarshalJSON() (data []byte, err error) {
+	type shadow UpdateFunctionExtractParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *UpdateFunctionExtractParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

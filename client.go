@@ -78,7 +78,23 @@ type Client struct {
 	// `GET /v3/outputs/{eventID}` to retrieve a specific output. To get outputs scoped
 	// to a single call, filter by `callIDs`.
 	Outputs OutputService
-	// Workflow operations
+	// Workflows orchestrate one or more functions into a directed acyclic graph (DAG)
+	// for document processing.
+	//
+	// Use these endpoints to create, update, list, and manage workflows, and to invoke
+	// them with file input via `POST /v3/workflows/{workflowName}/call`.
+	//
+	// The call endpoint accepts files as either multipart form data or JSON with
+	// base64-encoded content. In the Bem CLI, use `@path/to/file` inside JSON values
+	// to automatically read and encode files:
+	//
+	// ```
+	//
+	//	bem workflows call --workflow-name my-workflow \
+	//	  --input.single-file '{"inputContent": "@file.pdf", "inputType": "pdf"}' \
+	//	  --wait
+	//
+	// ```
 	Workflows WorkflowService
 	// Infer JSON Schemas from uploaded documents using AI.
 	//

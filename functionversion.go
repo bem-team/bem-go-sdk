@@ -79,23 +79,22 @@ func (r *FunctionVersionService) List(ctx context.Context, functionName string, 
 }
 
 // FunctionVersionUnion contains all possible properties and values from
-// [FunctionVersionTransform], [FunctionVersionAnalyze], [FunctionVersionRoute],
-// [FunctionVersionSend], [FunctionVersionSplit], [FunctionVersionJoin],
-// [FunctionVersionEnrich], [FunctionVersionPayloadShaping].
+// [FunctionVersionTransform], [FunctionVersionExtract], [FunctionVersionAnalyze],
+// [FunctionVersionRoute], [FunctionVersionSend], [FunctionVersionSplit],
+// [FunctionVersionJoin], [FunctionVersionEnrich], [FunctionVersionPayloadShaping].
 //
 // Use the [FunctionVersionUnion.AsAny] method to switch on the variant.
 //
 // Use the methods beginning with 'As' to cast the union to one of its variants.
 type FunctionVersionUnion struct {
-	EmailAddress     string `json:"emailAddress"`
-	FunctionID       string `json:"functionID"`
-	FunctionName     string `json:"functionName"`
-	OutputSchema     any    `json:"outputSchema"`
-	OutputSchemaName string `json:"outputSchemaName"`
-	// This field is from variant [FunctionVersionTransform].
-	TabularChunkingEnabled bool `json:"tabularChunkingEnabled"`
-	// Any of "transform", "analyze", "route", "send", "split", "join", "enrich",
-	// "payload_shaping".
+	EmailAddress           string `json:"emailAddress"`
+	FunctionID             string `json:"functionID"`
+	FunctionName           string `json:"functionName"`
+	OutputSchema           any    `json:"outputSchema"`
+	OutputSchemaName       string `json:"outputSchemaName"`
+	TabularChunkingEnabled bool   `json:"tabularChunkingEnabled"`
+	// Any of "transform", "extract", "analyze", "route", "send", "split", "join",
+	// "enrich", "payload_shaping".
 	Type       string `json:"type"`
 	VersionNum int64  `json:"versionNum"`
 	// This field is from variant [FunctionVersionTransform].
@@ -170,6 +169,7 @@ type anyFunctionVersion interface {
 }
 
 func (FunctionVersionTransform) implFunctionVersionUnion()      {}
+func (FunctionVersionExtract) implFunctionVersionUnion()        {}
 func (FunctionVersionAnalyze) implFunctionVersionUnion()        {}
 func (FunctionVersionRoute) implFunctionVersionUnion()          {}
 func (FunctionVersionSend) implFunctionVersionUnion()           {}
@@ -182,6 +182,7 @@ func (FunctionVersionPayloadShaping) implFunctionVersionUnion() {}
 //
 //	switch variant := FunctionVersionUnion.AsAny().(type) {
 //	case bem.FunctionVersionTransform:
+//	case bem.FunctionVersionExtract:
 //	case bem.FunctionVersionAnalyze:
 //	case bem.FunctionVersionRoute:
 //	case bem.FunctionVersionSend:
@@ -196,6 +197,8 @@ func (u FunctionVersionUnion) AsAny() anyFunctionVersion {
 	switch u.Type {
 	case "transform":
 		return u.AsTransform()
+	case "extract":
+		return u.AsExtract()
 	case "analyze":
 		return u.AsAnalyze()
 	case "route":
@@ -215,6 +218,11 @@ func (u FunctionVersionUnion) AsAny() anyFunctionVersion {
 }
 
 func (u FunctionVersionUnion) AsTransform() (v FunctionVersionTransform) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u FunctionVersionUnion) AsExtract() (v FunctionVersionExtract) {
 	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
 	return
 }
@@ -312,6 +320,56 @@ type FunctionVersionTransform struct {
 // Returns the unmodified JSON received from the API
 func (r FunctionVersionTransform) RawJSON() string { return r.JSON.raw }
 func (r *FunctionVersionTransform) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type FunctionVersionExtract struct {
+	// Unique identifier of function.
+	FunctionID string `json:"functionID" api:"required"`
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName string `json:"functionName" api:"required"`
+	// Desired output structure defined in standard JSON Schema convention.
+	OutputSchema any `json:"outputSchema" api:"required"`
+	// Name of output schema object.
+	OutputSchemaName string `json:"outputSchemaName" api:"required"`
+	// Whether tabular chunking is enabled. When true, tables in CSV/Excel files are
+	// processed in row batches rather than all at once.
+	TabularChunkingEnabled bool             `json:"tabularChunkingEnabled" api:"required"`
+	Type                   constant.Extract `json:"type" default:"extract"`
+	// Version number of function.
+	VersionNum int64 `json:"versionNum" api:"required"`
+	// Audit trail information for the function version.
+	Audit FunctionAudit `json:"audit"`
+	// The date and time the function version was created.
+	CreatedAt time.Time `json:"createdAt" format:"date-time"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName string `json:"displayName"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags"`
+	// List of workflows that use this function.
+	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		FunctionID             respjson.Field
+		FunctionName           respjson.Field
+		OutputSchema           respjson.Field
+		OutputSchemaName       respjson.Field
+		TabularChunkingEnabled respjson.Field
+		Type                   respjson.Field
+		VersionNum             respjson.Field
+		Audit                  respjson.Field
+		CreatedAt              respjson.Field
+		DisplayName            respjson.Field
+		Tags                   respjson.Field
+		UsedInWorkflows        respjson.Field
+		ExtraFields            map[string]respjson.Field
+		raw                    string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r FunctionVersionExtract) RawJSON() string { return r.JSON.raw }
+func (r *FunctionVersionExtract) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

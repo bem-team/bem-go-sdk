@@ -20,6 +20,7 @@ func ValueOf[T Constant[T]]() T {
 
 type Analyze string        // Always "analyze"
 type Enrich string         // Always "enrich"
+type Extract string        // Always "extract"
 type Join string           // Always "join"
 type PayloadShaping string // Always "payload_shaping"
 type Route string          // Always "route"
@@ -29,6 +30,7 @@ type Transform string      // Always "transform"
 
 func (c Analyze) Default() Analyze               { return "analyze" }
 func (c Enrich) Default() Enrich                 { return "enrich" }
+func (c Extract) Default() Extract               { return "extract" }
 func (c Join) Default() Join                     { return "join" }
 func (c PayloadShaping) Default() PayloadShaping { return "payload_shaping" }
 func (c Route) Default() Route                   { return "route" }
@@ -38,6 +40,7 @@ func (c Transform) Default() Transform           { return "transform" }
 
 func (c Analyze) MarshalJSON() ([]byte, error)        { return marshalString(c) }
 func (c Enrich) MarshalJSON() ([]byte, error)         { return marshalString(c) }
+func (c Extract) MarshalJSON() ([]byte, error)        { return marshalString(c) }
 func (c Join) MarshalJSON() ([]byte, error)           { return marshalString(c) }
 func (c PayloadShaping) MarshalJSON() ([]byte, error) { return marshalString(c) }
 func (c Route) MarshalJSON() ([]byte, error)          { return marshalString(c) }

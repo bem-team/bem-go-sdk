@@ -21,7 +21,23 @@ import (
 	"github.com/bem-team/bem-go-sdk/packages/respjson"
 )
 
-// Workflow operations
+// Workflows orchestrate one or more functions into a directed acyclic graph (DAG)
+// for document processing.
+//
+// Use these endpoints to create, update, list, and manage workflows, and to invoke
+// them with file input via `POST /v3/workflows/{workflowName}/call`.
+//
+// The call endpoint accepts files as either multipart form data or JSON with
+// base64-encoded content. In the Bem CLI, use `@path/to/file` inside JSON values
+// to automatically read and encode files:
+//
+// ```
+//
+//	bem workflows call --workflow-name my-workflow \
+//	  --input.single-file '{"inputContent": "@file.pdf", "inputType": "pdf"}' \
+//	  --wait
+//
+// ```
 //
 // WorkflowService contains methods and other services that help with interacting
 // with the bem API.
@@ -31,7 +47,23 @@ import (
 // the [NewWorkflowService] method instead.
 type WorkflowService struct {
 	options []option.RequestOption
-	// Workflow operations
+	// Workflows orchestrate one or more functions into a directed acyclic graph (DAG)
+	// for document processing.
+	//
+	// Use these endpoints to create, update, list, and manage workflows, and to invoke
+	// them with file input via `POST /v3/workflows/{workflowName}/call`.
+	//
+	// The call endpoint accepts files as either multipart form data or JSON with
+	// base64-encoded content. In the Bem CLI, use `@path/to/file` inside JSON values
+	// to automatically read and encode files:
+	//
+	// ```
+	//
+	//	bem workflows call --workflow-name my-workflow \
+	//	  --input.single-file '{"inputContent": "@file.pdf", "inputType": "pdf"}' \
+	//	  --wait
+	//
+	// ```
 	Versions WorkflowVersionService
 }
 
@@ -142,6 +174,61 @@ func (r *WorkflowService) Delete(ctx context.Context, workflowName string, opts 
 //
 // Poll `GET /v3/calls/{callID}` to check status, or configure a webhook
 // subscription to receive events when the call finishes.
+//
+// ## CLI Usage
+//
+// Use `@path/to/file` inside JSON string values to embed file contents
+// automatically. Binary files (PDF, images, audio) are base64-encoded; text files
+// are embedded as strings.
+//
+// Single file (synchronous):
+//
+// ```bash
+//
+//	bem workflows call \
+//	  --workflow-name my-workflow \
+//	  --input.single-file '{"inputContent": "@invoice.pdf", "inputType": "pdf"}' \
+//	  --wait
+//
+// ```
+//
+// Single file (asynchronous, returns callID immediately):
+//
+// ```bash
+//
+//	bem workflows call \
+//	  --workflow-name my-workflow \
+//	  --input.single-file '{"inputContent": "@invoice.pdf", "inputType": "pdf"}'
+//
+// ```
+//
+// Batch files:
+//
+// ```bash
+//
+//	bem workflows call \
+//	  --workflow-name my-workflow \
+//	  --input.batch-files '{"inputs": [{"inputContent": "@a.pdf", "inputType": "pdf"}, {"inputContent": "@b.png", "inputType": "png"}]}'
+//
+// ```
+//
+// Alternative: pass the full `--input` flag as JSON:
+//
+// ```bash
+//
+//	bem workflows call \
+//	  --workflow-name my-workflow \
+//	  --input '{"singleFile": {"inputContent": "@invoice.pdf", "inputType": "pdf"}}' \
+//	  --wait
+//
+// ```
+//
+// **Important:** `--wait` is a boolean flag. Use `--wait` or `--wait=true`. Do
+// **not** use `--wait true` (with a space) — the `true` will be parsed as an
+// unexpected positional argument.
+//
+// Supported `inputType` values: csv, docx, email, heic, heif, html, jpeg, json,
+// m4a, mp3, pdf, png, text, wav, webp, xls, xlsx, xml.
 func (r *WorkflowService) Call(ctx context.Context, workflowName string, params WorkflowCallParams, opts ...option.RequestOption) (res *CallGetResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if workflowName == "" {
@@ -644,6 +731,11 @@ func (r WorkflowCallParams) URLQuery() (v url.Values, err error) {
 // Input to the workflow call. Provide exactly one of `singleFile` or `batchFiles`.
 type WorkflowCallParamsInput struct {
 	BatchFiles WorkflowCallParamsInputBatchFiles `json:"batchFiles,omitzero"`
+	// A single file input with base64-encoded content.
+	//
+	// When using the Bem CLI, use `@path/to/file` in the `inputContent` field to
+	// automatically read and base64-encode the file:
+	// `--input.single-file '{"inputContent": "@file.pdf", "inputType": "pdf"}'`
 	SingleFile WorkflowCallParamsInputSingleFile `json:"singleFile,omitzero"`
 	paramObj
 }
@@ -671,7 +763,8 @@ func (r *WorkflowCallParamsInputBatchFiles) UnmarshalJSON(data []byte) error {
 
 // The properties InputContent, InputType are required.
 type WorkflowCallParamsInputBatchFilesInput struct {
-	// Base64-encoded file content
+	// Base64-encoded file content. In the Bem CLI, use `@path/to/file` to embed file
+	// contents automatically.
 	InputContent string `json:"inputContent" api:"required"`
 	// The input type of the content you're sending for transformation.
 	//
@@ -696,9 +789,16 @@ func init() {
 	)
 }
 
+// A single file input with base64-encoded content.
+//
+// When using the Bem CLI, use `@path/to/file` in the `inputContent` field to
+// automatically read and base64-encode the file:
+// `--input.single-file '{"inputContent": "@file.pdf", "inputType": "pdf"}'`
+//
 // The properties InputContent, InputType are required.
 type WorkflowCallParamsInputSingleFile struct {
-	// Base64-encoded file content
+	// Base64-encoded file content. In the Bem CLI, use `@path/to/file` to embed file
+	// contents automatically.
 	InputContent string `json:"inputContent" api:"required"`
 	// The input type of the content you're sending for transformation.
 	//

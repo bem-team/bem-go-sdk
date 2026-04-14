@@ -67,7 +67,9 @@ func NewInferSchemaService(opts ...option.RequestOption) (r InferSchemaService) 
 //
 // Maximum file size is **20 MB**.
 //
-// ## Example
+// ## Examples
+//
+// Using curl:
 //
 // ```bash
 //
@@ -75,6 +77,12 @@ func NewInferSchemaService(opts ...option.RequestOption) (r InferSchemaService) 
 //	  -H "x-api-key: YOUR_API_KEY" \
 //	  -F "file=@invoice.pdf"
 //
+// ```
+//
+// Using the Bem CLI:
+//
+// ```bash
+// bem infer-schema create --file @invoice.pdf
 // ```
 func (r *InferSchemaService) New(ctx context.Context, body InferSchemaNewParams, opts ...option.RequestOption) (res *InferSchemaNewResponse, err error) {
 	opts = slices.Concat(r.options, opts)

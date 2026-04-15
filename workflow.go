@@ -702,10 +702,15 @@ const (
 )
 
 type WorkflowCallParams struct {
-	// Input to the workflow call. Provide exactly one of `singleFile` or `batchFiles`.
+	// Input file(s) for a call. Provide exactly one of `singleFile` or `batchFiles`.
+	//
+	// In the CLI, use the nested flags `--input.single-file` or `--input.batch-files`
+	// with `@path/to/file` for automatic file embedding:
+	// `--input.single-file '{"inputContent": "@invoice.pdf", "inputType": "pdf"}' --wait`
 	Input WorkflowCallParamsInput `json:"input,omitzero" api:"required"`
-	// When `true`, the endpoint blocks until the call completes (up to 30 seconds) and
-	// returns the finished call object. Default: `false`.
+	// Block until the call completes (up to 30 seconds) and return the finished call
+	// object. Default: `false`. This is a boolean flag — use `--wait` or
+	// `--wait=true`, not `--wait true`.
 	Wait param.Opt[bool] `query:"wait,omitzero" json:"-"`
 	// Your reference ID for tracking this call.
 	CallReferenceID param.Opt[string] `json:"callReferenceID,omitzero"`
@@ -728,14 +733,20 @@ func (r WorkflowCallParams) URLQuery() (v url.Values, err error) {
 	})
 }
 
-// Input to the workflow call. Provide exactly one of `singleFile` or `batchFiles`.
+// Input file(s) for a call. Provide exactly one of `singleFile` or `batchFiles`.
+//
+// In the CLI, use the nested flags `--input.single-file` or `--input.batch-files`
+// with `@path/to/file` for automatic file embedding:
+// `--input.single-file '{"inputContent": "@invoice.pdf", "inputType": "pdf"}' --wait`
 type WorkflowCallParamsInput struct {
+	// Multiple files to process in one call. Each item in the `inputs` array has its
+	// own `inputContent` and `inputType`.
 	BatchFiles WorkflowCallParamsInputBatchFiles `json:"batchFiles,omitzero"`
 	// A single file input with base64-encoded content.
 	//
 	// When using the Bem CLI, use `@path/to/file` in the `inputContent` field to
 	// automatically read and base64-encode the file:
-	// `--input.single-file '{"inputContent": "@file.pdf", "inputType": "pdf"}'`
+	// `--input.single-file '{"inputContent": "@file.pdf", "inputType": "pdf"}' --wait`
 	SingleFile WorkflowCallParamsInputSingleFile `json:"singleFile,omitzero"`
 	paramObj
 }
@@ -748,6 +759,8 @@ func (r *WorkflowCallParamsInput) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
+// Multiple files to process in one call. Each item in the `inputs` array has its
+// own `inputContent` and `inputType`.
 type WorkflowCallParamsInputBatchFiles struct {
 	Inputs []WorkflowCallParamsInputBatchFilesInput `json:"inputs,omitzero"`
 	paramObj
@@ -793,7 +806,7 @@ func init() {
 //
 // When using the Bem CLI, use `@path/to/file` in the `inputContent` field to
 // automatically read and base64-encode the file:
-// `--input.single-file '{"inputContent": "@file.pdf", "inputType": "pdf"}'`
+// `--input.single-file '{"inputContent": "@file.pdf", "inputType": "pdf"}' --wait`
 //
 // The properties InputContent, InputType are required.
 type WorkflowCallParamsInputSingleFile struct {

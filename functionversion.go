@@ -103,7 +103,9 @@ type FunctionVersionUnion struct {
 	DisplayName     string              `json:"displayName"`
 	Tags            []string            `json:"tags"`
 	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
-	Description     string              `json:"description"`
+	// This field is from variant [FunctionVersionAnalyze].
+	EnableBoundingBoxes bool   `json:"enableBoundingBoxes"`
+	Description         string `json:"description"`
 	// This field is from variant [FunctionVersionRoute].
 	Routes []RouteListItem `json:"routes"`
 	// This field is from variant [FunctionVersionSend].
@@ -144,6 +146,7 @@ type FunctionVersionUnion struct {
 		DisplayName             respjson.Field
 		Tags                    respjson.Field
 		UsedInWorkflows         respjson.Field
+		EnableBoundingBoxes     respjson.Field
 		Description             respjson.Field
 		Routes                  respjson.Field
 		DestinationType         respjson.Field
@@ -374,6 +377,10 @@ func (r *FunctionVersionExtract) UnmarshalJSON(data []byte) error {
 }
 
 type FunctionVersionAnalyze struct {
+	// Whether bounding box extraction is enabled. Only applicable to analyze and
+	// extract functions. When true, the function returns the document regions (page,
+	// coordinates) from which each field was extracted.
+	EnableBoundingBoxes bool `json:"enableBoundingBoxes" api:"required"`
 	// Unique identifier of function.
 	FunctionID string `json:"functionID" api:"required"`
 	// Name of function. Must be UNIQUE on a per-environment basis.
@@ -397,19 +404,20 @@ type FunctionVersionAnalyze struct {
 	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		FunctionID       respjson.Field
-		FunctionName     respjson.Field
-		OutputSchema     respjson.Field
-		OutputSchemaName respjson.Field
-		Type             respjson.Field
-		VersionNum       respjson.Field
-		Audit            respjson.Field
-		CreatedAt        respjson.Field
-		DisplayName      respjson.Field
-		Tags             respjson.Field
-		UsedInWorkflows  respjson.Field
-		ExtraFields      map[string]respjson.Field
-		raw              string
+		EnableBoundingBoxes respjson.Field
+		FunctionID          respjson.Field
+		FunctionName        respjson.Field
+		OutputSchema        respjson.Field
+		OutputSchemaName    respjson.Field
+		Type                respjson.Field
+		VersionNum          respjson.Field
+		Audit               respjson.Field
+		CreatedAt           respjson.Field
+		DisplayName         respjson.Field
+		Tags                respjson.Field
+		UsedInWorkflows     respjson.Field
+		ExtraFields         map[string]respjson.Field
+		raw                 string
 	} `json:"-"`
 }
 

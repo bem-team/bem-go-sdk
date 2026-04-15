@@ -322,6 +322,12 @@ type CreateFunctionAnalyzeParam struct {
 	FunctionName string `json:"functionName" api:"required"`
 	// Display name of function. Human-readable name to help you identify the function.
 	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Whether bounding box extraction is enabled. Only applicable to analyze and
+	// extract functions. When true, the function returns the document regions (page,
+	// coordinates) from which each field was extracted. Enabling this automatically
+	// configures the function to use the bounding box model. Disabling resets to the
+	// default.
+	EnableBoundingBoxes param.Opt[bool] `json:"enableBoundingBoxes,omitzero"`
 	// Name of output schema object.
 	OutputSchemaName param.Opt[string] `json:"outputSchemaName,omitzero"`
 	// Desired output structure defined in standard JSON Schema convention.
@@ -948,7 +954,9 @@ type FunctionUnion struct {
 	DisplayName     string              `json:"displayName"`
 	Tags            []string            `json:"tags"`
 	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
-	Description     string              `json:"description"`
+	// This field is from variant [FunctionAnalyze].
+	EnableBoundingBoxes bool   `json:"enableBoundingBoxes"`
+	Description         string `json:"description"`
 	// This field is from variant [FunctionRoute].
 	Routes []RouteListItem `json:"routes"`
 	// This field is from variant [FunctionSend].
@@ -988,6 +996,7 @@ type FunctionUnion struct {
 		DisplayName             respjson.Field
 		Tags                    respjson.Field
 		UsedInWorkflows         respjson.Field
+		EnableBoundingBoxes     respjson.Field
 		Description             respjson.Field
 		Routes                  respjson.Field
 		DestinationType         respjson.Field
@@ -1215,6 +1224,10 @@ func (r *FunctionExtract) UnmarshalJSON(data []byte) error {
 }
 
 type FunctionAnalyze struct {
+	// Whether bounding box extraction is enabled. Only applicable to analyze and
+	// extract functions. When true, the function returns the document regions (page,
+	// coordinates) from which each field was extracted.
+	EnableBoundingBoxes bool `json:"enableBoundingBoxes" api:"required"`
 	// Unique identifier of function.
 	FunctionID string `json:"functionID" api:"required"`
 	// Name of function. Must be UNIQUE on a per-environment basis.
@@ -1236,18 +1249,19 @@ type FunctionAnalyze struct {
 	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		FunctionID       respjson.Field
-		FunctionName     respjson.Field
-		OutputSchema     respjson.Field
-		OutputSchemaName respjson.Field
-		Type             respjson.Field
-		VersionNum       respjson.Field
-		Audit            respjson.Field
-		DisplayName      respjson.Field
-		Tags             respjson.Field
-		UsedInWorkflows  respjson.Field
-		ExtraFields      map[string]respjson.Field
-		raw              string
+		EnableBoundingBoxes respjson.Field
+		FunctionID          respjson.Field
+		FunctionName        respjson.Field
+		OutputSchema        respjson.Field
+		OutputSchemaName    respjson.Field
+		Type                respjson.Field
+		VersionNum          respjson.Field
+		Audit               respjson.Field
+		DisplayName         respjson.Field
+		Tags                respjson.Field
+		UsedInWorkflows     respjson.Field
+		ExtraFields         map[string]respjson.Field
+		raw                 string
 	} `json:"-"`
 }
 
@@ -1993,6 +2007,12 @@ func (r *UpdateFunctionExtractParam) UnmarshalJSON(data []byte) error {
 type UpdateFunctionAnalyzeParam struct {
 	// Display name of function. Human-readable name to help you identify the function.
 	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Whether bounding box extraction is enabled. Only applicable to analyze and
+	// extract functions. When true, the function returns the document regions (page,
+	// coordinates) from which each field was extracted. Enabling this automatically
+	// configures the function to use the bounding box model. Disabling resets to the
+	// default.
+	EnableBoundingBoxes param.Opt[bool] `json:"enableBoundingBoxes,omitzero"`
 	// Name of function. Must be UNIQUE on a per-environment basis.
 	FunctionName param.Opt[string] `json:"functionName,omitzero"`
 	// Name of output schema object.

@@ -330,6 +330,9 @@ type CreateFunctionAnalyzeParam struct {
 	EnableBoundingBoxes param.Opt[bool] `json:"enableBoundingBoxes,omitzero"`
 	// Name of output schema object.
 	OutputSchemaName param.Opt[string] `json:"outputSchemaName,omitzero"`
+	// Reducing the risk of the model stopping early on long documents. Trade-off:
+	// Increases total latency. Compatible with `enableBoundingBoxes`.
+	PreCount param.Opt[bool] `json:"preCount,omitzero"`
 	// Desired output structure defined in standard JSON Schema convention.
 	OutputSchema any `json:"outputSchema,omitzero"`
 	// Array of tags to categorize and organize functions.
@@ -955,8 +958,10 @@ type FunctionUnion struct {
 	Tags            []string            `json:"tags"`
 	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
 	// This field is from variant [FunctionAnalyze].
-	EnableBoundingBoxes bool   `json:"enableBoundingBoxes"`
-	Description         string `json:"description"`
+	EnableBoundingBoxes bool `json:"enableBoundingBoxes"`
+	// This field is from variant [FunctionAnalyze].
+	PreCount    bool   `json:"preCount"`
+	Description string `json:"description"`
 	// This field is from variant [FunctionRoute].
 	Routes []RouteListItem `json:"routes"`
 	// This field is from variant [FunctionSend].
@@ -997,6 +1002,7 @@ type FunctionUnion struct {
 		Tags                    respjson.Field
 		UsedInWorkflows         respjson.Field
 		EnableBoundingBoxes     respjson.Field
+		PreCount                respjson.Field
 		Description             respjson.Field
 		Routes                  respjson.Field
 		DestinationType         respjson.Field
@@ -1235,8 +1241,11 @@ type FunctionAnalyze struct {
 	// Desired output structure defined in standard JSON Schema convention.
 	OutputSchema any `json:"outputSchema" api:"required"`
 	// Name of output schema object.
-	OutputSchemaName string           `json:"outputSchemaName" api:"required"`
-	Type             constant.Analyze `json:"type" default:"analyze"`
+	OutputSchemaName string `json:"outputSchemaName" api:"required"`
+	// Reducing the risk of the model stopping early on long documents. Trade-off:
+	// Increases total latency.
+	PreCount bool             `json:"preCount" api:"required"`
+	Type     constant.Analyze `json:"type" default:"analyze"`
 	// Version number of function.
 	VersionNum int64 `json:"versionNum" api:"required"`
 	// Audit trail information for the function.
@@ -1254,6 +1263,7 @@ type FunctionAnalyze struct {
 		FunctionName        respjson.Field
 		OutputSchema        respjson.Field
 		OutputSchemaName    respjson.Field
+		PreCount            respjson.Field
 		Type                respjson.Field
 		VersionNum          respjson.Field
 		Audit               respjson.Field
@@ -2017,6 +2027,9 @@ type UpdateFunctionAnalyzeParam struct {
 	FunctionName param.Opt[string] `json:"functionName,omitzero"`
 	// Name of output schema object.
 	OutputSchemaName param.Opt[string] `json:"outputSchemaName,omitzero"`
+	// Reducing the risk of the model stopping early on long documents. Trade-off:
+	// Increases total latency. Compatible with `enableBoundingBoxes`.
+	PreCount param.Opt[bool] `json:"preCount,omitzero"`
 	// Desired output structure defined in standard JSON Schema convention.
 	OutputSchema any `json:"outputSchema,omitzero"`
 	// Array of tags to categorize and organize functions.

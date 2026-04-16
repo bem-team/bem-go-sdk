@@ -714,6 +714,10 @@ type WorkflowCallParams struct {
 	Wait param.Opt[bool] `query:"wait,omitzero" json:"-"`
 	// Your reference ID for tracking this call.
 	CallReferenceID param.Opt[string] `json:"callReferenceID,omitzero"`
+	// Arbitrary JSON object attached to this call. Stored on the call record and
+	// injected into `transformedContent` under the reserved `_metadata` key (alongside
+	// `referenceID`). Must be a JSON object. Maximum size: 4 KB.
+	Metadata any `json:"metadata,omitzero"`
 	paramObj
 }
 

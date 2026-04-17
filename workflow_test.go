@@ -35,13 +35,24 @@ func TestWorkflowNewWithOptionalParams(t *testing.T) {
 				Name:       bem.String("name"),
 				VersionNum: bem.Int(0),
 			},
-			Name: bem.String("name"),
+			Metadata: map[string]any{},
+			Name:     bem.String("name"),
+		}},
+		Connectors: []bem.WorkflowNewParamsConnector{{
+			Name:        "name",
+			Type:        "paragon",
+			ConnectorID: bem.String("connectorID"),
+			Paragon: bem.WorkflowNewParamsConnectorParagon{
+				Configuration: map[string]any{},
+				Integration:   bem.String("integration"),
+			},
 		}},
 		DisplayName: bem.String("displayName"),
 		Edges: []bem.WorkflowNewParamsEdge{{
 			DestinationNodeName: "destinationNodeName",
 			SourceNodeName:      "sourceNodeName",
 			DestinationName:     bem.String("destinationName"),
+			Metadata:            map[string]any{},
 		}},
 		Tags: []string{"string"},
 	})
@@ -94,11 +105,21 @@ func TestWorkflowUpdateWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"workflowName",
 		bem.WorkflowUpdateParams{
+			Connectors: []bem.WorkflowUpdateParamsConnector{{
+				Name:        "name",
+				Type:        "paragon",
+				ConnectorID: bem.String("connectorID"),
+				Paragon: bem.WorkflowUpdateParamsConnectorParagon{
+					Configuration: map[string]any{},
+					Integration:   bem.String("integration"),
+				},
+			}},
 			DisplayName: bem.String("displayName"),
 			Edges: []bem.WorkflowUpdateParamsEdge{{
 				DestinationNodeName: "destinationNodeName",
 				SourceNodeName:      "sourceNodeName",
 				DestinationName:     bem.String("destinationName"),
+				Metadata:            map[string]any{},
 			}},
 			MainNodeName: bem.String("mainNodeName"),
 			Name:         bem.String("name"),
@@ -108,7 +129,8 @@ func TestWorkflowUpdateWithOptionalParams(t *testing.T) {
 					Name:       bem.String("name"),
 					VersionNum: bem.Int(0),
 				},
-				Name: bem.String("name"),
+				Metadata: map[string]any{},
+				Name:     bem.String("name"),
 			}},
 			Tags: []string{"string"},
 		},

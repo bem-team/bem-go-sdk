@@ -104,8 +104,10 @@ type FunctionVersionUnion struct {
 	Tags            []string            `json:"tags"`
 	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
 	// This field is from variant [FunctionVersionAnalyze].
-	EnableBoundingBoxes bool   `json:"enableBoundingBoxes"`
-	Description         string `json:"description"`
+	EnableBoundingBoxes bool `json:"enableBoundingBoxes"`
+	// This field is from variant [FunctionVersionAnalyze].
+	PreCount    bool   `json:"preCount"`
+	Description string `json:"description"`
 	// This field is from variant [FunctionVersionRoute].
 	Routes []RouteListItem `json:"routes"`
 	// This field is from variant [FunctionVersionSend].
@@ -147,6 +149,7 @@ type FunctionVersionUnion struct {
 		Tags                    respjson.Field
 		UsedInWorkflows         respjson.Field
 		EnableBoundingBoxes     respjson.Field
+		PreCount                respjson.Field
 		Description             respjson.Field
 		Routes                  respjson.Field
 		DestinationType         respjson.Field
@@ -388,8 +391,11 @@ type FunctionVersionAnalyze struct {
 	// Desired output structure defined in standard JSON Schema convention.
 	OutputSchema any `json:"outputSchema" api:"required"`
 	// Name of output schema object.
-	OutputSchemaName string           `json:"outputSchemaName" api:"required"`
-	Type             constant.Analyze `json:"type" default:"analyze"`
+	OutputSchemaName string `json:"outputSchemaName" api:"required"`
+	// Reducing the risk of the model stopping early on long documents. Trade-off:
+	// Increases total latency.
+	PreCount bool             `json:"preCount" api:"required"`
+	Type     constant.Analyze `json:"type" default:"analyze"`
 	// Version number of function.
 	VersionNum int64 `json:"versionNum" api:"required"`
 	// Audit trail information for the function version.
@@ -409,6 +415,7 @@ type FunctionVersionAnalyze struct {
 		FunctionName        respjson.Field
 		OutputSchema        respjson.Field
 		OutputSchemaName    respjson.Field
+		PreCount            respjson.Field
 		Type                respjson.Field
 		VersionNum          respjson.Field
 		Audit               respjson.Field

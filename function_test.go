@@ -28,7 +28,7 @@ func TestFunctionNewWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.Functions.New(context.TODO(), bem.FunctionNewParams{
 		CreateFunction: bem.CreateFunctionUnionParam{
-			OfTransform: &bem.CreateFunctionTransformParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
 				FunctionName:           "functionName",
 				DisplayName:            bem.String("displayName"),
 				OutputSchema:           map[string]any{},
@@ -88,7 +88,7 @@ func TestFunctionUpdateWithOptionalParams(t *testing.T) {
 		"functionName",
 		bem.FunctionUpdateParams{
 			UpdateFunction: bem.UpdateFunctionUnionParam{
-				OfTransform: &bem.UpdateFunctionTransformParam{
+				OfExtract: &bem.UpdateFunctionExtractParam{
 					DisplayName:            bem.String("displayName"),
 					FunctionName:           bem.String("functionName"),
 					OutputSchema:           map[string]any{},

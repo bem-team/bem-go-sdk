@@ -40,7 +40,7 @@ func TestUserAgentHeader(t *testing.T) {
 	)
 	_, _ = client.Functions.New(context.Background(), bem.FunctionNewParams{
 		CreateFunction: bem.CreateFunctionUnionParam{
-			OfTransform: &bem.CreateFunctionTransformParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
 				FunctionName: "functionName",
 			},
 		},
@@ -70,7 +70,7 @@ func TestRetryAfter(t *testing.T) {
 	)
 	_, err := client.Functions.New(context.Background(), bem.FunctionNewParams{
 		CreateFunction: bem.CreateFunctionUnionParam{
-			OfTransform: &bem.CreateFunctionTransformParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
 				FunctionName: "functionName",
 			},
 		},
@@ -111,7 +111,7 @@ func TestDeleteRetryCountHeader(t *testing.T) {
 	)
 	_, err := client.Functions.New(context.Background(), bem.FunctionNewParams{
 		CreateFunction: bem.CreateFunctionUnionParam{
-			OfTransform: &bem.CreateFunctionTransformParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
 				FunctionName: "functionName",
 			},
 		},
@@ -147,7 +147,7 @@ func TestOverwriteRetryCountHeader(t *testing.T) {
 	)
 	_, err := client.Functions.New(context.Background(), bem.FunctionNewParams{
 		CreateFunction: bem.CreateFunctionUnionParam{
-			OfTransform: &bem.CreateFunctionTransformParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
 				FunctionName: "functionName",
 			},
 		},
@@ -182,7 +182,7 @@ func TestRetryAfterMs(t *testing.T) {
 	)
 	_, err := client.Functions.New(context.Background(), bem.FunctionNewParams{
 		CreateFunction: bem.CreateFunctionUnionParam{
-			OfTransform: &bem.CreateFunctionTransformParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
 				FunctionName: "functionName",
 			},
 		},
@@ -211,7 +211,7 @@ func TestContextCancel(t *testing.T) {
 	cancel()
 	_, err := client.Functions.New(cancelCtx, bem.FunctionNewParams{
 		CreateFunction: bem.CreateFunctionUnionParam{
-			OfTransform: &bem.CreateFunctionTransformParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
 				FunctionName: "functionName",
 			},
 		},
@@ -237,7 +237,7 @@ func TestContextCancelDelay(t *testing.T) {
 	defer cancel()
 	_, err := client.Functions.New(cancelCtx, bem.FunctionNewParams{
 		CreateFunction: bem.CreateFunctionUnionParam{
-			OfTransform: &bem.CreateFunctionTransformParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
 				FunctionName: "functionName",
 			},
 		},
@@ -269,7 +269,7 @@ func TestContextDeadline(t *testing.T) {
 		)
 		_, err := client.Functions.New(deadlineCtx, bem.FunctionNewParams{
 			CreateFunction: bem.CreateFunctionUnionParam{
-				OfTransform: &bem.CreateFunctionTransformParam{
+				OfExtract: &bem.CreateFunctionExtractParam{
 					FunctionName: "functionName",
 				},
 			},

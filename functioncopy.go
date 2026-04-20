@@ -17,16 +17,16 @@ import (
 // Functions are the core building blocks of data transformation in Bem. Each
 // function type serves a specific purpose:
 //
-//   - **Transform**: Extract structured JSON data from unstructured documents (PDFs,
-//     emails, images)
-//   - **Analyze**: Perform visual analysis on documents to extract layout-aware
-//     information
+//   - **Extract**: Extract structured JSON data from unstructured documents (PDFs,
+//     emails, images, spreadsheets), with optional layout-aware bounding-box
+//     extraction
 //   - **Route**: Direct data to different processing paths based on conditions
 //   - **Split**: Break multi-page documents into individual pages for parallel
 //     processing
 //   - **Join**: Combine outputs from multiple function calls into a single result
 //   - **Payload Shaping**: Transform and restructure data using JMESPath expressions
 //   - **Enrich**: Enhance data with semantic search against collections
+//   - **Send**: Deliver workflow outputs to downstream destinations
 //
 // Use these endpoints to create, update, list, and manage your functions.
 //

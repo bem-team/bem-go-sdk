@@ -37,7 +37,7 @@ Or to pin the version:
 <!-- x-release-please-start-version -->
 
 ```sh
-go get -u 'github.com/bem-team/bem-go-sdk@v0.6.0'
+go get -u 'github.com/bem-team/bem-go-sdk@v0.7.0'
 ```
 
 <!-- x-release-please-end -->
@@ -67,7 +67,7 @@ func main() {
 	)
 	functionResponse, err := client.Functions.New(context.TODO(), bem.FunctionNewParams{
 		CreateFunction: bem.CreateFunctionUnionParam{
-			OfTransform: &bem.CreateFunctionTransformParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
 				FunctionName: "functionName",
 			},
 		},
@@ -339,7 +339,7 @@ To handle errors, we recommend that you use the `errors.As` pattern:
 ```go
 _, err := client.Functions.New(context.TODO(), bem.FunctionNewParams{
 	CreateFunction: bem.CreateFunctionUnionParam{
-		OfTransform: &bem.CreateFunctionTransformParam{
+		OfExtract: &bem.CreateFunctionExtractParam{
 			FunctionName: "functionName",
 		},
 	},
@@ -372,7 +372,7 @@ client.Functions.New(
 	ctx,
 	bem.FunctionNewParams{
 		CreateFunction: bem.CreateFunctionUnionParam{
-			OfTransform: &bem.CreateFunctionTransformParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
 				FunctionName: "functionName",
 			},
 		},
@@ -414,7 +414,7 @@ client.Functions.New(
 	context.TODO(),
 	bem.FunctionNewParams{
 		CreateFunction: bem.CreateFunctionUnionParam{
-			OfTransform: &bem.CreateFunctionTransformParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
 				FunctionName: "functionName",
 			},
 		},
@@ -435,7 +435,7 @@ functionResponse, err := client.Functions.New(
 	context.TODO(),
 	bem.FunctionNewParams{
 		CreateFunction: bem.CreateFunctionUnionParam{
-			OfTransform: &bem.CreateFunctionTransformParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
 				FunctionName: "functionName",
 			},
 		},

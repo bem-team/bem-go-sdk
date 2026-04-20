@@ -305,6 +305,10 @@ func (r *FunctionVersionIdentifierParam) UnmarshalJSON(data []byte) error {
 type Workflow struct {
 	// Unique identifier of the workflow.
 	ID string `json:"id" api:"required"`
+	// Connectors currently attached to this workflow. For version-scoped reads
+	// (`/versions/{n}`) this is always empty — connectors are current-state and not
+	// part of version history.
+	Connectors []WorkflowConnector `json:"connectors" api:"required"`
 	// The date and time the workflow was created.
 	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
 	// All directed edges in this workflow version's DAG.
@@ -330,6 +334,7 @@ type Workflow struct {
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		ID           respjson.Field
+		Connectors   respjson.Field
 		CreatedAt    respjson.Field
 		Edges        respjson.Field
 		MainNodeName respjson.Field
@@ -349,6 +354,59 @@ type Workflow struct {
 // Returns the unmodified JSON received from the API
 func (r Workflow) RawJSON() string { return r.JSON.raw }
 func (r *Workflow) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// A connector attached to a workflow. Ingestion point that triggers the workflow.
+type WorkflowConnector struct {
+	// Unique connector API ID.
+	ConnectorID string `json:"connectorID" api:"required"`
+	// Human-friendly connector name.
+	Name string `json:"name" api:"required"`
+	// Discriminator for a workflow connector. V3 supports `paragon` only.
+	//
+	// Any of "paragon".
+	Type string `json:"type" api:"required"`
+	// Paragon-integration configuration on a workflow connector.
+	Paragon WorkflowConnectorParagon `json:"paragon"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		ConnectorID respjson.Field
+		Name        respjson.Field
+		Type        respjson.Field
+		Paragon     respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r WorkflowConnector) RawJSON() string { return r.JSON.raw }
+func (r *WorkflowConnector) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Paragon-integration configuration on a workflow connector.
+type WorkflowConnectorParagon struct {
+	// Opaque per-integration configuration (e.g. `{"folderId": "..."}`).
+	Configuration any `json:"configuration" api:"required"`
+	// Paragon integration key (e.g. "googledrive").
+	Integration string `json:"integration" api:"required"`
+	// Paragon sync ID managed by the server. Read-only.
+	SyncID string `json:"syncID" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Configuration respjson.Field
+		Integration   respjson.Field
+		SyncID        respjson.Field
+		ExtraFields   map[string]respjson.Field
+		raw           string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r WorkflowConnectorParagon) RawJSON() string { return r.JSON.raw }
+func (r *WorkflowConnectorParagon) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -383,11 +441,15 @@ type WorkflowEdgeResponse struct {
 	SourceNodeName string `json:"sourceNodeName" api:"required"`
 	// Labelled outlet on the source node, if any.
 	DestinationName string `json:"destinationName"`
+	// Opaque free-form JSON object attached to this edge on create/update. Returned
+	// verbatim; never interpreted by the server.
+	Metadata any `json:"metadata"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		DestinationNodeName respjson.Field
 		SourceNodeName      respjson.Field
 		DestinationName     respjson.Field
+		Metadata            respjson.Field
 		ExtraFields         map[string]respjson.Field
 		raw                 string
 	} `json:"-"`
@@ -405,10 +467,14 @@ type WorkflowNodeResponse struct {
 	Function FunctionVersionIdentifier `json:"function" api:"required"`
 	// Name of this call site, unique within the workflow version.
 	Name string `json:"name" api:"required"`
+	// Opaque free-form JSON object attached to this node on create/update. Returned
+	// verbatim; never interpreted by the server.
+	Metadata any `json:"metadata"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Function    respjson.Field
 		Name        respjson.Field
+		Metadata    respjson.Field
 		ExtraFields map[string]respjson.Field
 		raw         string
 	} `json:"-"`
@@ -421,22 +487,58 @@ func (r *WorkflowNodeResponse) UnmarshalJSON(data []byte) error {
 }
 
 type WorkflowNewResponse struct {
+	// Per-connector failures from the diff/apply phase. Empty or omitted when all
+	// operations succeeded.
+	ConnectorErrors []WorkflowNewResponseConnectorError `json:"connectorErrors"`
 	// Error message if the workflow creation failed.
 	Error string `json:"error"`
 	// V3 read representation of a workflow version.
 	Workflow Workflow `json:"workflow"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		Error       respjson.Field
-		Workflow    respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
+		ConnectorErrors respjson.Field
+		Error           respjson.Field
+		Workflow        respjson.Field
+		ExtraFields     map[string]respjson.Field
+		raw             string
 	} `json:"-"`
 }
 
 // Returns the unmodified JSON received from the API
 func (r WorkflowNewResponse) RawJSON() string { return r.JSON.raw }
 func (r *WorkflowNewResponse) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Per-connector failure surfaced alongside a successful workflow DAG save.
+type WorkflowNewResponseConnectorError struct {
+	// Machine-readable error code.
+	Code string `json:"code" api:"required"`
+	// Human-readable error message.
+	Message string `json:"message" api:"required"`
+	// Which diff operation was attempted.
+	//
+	// Any of "create", "update", "delete".
+	Operation string `json:"operation" api:"required"`
+	// Populated for update/delete failures.
+	ConnectorID string `json:"connectorID"`
+	// Populated for create failures.
+	Name string `json:"name"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Code        respjson.Field
+		Message     respjson.Field
+		Operation   respjson.Field
+		ConnectorID respjson.Field
+		Name        respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r WorkflowNewResponseConnectorError) RawJSON() string { return r.JSON.raw }
+func (r *WorkflowNewResponseConnectorError) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -461,22 +563,58 @@ func (r *WorkflowGetResponse) UnmarshalJSON(data []byte) error {
 }
 
 type WorkflowUpdateResponse struct {
+	// Per-connector failures from the diff/apply phase. Empty or omitted when all
+	// operations succeeded.
+	ConnectorErrors []WorkflowUpdateResponseConnectorError `json:"connectorErrors"`
 	// Error message if the workflow update failed.
 	Error string `json:"error"`
 	// V3 read representation of a workflow version.
 	Workflow Workflow `json:"workflow"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		Error       respjson.Field
-		Workflow    respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
+		ConnectorErrors respjson.Field
+		Error           respjson.Field
+		Workflow        respjson.Field
+		ExtraFields     map[string]respjson.Field
+		raw             string
 	} `json:"-"`
 }
 
 // Returns the unmodified JSON received from the API
 func (r WorkflowUpdateResponse) RawJSON() string { return r.JSON.raw }
 func (r *WorkflowUpdateResponse) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Per-connector failure surfaced alongside a successful workflow DAG save.
+type WorkflowUpdateResponseConnectorError struct {
+	// Machine-readable error code.
+	Code string `json:"code" api:"required"`
+	// Human-readable error message.
+	Message string `json:"message" api:"required"`
+	// Which diff operation was attempted.
+	//
+	// Any of "create", "update", "delete".
+	Operation string `json:"operation" api:"required"`
+	// Populated for update/delete failures.
+	ConnectorID string `json:"connectorID"`
+	// Populated for create failures.
+	Name string `json:"name"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Code        respjson.Field
+		Message     respjson.Field
+		Operation   respjson.Field
+		ConnectorID respjson.Field
+		Name        respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r WorkflowUpdateResponseConnectorError) RawJSON() string { return r.JSON.raw }
+func (r *WorkflowUpdateResponseConnectorError) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -548,6 +686,9 @@ type WorkflowNewParams struct {
 	Nodes []WorkflowNewParamsNode `json:"nodes,omitzero" api:"required"`
 	// Human-readable display name.
 	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Connectors to attach to the workflow at creation. If any entry fails to
+	// provision, the entire workflow creation is rolled back.
+	Connectors []WorkflowNewParamsConnector `json:"connectors,omitzero"`
 	// Directed edges between nodes. Omit or leave empty for single-node workflows.
 	Edges []WorkflowNewParamsEdge `json:"edges,omitzero"`
 	// Tags to categorize and organize the workflow.
@@ -572,6 +713,10 @@ type WorkflowNewParamsNode struct {
 	// Name for this call site. Must be unique within the workflow version. Defaults to
 	// the function's own name when omitted.
 	Name param.Opt[string] `json:"name,omitzero"`
+	// Opaque free-form JSON object attached to this node. Stored and returned
+	// verbatim; the server does not interpret it. Intended for client-side concerns
+	// such as canvas display properties (position, color, collapsed state, etc.).
+	Metadata any `json:"metadata,omitzero"`
 	paramObj
 }
 
@@ -580,6 +725,56 @@ func (r WorkflowNewParamsNode) MarshalJSON() (data []byte, err error) {
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *WorkflowNewParamsNode) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Create/update entry for a connector inline with the workflow.
+//
+// The properties Name, Type are required.
+type WorkflowNewParamsConnector struct {
+	// Human-friendly connector name.
+	Name string `json:"name" api:"required"`
+	// Discriminator for a workflow connector. V3 supports `paragon` only.
+	//
+	// Any of "paragon".
+	Type string `json:"type,omitzero" api:"required"`
+	// Present → update. Absent → create.
+	ConnectorID param.Opt[string] `json:"connectorID,omitzero"`
+	// Request-side config block for a Paragon connector. Fields absent on update are
+	// unchanged.
+	Paragon WorkflowNewParamsConnectorParagon `json:"paragon,omitzero"`
+	paramObj
+}
+
+func (r WorkflowNewParamsConnector) MarshalJSON() (data []byte, err error) {
+	type shadow WorkflowNewParamsConnector
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *WorkflowNewParamsConnector) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[WorkflowNewParamsConnector](
+		"type", "paragon",
+	)
+}
+
+// Request-side config block for a Paragon connector. Fields absent on update are
+// unchanged.
+type WorkflowNewParamsConnectorParagon struct {
+	// Paragon integration key. Required on create.
+	Integration param.Opt[string] `json:"integration,omitzero"`
+	// Opaque per-integration configuration. Required on create.
+	Configuration any `json:"configuration,omitzero"`
+	paramObj
+}
+
+func (r WorkflowNewParamsConnectorParagon) MarshalJSON() (data []byte, err error) {
+	type shadow WorkflowNewParamsConnectorParagon
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *WorkflowNewParamsConnectorParagon) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -594,6 +789,9 @@ type WorkflowNewParamsEdge struct {
 	// Labelled outlet on the source node that activates this edge. Omit for the
 	// default (unlabelled) outlet.
 	DestinationName param.Opt[string] `json:"destinationName,omitzero"`
+	// Opaque free-form JSON object attached to this edge. Stored and returned
+	// verbatim; the server does not interpret it.
+	Metadata any `json:"metadata,omitzero"`
 	paramObj
 }
 
@@ -613,9 +811,14 @@ type WorkflowUpdateParams struct {
 	// version.
 	MainNodeName param.Opt[string] `json:"mainNodeName,omitzero"`
 	// New name for the workflow (renames it). Must match `^[a-zA-Z0-9_-]{1,128}$`.
-	Name  param.Opt[string]          `json:"name,omitzero"`
-	Edges []WorkflowUpdateParamsEdge `json:"edges,omitzero"`
-	Nodes []WorkflowUpdateParamsNode `json:"nodes,omitzero"`
+	Name param.Opt[string] `json:"name,omitzero"`
+	// Declarative, full-desired-state array of connectors. If omitted, existing
+	// connectors are left unchanged. If provided, it replaces the current set: entries
+	// with `connectorID` are updates, entries without are creates, and existing
+	// connectors whose `connectorID` is absent are deleted.
+	Connectors []WorkflowUpdateParamsConnector `json:"connectors,omitzero"`
+	Edges      []WorkflowUpdateParamsEdge      `json:"edges,omitzero"`
+	Nodes      []WorkflowUpdateParamsNode      `json:"nodes,omitzero"`
 	// Tags to categorize and organize the workflow.
 	Tags []string `json:"tags,omitzero"`
 	paramObj
@@ -626,6 +829,56 @@ func (r WorkflowUpdateParams) MarshalJSON() (data []byte, err error) {
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *WorkflowUpdateParams) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Create/update entry for a connector inline with the workflow.
+//
+// The properties Name, Type are required.
+type WorkflowUpdateParamsConnector struct {
+	// Human-friendly connector name.
+	Name string `json:"name" api:"required"`
+	// Discriminator for a workflow connector. V3 supports `paragon` only.
+	//
+	// Any of "paragon".
+	Type string `json:"type,omitzero" api:"required"`
+	// Present → update. Absent → create.
+	ConnectorID param.Opt[string] `json:"connectorID,omitzero"`
+	// Request-side config block for a Paragon connector. Fields absent on update are
+	// unchanged.
+	Paragon WorkflowUpdateParamsConnectorParagon `json:"paragon,omitzero"`
+	paramObj
+}
+
+func (r WorkflowUpdateParamsConnector) MarshalJSON() (data []byte, err error) {
+	type shadow WorkflowUpdateParamsConnector
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *WorkflowUpdateParamsConnector) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[WorkflowUpdateParamsConnector](
+		"type", "paragon",
+	)
+}
+
+// Request-side config block for a Paragon connector. Fields absent on update are
+// unchanged.
+type WorkflowUpdateParamsConnectorParagon struct {
+	// Paragon integration key. Required on create.
+	Integration param.Opt[string] `json:"integration,omitzero"`
+	// Opaque per-integration configuration. Required on create.
+	Configuration any `json:"configuration,omitzero"`
+	paramObj
+}
+
+func (r WorkflowUpdateParamsConnectorParagon) MarshalJSON() (data []byte, err error) {
+	type shadow WorkflowUpdateParamsConnectorParagon
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *WorkflowUpdateParamsConnectorParagon) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -640,6 +893,9 @@ type WorkflowUpdateParamsEdge struct {
 	// Labelled outlet on the source node that activates this edge. Omit for the
 	// default (unlabelled) outlet.
 	DestinationName param.Opt[string] `json:"destinationName,omitzero"`
+	// Opaque free-form JSON object attached to this edge. Stored and returned
+	// verbatim; the server does not interpret it.
+	Metadata any `json:"metadata,omitzero"`
 	paramObj
 }
 
@@ -660,6 +916,10 @@ type WorkflowUpdateParamsNode struct {
 	// Name for this call site. Must be unique within the workflow version. Defaults to
 	// the function's own name when omitted.
 	Name param.Opt[string] `json:"name,omitzero"`
+	// Opaque free-form JSON object attached to this node. Stored and returned
+	// verbatim; the server does not interpret it. Intended for client-side concerns
+	// such as canvas display properties (position, color, collapsed state, etc.).
+	Metadata any `json:"metadata,omitzero"`
 	paramObj
 }
 

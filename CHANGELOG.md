@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.0 (2026-04-20)
+
+Full Changelog: [v0.6.0...v0.7.0](https://github.com/bem-team/bem-go-sdk/compare/v0.6.0...v0.7.0)
+
+### Features
+
+* **api:** api update ([c87f143](https://github.com/bem-team/bem-go-sdk/commit/c87f1437880e9b6349f0ecd612da3abcda6a2dff))
+* **api:** api update ([a1216e1](https://github.com/bem-team/bem-go-sdk/commit/a1216e19407e2f6f9d6ca2948531e0941d997d3f))
+* **api:** fix model references in Stainless config ([c49bbfa](https://github.com/bem-team/bem-go-sdk/commit/c49bbfaf1d612278c9e7aaec5867666568eccba4))
+
 ## 0.6.0 (2026-04-17)
 
 Full Changelog: [v0.5.0...v0.6.0](https://github.com/bem-team/bem-go-sdk/compare/v0.5.0...v0.6.0)

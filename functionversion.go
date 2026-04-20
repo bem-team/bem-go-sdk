@@ -22,16 +22,16 @@ import (
 // Functions are the core building blocks of data transformation in Bem. Each
 // function type serves a specific purpose:
 //
-//   - **Transform**: Extract structured JSON data from unstructured documents (PDFs,
-//     emails, images)
-//   - **Analyze**: Perform visual analysis on documents to extract layout-aware
-//     information
+//   - **Extract**: Extract structured JSON data from unstructured documents (PDFs,
+//     emails, images, spreadsheets), with optional layout-aware bounding-box
+//     extraction
 //   - **Route**: Direct data to different processing paths based on conditions
 //   - **Split**: Break multi-page documents into individual pages for parallel
 //     processing
 //   - **Join**: Combine outputs from multiple function calls into a single result
 //   - **Payload Shaping**: Transform and restructure data using JMESPath expressions
 //   - **Enrich**: Enhance data with semantic search against collections
+//   - **Send**: Deliver workflow outputs to downstream destinations
 //
 // Use these endpoints to create, update, list, and manage your functions.
 //
@@ -80,7 +80,7 @@ func (r *FunctionVersionService) List(ctx context.Context, functionName string, 
 
 // FunctionVersionUnion contains all possible properties and values from
 // [FunctionVersionTransform], [FunctionVersionExtract], [FunctionVersionAnalyze],
-// [FunctionVersionRoute], [FunctionVersionSend], [FunctionVersionSplit],
+// [FunctionVersionClassify], [FunctionVersionSend], [FunctionVersionSplit],
 // [FunctionVersionJoin], [FunctionVersionEnrich], [FunctionVersionPayloadShaping].
 //
 // Use the [FunctionVersionUnion.AsAny] method to switch on the variant.
@@ -93,7 +93,7 @@ type FunctionVersionUnion struct {
 	OutputSchema           any    `json:"outputSchema"`
 	OutputSchemaName       string `json:"outputSchemaName"`
 	TabularChunkingEnabled bool   `json:"tabularChunkingEnabled"`
-	// Any of "transform", "extract", "analyze", "route", "send", "split", "join",
+	// Any of "transform", "extract", "analyze", "classify", "send", "split", "join",
 	// "enrich", "payload_shaping".
 	Type       string `json:"type"`
 	VersionNum int64  `json:"versionNum"`
@@ -106,10 +106,10 @@ type FunctionVersionUnion struct {
 	// This field is from variant [FunctionVersionAnalyze].
 	EnableBoundingBoxes bool `json:"enableBoundingBoxes"`
 	// This field is from variant [FunctionVersionAnalyze].
-	PreCount    bool   `json:"preCount"`
-	Description string `json:"description"`
-	// This field is from variant [FunctionVersionRoute].
-	Routes []RouteListItem `json:"routes"`
+	PreCount bool `json:"preCount"`
+	// This field is from variant [FunctionVersionClassify].
+	Classifications []ClassificationListItem `json:"classifications"`
+	Description     string                   `json:"description"`
 	// This field is from variant [FunctionVersionSend].
 	DestinationType string `json:"destinationType"`
 	// This field is from variant [FunctionVersionSend].
@@ -150,8 +150,8 @@ type FunctionVersionUnion struct {
 		UsedInWorkflows         respjson.Field
 		EnableBoundingBoxes     respjson.Field
 		PreCount                respjson.Field
+		Classifications         respjson.Field
 		Description             respjson.Field
-		Routes                  respjson.Field
 		DestinationType         respjson.Field
 		GoogleDriveFolderID     respjson.Field
 		S3Bucket                respjson.Field
@@ -177,7 +177,7 @@ type anyFunctionVersion interface {
 func (FunctionVersionTransform) implFunctionVersionUnion()      {}
 func (FunctionVersionExtract) implFunctionVersionUnion()        {}
 func (FunctionVersionAnalyze) implFunctionVersionUnion()        {}
-func (FunctionVersionRoute) implFunctionVersionUnion()          {}
+func (FunctionVersionClassify) implFunctionVersionUnion()       {}
 func (FunctionVersionSend) implFunctionVersionUnion()           {}
 func (FunctionVersionSplit) implFunctionVersionUnion()          {}
 func (FunctionVersionJoin) implFunctionVersionUnion()           {}
@@ -190,7 +190,7 @@ func (FunctionVersionPayloadShaping) implFunctionVersionUnion() {}
 //	case bem.FunctionVersionTransform:
 //	case bem.FunctionVersionExtract:
 //	case bem.FunctionVersionAnalyze:
-//	case bem.FunctionVersionRoute:
+//	case bem.FunctionVersionClassify:
 //	case bem.FunctionVersionSend:
 //	case bem.FunctionVersionSplit:
 //	case bem.FunctionVersionJoin:
@@ -207,8 +207,8 @@ func (u FunctionVersionUnion) AsAny() anyFunctionVersion {
 		return u.AsExtract()
 	case "analyze":
 		return u.AsAnalyze()
-	case "route":
-		return u.AsRoute()
+	case "classify":
+		return u.AsClassify()
 	case "send":
 		return u.AsSend()
 	case "split":
@@ -238,7 +238,7 @@ func (u FunctionVersionUnion) AsAnalyze() (v FunctionVersionAnalyze) {
 	return
 }
 
-func (u FunctionVersionUnion) AsRoute() (v FunctionVersionRoute) {
+func (u FunctionVersionUnion) AsClassify() (v FunctionVersionClassify) {
 	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
 	return
 }
@@ -434,20 +434,33 @@ func (r *FunctionVersionAnalyze) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type FunctionVersionRoute struct {
-	// Description of router. Can be used to provide additional context on router's
-	// purpose and expected inputs.
+// V3 read-side shape of a Classify (internally Route) function version. Mirrors {
+type FunctionVersionClassify struct {
+	// V3 create/update variants of the shared function payloads.
+	//
+	// The V3 Functions API no longer accepts the legacy `transform` or `analyze`
+	// function types when creating new functions or updating existing ones — both have
+	// been unified under `extract`. Existing functions of those types remain readable
+	// and callable via V3, so the V3 read-side unions still include `transform` and
+	// `analyze` variants.
+	//
+	// The V3 API also renames the internal `route` function type to `classify` on the
+	// wire, and the associated `routes` field to `classifications` (type
+	// `ClassificationList`). Platform-internal storage and processing still use
+	// `route` / `routes`; the rename is applied only at the V3 API boundary.V3-facing
+	// name for the list of classifications a classify function can produce.
+	Classifications []ClassificationListItem `json:"classifications" api:"required"`
+	// Description of classifier. Can be used to provide additional context on
+	// classifier's purpose and expected inputs.
 	Description string `json:"description" api:"required"`
 	// Email address automatically created by bem. You can forward emails with or
-	// without attachments, to be routed.
+	// without attachments, to be classified.
 	EmailAddress string `json:"emailAddress" api:"required"`
 	// Unique identifier of function.
 	FunctionID string `json:"functionID" api:"required"`
 	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName string `json:"functionName" api:"required"`
-	// List of routes.
-	Routes []RouteListItem `json:"routes" api:"required"`
-	Type   constant.Route  `json:"type" default:"route"`
+	FunctionName string            `json:"functionName" api:"required"`
+	Type         constant.Classify `json:"type" default:"classify"`
 	// Version number of function.
 	VersionNum int64 `json:"versionNum" api:"required"`
 	// Audit trail information for the function version.
@@ -462,11 +475,11 @@ type FunctionVersionRoute struct {
 	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
+		Classifications respjson.Field
 		Description     respjson.Field
 		EmailAddress    respjson.Field
 		FunctionID      respjson.Field
 		FunctionName    respjson.Field
-		Routes          respjson.Field
 		Type            respjson.Field
 		VersionNum      respjson.Field
 		Audit           respjson.Field
@@ -480,8 +493,8 @@ type FunctionVersionRoute struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r FunctionVersionRoute) RawJSON() string { return r.JSON.raw }
-func (r *FunctionVersionRoute) UnmarshalJSON(data []byte) error {
+func (r FunctionVersionClassify) RawJSON() string { return r.JSON.raw }
+func (r *FunctionVersionClassify) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -815,11 +828,8 @@ func (r *ListFunctionVersionsResponse) UnmarshalJSON(data []byte) error {
 
 // Single-function-version response wrapper used by V3 endpoints.
 type FunctionVersionGetResponse struct {
-	// A version of a payload shaping function that transforms and customizes input
-	// payloads using JMESPath expressions. Payload shaping allows you to extract
-	// specific data, perform calculations, and reshape complex input structures into
-	// simplified, standardized output formats tailored to your downstream systems or
-	// business requirements.
+	// V3 read-side union for function versions. Same shape as the shared
+	// `FunctionVersion` union but with `classify` in place of `route`.
 	Function FunctionVersionUnion `json:"function" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {

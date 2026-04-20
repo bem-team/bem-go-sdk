@@ -27,7 +27,7 @@ func TestUsage(t *testing.T) {
 	)
 	functionResponse, err := client.Functions.New(context.TODO(), bem.FunctionNewParams{
 		CreateFunction: bem.CreateFunctionUnionParam{
-			OfTransform: &bem.CreateFunctionTransformParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
 				FunctionName: "functionName",
 			},
 		},

@@ -14,6 +14,7 @@ import (
 
 	"github.com/bem-team/bem-go-sdk/internal/apijson"
 	"github.com/bem-team/bem-go-sdk/internal/apiquery"
+	shimjson "github.com/bem-team/bem-go-sdk/internal/encoding/json"
 	"github.com/bem-team/bem-go-sdk/internal/requestconfig"
 	"github.com/bem-team/bem-go-sdk/option"
 	"github.com/bem-team/bem-go-sdk/packages/pagination"
@@ -124,7 +125,7 @@ func (r *FunctionService) Update(ctx context.Context, pathFunctionName string, b
 }
 
 // List Functions
-func (r *FunctionService) List(ctx context.Context, query FunctionListParams, opts ...option.RequestOption) (res *pagination.FunctionsPage[FunctionListResponseUnion], err error) {
+func (r *FunctionService) List(ctx context.Context, query FunctionListParams, opts ...option.RequestOption) (res *pagination.FunctionsPage[FunctionUnion], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.options, opts)
 	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
@@ -142,7 +143,7 @@ func (r *FunctionService) List(ctx context.Context, query FunctionListParams, op
 }
 
 // List Functions
-func (r *FunctionService) ListAutoPaging(ctx context.Context, query FunctionListParams, opts ...option.RequestOption) *pagination.FunctionsPageAutoPager[FunctionListResponseUnion] {
+func (r *FunctionService) ListAutoPaging(ctx context.Context, query FunctionListParams, opts ...option.RequestOption) *pagination.FunctionsPageAutoPager[FunctionUnion] {
 	return pagination.NewFunctionsPageAutoPager(r.List(ctx, query, opts...))
 }
 
@@ -157,6 +158,513 @@ func (r *FunctionService) Delete(ctx context.Context, functionName string, opts 
 	path := fmt.Sprintf("v3/functions/%s", url.PathEscape(functionName))
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
 	return err
+}
+
+type ClassificationListItem struct {
+	Name            string                       `json:"name" api:"required"`
+	Description     string                       `json:"description"`
+	FunctionID      string                       `json:"functionID"`
+	FunctionName    string                       `json:"functionName"`
+	IsErrorFallback bool                         `json:"isErrorFallback"`
+	Origin          ClassificationListItemOrigin `json:"origin"`
+	Regex           ClassificationListItemRegex  `json:"regex"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Name            respjson.Field
+		Description     respjson.Field
+		FunctionID      respjson.Field
+		FunctionName    respjson.Field
+		IsErrorFallback respjson.Field
+		Origin          respjson.Field
+		Regex           respjson.Field
+		ExtraFields     map[string]respjson.Field
+		raw             string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r ClassificationListItem) RawJSON() string { return r.JSON.raw }
+func (r *ClassificationListItem) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// ToParam converts this ClassificationListItem to a ClassificationListItemParam.
+//
+// Warning: the fields of the param type will not be present. ToParam should only
+// be used at the last possible moment before sending a request. Test for this with
+// ClassificationListItemParam.Overrides()
+func (r ClassificationListItem) ToParam() ClassificationListItemParam {
+	return param.Override[ClassificationListItemParam](json.RawMessage(r.RawJSON()))
+}
+
+type ClassificationListItemOrigin struct {
+	Email ClassificationListItemOriginEmail `json:"email"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Email       respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r ClassificationListItemOrigin) RawJSON() string { return r.JSON.raw }
+func (r *ClassificationListItemOrigin) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type ClassificationListItemOriginEmail struct {
+	Patterns []string `json:"patterns"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Patterns    respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r ClassificationListItemOriginEmail) RawJSON() string { return r.JSON.raw }
+func (r *ClassificationListItemOriginEmail) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type ClassificationListItemRegex struct {
+	Patterns []string `json:"patterns"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Patterns    respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r ClassificationListItemRegex) RawJSON() string { return r.JSON.raw }
+func (r *ClassificationListItemRegex) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The property Name is required.
+type ClassificationListItemParam struct {
+	Name            string                            `json:"name" api:"required"`
+	Description     param.Opt[string]                 `json:"description,omitzero"`
+	FunctionID      param.Opt[string]                 `json:"functionID,omitzero"`
+	FunctionName    param.Opt[string]                 `json:"functionName,omitzero"`
+	IsErrorFallback param.Opt[bool]                   `json:"isErrorFallback,omitzero"`
+	Origin          ClassificationListItemOriginParam `json:"origin,omitzero"`
+	Regex           ClassificationListItemRegexParam  `json:"regex,omitzero"`
+	paramObj
+}
+
+func (r ClassificationListItemParam) MarshalJSON() (data []byte, err error) {
+	type shadow ClassificationListItemParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *ClassificationListItemParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type ClassificationListItemOriginParam struct {
+	Email ClassificationListItemOriginEmailParam `json:"email,omitzero"`
+	paramObj
+}
+
+func (r ClassificationListItemOriginParam) MarshalJSON() (data []byte, err error) {
+	type shadow ClassificationListItemOriginParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *ClassificationListItemOriginParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type ClassificationListItemOriginEmailParam struct {
+	Patterns []string `json:"patterns,omitzero"`
+	paramObj
+}
+
+func (r ClassificationListItemOriginEmailParam) MarshalJSON() (data []byte, err error) {
+	type shadow ClassificationListItemOriginEmailParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *ClassificationListItemOriginEmailParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type ClassificationListItemRegexParam struct {
+	Patterns []string `json:"patterns,omitzero"`
+	paramObj
+}
+
+func (r ClassificationListItemRegexParam) MarshalJSON() (data []byte, err error) {
+	type shadow ClassificationListItemRegexParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *ClassificationListItemRegexParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func CreateFunctionParamOfExtract(functionName string) CreateFunctionUnionParam {
+	var extract CreateFunctionExtractParam
+	extract.FunctionName = functionName
+	return CreateFunctionUnionParam{OfExtract: &extract}
+}
+
+func CreateFunctionParamOfClassify(functionName string) CreateFunctionUnionParam {
+	var classify CreateFunctionClassifyParam
+	classify.FunctionName = functionName
+	return CreateFunctionUnionParam{OfClassify: &classify}
+}
+
+func CreateFunctionParamOfSend(functionName string) CreateFunctionUnionParam {
+	var send CreateFunctionSendParam
+	send.FunctionName = functionName
+	return CreateFunctionUnionParam{OfSend: &send}
+}
+
+func CreateFunctionParamOfSplit(functionName string) CreateFunctionUnionParam {
+	var split CreateFunctionSplitParam
+	split.FunctionName = functionName
+	return CreateFunctionUnionParam{OfSplit: &split}
+}
+
+func CreateFunctionParamOfJoin(functionName string) CreateFunctionUnionParam {
+	var join CreateFunctionJoinParam
+	join.FunctionName = functionName
+	return CreateFunctionUnionParam{OfJoin: &join}
+}
+
+func CreateFunctionParamOfPayloadShaping(functionName string) CreateFunctionUnionParam {
+	var payloadShaping CreateFunctionPayloadShapingParam
+	payloadShaping.FunctionName = functionName
+	return CreateFunctionUnionParam{OfPayloadShaping: &payloadShaping}
+}
+
+func CreateFunctionParamOfEnrich(functionName string) CreateFunctionUnionParam {
+	var enrich CreateFunctionEnrichParam
+	enrich.FunctionName = functionName
+	return CreateFunctionUnionParam{OfEnrich: &enrich}
+}
+
+// Only one field can be non-zero.
+//
+// Use [param.IsOmitted] to confirm if a field is set.
+type CreateFunctionUnionParam struct {
+	OfExtract        *CreateFunctionExtractParam        `json:",omitzero,inline"`
+	OfClassify       *CreateFunctionClassifyParam       `json:",omitzero,inline"`
+	OfSend           *CreateFunctionSendParam           `json:",omitzero,inline"`
+	OfSplit          *CreateFunctionSplitParam          `json:",omitzero,inline"`
+	OfJoin           *CreateFunctionJoinParam           `json:",omitzero,inline"`
+	OfPayloadShaping *CreateFunctionPayloadShapingParam `json:",omitzero,inline"`
+	OfEnrich         *CreateFunctionEnrichParam         `json:",omitzero,inline"`
+	paramUnion
+}
+
+func (u CreateFunctionUnionParam) MarshalJSON() ([]byte, error) {
+	return param.MarshalUnion(u, u.OfExtract,
+		u.OfClassify,
+		u.OfSend,
+		u.OfSplit,
+		u.OfJoin,
+		u.OfPayloadShaping,
+		u.OfEnrich)
+}
+func (u *CreateFunctionUnionParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, u)
+}
+
+func init() {
+	apijson.RegisterUnion[CreateFunctionUnionParam](
+		"type",
+		apijson.Discriminator[CreateFunctionExtractParam]("extract"),
+		apijson.Discriminator[CreateFunctionClassifyParam]("classify"),
+		apijson.Discriminator[CreateFunctionSendParam]("send"),
+		apijson.Discriminator[CreateFunctionSplitParam]("split"),
+		apijson.Discriminator[CreateFunctionJoinParam]("join"),
+		apijson.Discriminator[CreateFunctionPayloadShapingParam]("payload_shaping"),
+		apijson.Discriminator[CreateFunctionEnrichParam]("enrich"),
+	)
+}
+
+// The properties FunctionName, Type are required.
+type CreateFunctionExtractParam struct {
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName string `json:"functionName" api:"required"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Name of output schema object.
+	OutputSchemaName param.Opt[string] `json:"outputSchemaName,omitzero"`
+	// Whether tabular chunking is enabled. When true, tables in CSV/Excel files are
+	// processed in row batches rather than all at once.
+	TabularChunkingEnabled param.Opt[bool] `json:"tabularChunkingEnabled,omitzero"`
+	// Desired output structure defined in standard JSON Schema convention.
+	OutputSchema any `json:"outputSchema,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "extract".
+	Type constant.Extract `json:"type" default:"extract"`
+	paramObj
+}
+
+func (r CreateFunctionExtractParam) MarshalJSON() (data []byte, err error) {
+	type shadow CreateFunctionExtractParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *CreateFunctionExtractParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// V3 wire form of the Route (classify) function create payload. Mirrors {
+//
+// The properties FunctionName, Type are required.
+type CreateFunctionClassifyParam struct {
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName string `json:"functionName" api:"required"`
+	// Description of classifier. Can be used to provide additional context on
+	// classifier's purpose and expected inputs.
+	Description param.Opt[string] `json:"description,omitzero"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// V3 create/update variants of the shared function payloads.
+	//
+	// The V3 Functions API no longer accepts the legacy `transform` or `analyze`
+	// function types when creating new functions or updating existing ones — both have
+	// been unified under `extract`. Existing functions of those types remain readable
+	// and callable via V3, so the V3 read-side unions still include `transform` and
+	// `analyze` variants.
+	//
+	// The V3 API also renames the internal `route` function type to `classify` on the
+	// wire, and the associated `routes` field to `classifications` (type
+	// `ClassificationList`). Platform-internal storage and processing still use
+	// `route` / `routes`; the rename is applied only at the V3 API boundary.V3-facing
+	// name for the list of classifications a classify function can produce.
+	Classifications []ClassificationListItemParam `json:"classifications,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "classify".
+	Type constant.Classify `json:"type" default:"classify"`
+	paramObj
+}
+
+func (r CreateFunctionClassifyParam) MarshalJSON() (data []byte, err error) {
+	type shadow CreateFunctionClassifyParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *CreateFunctionClassifyParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The properties FunctionName, Type are required.
+type CreateFunctionSendParam struct {
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName string `json:"functionName" api:"required"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Google Drive folder ID. Required when destinationType is google_drive. Managed
+	// via Paragon OAuth.
+	GoogleDriveFolderID param.Opt[string] `json:"googleDriveFolderId,omitzero"`
+	// S3 bucket to upload the payload to. Required when destinationType is s3.
+	S3Bucket param.Opt[string] `json:"s3Bucket,omitzero"`
+	// Optional S3 key prefix (folder path).
+	S3Prefix param.Opt[string] `json:"s3Prefix,omitzero"`
+	// Whether to sign webhook deliveries with an HMAC-SHA256 `bem-signature` header.
+	// Defaults to `true` when omitted — signing is on by default for new send
+	// functions. Set explicitly to `false` to disable.
+	WebhookSigningEnabled param.Opt[bool] `json:"webhookSigningEnabled,omitzero"`
+	// Webhook URL to POST the payload to. Required when destinationType is webhook.
+	WebhookURL param.Opt[string] `json:"webhookUrl,omitzero"`
+	// Destination type for a Send function.
+	//
+	// Any of "webhook", "s3", "google_drive".
+	DestinationType string `json:"destinationType,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "send".
+	Type constant.Send `json:"type" default:"send"`
+	paramObj
+}
+
+func (r CreateFunctionSendParam) MarshalJSON() (data []byte, err error) {
+	type shadow CreateFunctionSendParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *CreateFunctionSendParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[CreateFunctionSendParam](
+		"destinationType", "webhook", "s3", "google_drive",
+	)
+}
+
+// The properties FunctionName, Type are required.
+type CreateFunctionSplitParam struct {
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName string `json:"functionName" api:"required"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName             param.Opt[string]                               `json:"displayName,omitzero"`
+	PrintPageSplitConfig    CreateFunctionSplitPrintPageSplitConfigParam    `json:"printPageSplitConfig,omitzero"`
+	SemanticPageSplitConfig CreateFunctionSplitSemanticPageSplitConfigParam `json:"semanticPageSplitConfig,omitzero"`
+	// Any of "print_page", "semantic_page".
+	SplitType string `json:"splitType,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "split".
+	Type constant.Split `json:"type" default:"split"`
+	paramObj
+}
+
+func (r CreateFunctionSplitParam) MarshalJSON() (data []byte, err error) {
+	type shadow CreateFunctionSplitParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *CreateFunctionSplitParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[CreateFunctionSplitParam](
+		"splitType", "print_page", "semantic_page",
+	)
+}
+
+type CreateFunctionSplitPrintPageSplitConfigParam struct {
+	NextFunctionID   param.Opt[string] `json:"nextFunctionID,omitzero"`
+	NextFunctionName param.Opt[string] `json:"nextFunctionName,omitzero"`
+	paramObj
+}
+
+func (r CreateFunctionSplitPrintPageSplitConfigParam) MarshalJSON() (data []byte, err error) {
+	type shadow CreateFunctionSplitPrintPageSplitConfigParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *CreateFunctionSplitPrintPageSplitConfigParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CreateFunctionSplitSemanticPageSplitConfigParam struct {
+	ItemClasses []SplitFunctionSemanticPageItemClassParam `json:"itemClasses,omitzero"`
+	paramObj
+}
+
+func (r CreateFunctionSplitSemanticPageSplitConfigParam) MarshalJSON() (data []byte, err error) {
+	type shadow CreateFunctionSplitSemanticPageSplitConfigParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *CreateFunctionSplitSemanticPageSplitConfigParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The properties FunctionName, Type are required.
+type CreateFunctionJoinParam struct {
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName string `json:"functionName" api:"required"`
+	// Description of join function.
+	Description param.Opt[string] `json:"description,omitzero"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Name of output schema object.
+	OutputSchemaName param.Opt[string] `json:"outputSchemaName,omitzero"`
+	// The type of join to perform.
+	//
+	// Any of "standard".
+	JoinType string `json:"joinType,omitzero"`
+	// Desired output structure defined in standard JSON Schema convention.
+	OutputSchema any `json:"outputSchema,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "join".
+	Type constant.Join `json:"type" default:"join"`
+	paramObj
+}
+
+func (r CreateFunctionJoinParam) MarshalJSON() (data []byte, err error) {
+	type shadow CreateFunctionJoinParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *CreateFunctionJoinParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[CreateFunctionJoinParam](
+		"joinType", "standard",
+	)
+}
+
+// The properties FunctionName, Type are required.
+type CreateFunctionPayloadShapingParam struct {
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName string `json:"functionName" api:"required"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// JMESPath expression that defines how to transform and customize the input
+	// payload structure. Payload shaping allows you to extract, reshape, and
+	// reorganize data from complex input payloads into a simplified, standardized
+	// output format. Use JMESPath syntax to select specific fields, perform
+	// calculations, and create new data structures tailored to your needs.
+	ShapingSchema param.Opt[string] `json:"shapingSchema,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "payload_shaping".
+	Type constant.PayloadShaping `json:"type" default:"payload_shaping"`
+	paramObj
+}
+
+func (r CreateFunctionPayloadShapingParam) MarshalJSON() (data []byte, err error) {
+	type shadow CreateFunctionPayloadShapingParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *CreateFunctionPayloadShapingParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The properties FunctionName, Type are required.
+type CreateFunctionEnrichParam struct {
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName string `json:"functionName" api:"required"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Configuration for enrich function with semantic search steps.
+	//
+	// **How Enrich Functions Work:**
+	//
+	// Enrich functions use semantic search to augment JSON data with relevant
+	// information from collections. They take JSON input (typically from a transform
+	// function), extract specified fields, perform vector-based semantic search
+	// against collections, and inject the results back into the data.
+	//
+	// **Input Requirements:**
+	//
+	// - Must receive JSON input (typically uploaded to S3 from a previous function)
+	// - Can be chained after transform or other functions that produce JSON output
+	//
+	// **Example Use Cases:**
+	//
+	// - Match product descriptions to SKU codes from a product catalog
+	// - Enrich customer data with account information
+	// - Link order line items to inventory records
+	//
+	// **Configuration:**
+	//
+	// - Define one or more enrichment steps
+	// - Each step extracts values, searches a collection, and injects results
+	// - Steps are executed sequentially
+	Config EnrichConfigParam `json:"config,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "enrich".
+	Type constant.Enrich `json:"type" default:"enrich"`
+	paramObj
+}
+
+func (r CreateFunctionEnrichParam) MarshalJSON() (data []byte, err error) {
+	type shadow CreateFunctionEnrichParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *CreateFunctionEnrichParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
 }
 
 // Configuration for enrich function with semantic search steps.
@@ -503,62 +1011,15 @@ func (r *EnrichStepParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type FunctionAudit struct {
-	// Information about who created the function.
-	FunctionCreatedBy UserActionSummary `json:"functionCreatedBy"`
-	// Information about who last updated the function.
-	FunctionLastUpdatedBy UserActionSummary `json:"functionLastUpdatedBy"`
-	// Information about who created the current version.
-	VersionCreatedBy UserActionSummary `json:"versionCreatedBy"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		FunctionCreatedBy     respjson.Field
-		FunctionLastUpdatedBy respjson.Field
-		VersionCreatedBy      respjson.Field
-		ExtraFields           map[string]respjson.Field
-		raw                   string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionAudit) RawJSON() string { return r.JSON.raw }
-func (r *FunctionAudit) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Single-function response wrapper used by V3 function endpoints. V3 wraps
-// individual function responses in a `{"function": ...}` envelope for consistency
-// with other V3 resource endpoints.
-type FunctionResponse struct {
-	// V3 read-side union. Same shape as the shared `Function` union but with
-	// `classify` in place of `route`. Legacy `transform` and `analyze` functions
-	// remain readable via V3.
-	Function FunctionResponseFunctionUnion `json:"function" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Function    respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionResponse) RawJSON() string { return r.JSON.raw }
-func (r *FunctionResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// FunctionResponseFunctionUnion contains all possible properties and values from
-// [FunctionResponseFunctionTransform], [FunctionResponseFunctionExtract],
-// [FunctionResponseFunctionAnalyze], [FunctionResponseFunctionClassify],
-// [FunctionResponseFunctionSend], [FunctionResponseFunctionSplit],
-// [FunctionResponseFunctionJoin], [FunctionResponseFunctionPayloadShaping],
-// [FunctionResponseFunctionEnrich].
+// FunctionUnion contains all possible properties and values from
+// [FunctionTransform], [FunctionExtract], [FunctionAnalyze], [FunctionClassify],
+// [FunctionSend], [FunctionSplit], [FunctionJoin], [FunctionPayloadShaping],
+// [FunctionEnrich].
 //
-// Use the [FunctionResponseFunctionUnion.AsAny] method to switch on the variant.
+// Use the [FunctionUnion.AsAny] method to switch on the variant.
 //
 // Use the methods beginning with 'As' to cast the union to one of its variants.
-type FunctionResponseFunctionUnion struct {
+type FunctionUnion struct {
 	EmailAddress           string `json:"emailAddress"`
 	FunctionID             string `json:"functionID"`
 	FunctionName           string `json:"functionName"`
@@ -569,41 +1030,41 @@ type FunctionResponseFunctionUnion struct {
 	// "payload_shaping", "enrich".
 	Type       string `json:"type"`
 	VersionNum int64  `json:"versionNum"`
-	// This field is from variant [FunctionResponseFunctionTransform].
+	// This field is from variant [FunctionTransform].
 	Audit           FunctionAudit       `json:"audit"`
 	DisplayName     string              `json:"displayName"`
 	Tags            []string            `json:"tags"`
 	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
-	// This field is from variant [FunctionResponseFunctionAnalyze].
+	// This field is from variant [FunctionAnalyze].
 	EnableBoundingBoxes bool `json:"enableBoundingBoxes"`
-	// This field is from variant [FunctionResponseFunctionAnalyze].
+	// This field is from variant [FunctionAnalyze].
 	PreCount bool `json:"preCount"`
-	// This field is from variant [FunctionResponseFunctionClassify].
-	Classifications []FunctionResponseFunctionClassifyClassification `json:"classifications"`
-	Description     string                                           `json:"description"`
-	// This field is from variant [FunctionResponseFunctionSend].
+	// This field is from variant [FunctionClassify].
+	Classifications []ClassificationListItem `json:"classifications"`
+	Description     string                   `json:"description"`
+	// This field is from variant [FunctionSend].
 	DestinationType string `json:"destinationType"`
-	// This field is from variant [FunctionResponseFunctionSend].
+	// This field is from variant [FunctionSend].
 	GoogleDriveFolderID string `json:"googleDriveFolderId"`
-	// This field is from variant [FunctionResponseFunctionSend].
+	// This field is from variant [FunctionSend].
 	S3Bucket string `json:"s3Bucket"`
-	// This field is from variant [FunctionResponseFunctionSend].
+	// This field is from variant [FunctionSend].
 	S3Prefix string `json:"s3Prefix"`
-	// This field is from variant [FunctionResponseFunctionSend].
+	// This field is from variant [FunctionSend].
 	WebhookSigningEnabled bool `json:"webhookSigningEnabled"`
-	// This field is from variant [FunctionResponseFunctionSend].
+	// This field is from variant [FunctionSend].
 	WebhookURL string `json:"webhookUrl"`
-	// This field is from variant [FunctionResponseFunctionSplit].
+	// This field is from variant [FunctionSplit].
 	SplitType string `json:"splitType"`
-	// This field is from variant [FunctionResponseFunctionSplit].
-	PrintPageSplitConfig FunctionResponseFunctionSplitPrintPageSplitConfig `json:"printPageSplitConfig"`
-	// This field is from variant [FunctionResponseFunctionSplit].
-	SemanticPageSplitConfig FunctionResponseFunctionSplitSemanticPageSplitConfig `json:"semanticPageSplitConfig"`
-	// This field is from variant [FunctionResponseFunctionJoin].
+	// This field is from variant [FunctionSplit].
+	PrintPageSplitConfig FunctionSplitPrintPageSplitConfig `json:"printPageSplitConfig"`
+	// This field is from variant [FunctionSplit].
+	SemanticPageSplitConfig FunctionSplitSemanticPageSplitConfig `json:"semanticPageSplitConfig"`
+	// This field is from variant [FunctionJoin].
 	JoinType string `json:"joinType"`
-	// This field is from variant [FunctionResponseFunctionPayloadShaping].
+	// This field is from variant [FunctionPayloadShaping].
 	ShapingSchema string `json:"shapingSchema"`
-	// This field is from variant [FunctionResponseFunctionEnrich].
+	// This field is from variant [FunctionEnrich].
 	Config EnrichConfig `json:"config"`
 	JSON   struct {
 		EmailAddress            respjson.Field
@@ -638,39 +1099,38 @@ type FunctionResponseFunctionUnion struct {
 	} `json:"-"`
 }
 
-// anyFunctionResponseFunction is implemented by each variant of
-// [FunctionResponseFunctionUnion] to add type safety for the return type of
-// [FunctionResponseFunctionUnion.AsAny]
-type anyFunctionResponseFunction interface {
-	implFunctionResponseFunctionUnion()
+// anyFunction is implemented by each variant of [FunctionUnion] to add type safety
+// for the return type of [FunctionUnion.AsAny]
+type anyFunction interface {
+	implFunctionUnion()
 }
 
-func (FunctionResponseFunctionTransform) implFunctionResponseFunctionUnion()      {}
-func (FunctionResponseFunctionExtract) implFunctionResponseFunctionUnion()        {}
-func (FunctionResponseFunctionAnalyze) implFunctionResponseFunctionUnion()        {}
-func (FunctionResponseFunctionClassify) implFunctionResponseFunctionUnion()       {}
-func (FunctionResponseFunctionSend) implFunctionResponseFunctionUnion()           {}
-func (FunctionResponseFunctionSplit) implFunctionResponseFunctionUnion()          {}
-func (FunctionResponseFunctionJoin) implFunctionResponseFunctionUnion()           {}
-func (FunctionResponseFunctionPayloadShaping) implFunctionResponseFunctionUnion() {}
-func (FunctionResponseFunctionEnrich) implFunctionResponseFunctionUnion()         {}
+func (FunctionTransform) implFunctionUnion()      {}
+func (FunctionExtract) implFunctionUnion()        {}
+func (FunctionAnalyze) implFunctionUnion()        {}
+func (FunctionClassify) implFunctionUnion()       {}
+func (FunctionSend) implFunctionUnion()           {}
+func (FunctionSplit) implFunctionUnion()          {}
+func (FunctionJoin) implFunctionUnion()           {}
+func (FunctionPayloadShaping) implFunctionUnion() {}
+func (FunctionEnrich) implFunctionUnion()         {}
 
 // Use the following switch statement to find the correct variant
 //
-//	switch variant := FunctionResponseFunctionUnion.AsAny().(type) {
-//	case bem.FunctionResponseFunctionTransform:
-//	case bem.FunctionResponseFunctionExtract:
-//	case bem.FunctionResponseFunctionAnalyze:
-//	case bem.FunctionResponseFunctionClassify:
-//	case bem.FunctionResponseFunctionSend:
-//	case bem.FunctionResponseFunctionSplit:
-//	case bem.FunctionResponseFunctionJoin:
-//	case bem.FunctionResponseFunctionPayloadShaping:
-//	case bem.FunctionResponseFunctionEnrich:
+//	switch variant := FunctionUnion.AsAny().(type) {
+//	case bem.FunctionTransform:
+//	case bem.FunctionExtract:
+//	case bem.FunctionAnalyze:
+//	case bem.FunctionClassify:
+//	case bem.FunctionSend:
+//	case bem.FunctionSplit:
+//	case bem.FunctionJoin:
+//	case bem.FunctionPayloadShaping:
+//	case bem.FunctionEnrich:
 //	default:
 //	  fmt.Errorf("no variant present")
 //	}
-func (u FunctionResponseFunctionUnion) AsAny() anyFunctionResponseFunction {
+func (u FunctionUnion) AsAny() anyFunction {
 	switch u.Type {
 	case "transform":
 		return u.AsTransform()
@@ -694,59 +1154,59 @@ func (u FunctionResponseFunctionUnion) AsAny() anyFunctionResponseFunction {
 	return nil
 }
 
-func (u FunctionResponseFunctionUnion) AsTransform() (v FunctionResponseFunctionTransform) {
+func (u FunctionUnion) AsTransform() (v FunctionTransform) {
 	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
 	return
 }
 
-func (u FunctionResponseFunctionUnion) AsExtract() (v FunctionResponseFunctionExtract) {
+func (u FunctionUnion) AsExtract() (v FunctionExtract) {
 	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
 	return
 }
 
-func (u FunctionResponseFunctionUnion) AsAnalyze() (v FunctionResponseFunctionAnalyze) {
+func (u FunctionUnion) AsAnalyze() (v FunctionAnalyze) {
 	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
 	return
 }
 
-func (u FunctionResponseFunctionUnion) AsClassify() (v FunctionResponseFunctionClassify) {
+func (u FunctionUnion) AsClassify() (v FunctionClassify) {
 	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
 	return
 }
 
-func (u FunctionResponseFunctionUnion) AsSend() (v FunctionResponseFunctionSend) {
+func (u FunctionUnion) AsSend() (v FunctionSend) {
 	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
 	return
 }
 
-func (u FunctionResponseFunctionUnion) AsSplit() (v FunctionResponseFunctionSplit) {
+func (u FunctionUnion) AsSplit() (v FunctionSplit) {
 	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
 	return
 }
 
-func (u FunctionResponseFunctionUnion) AsJoin() (v FunctionResponseFunctionJoin) {
+func (u FunctionUnion) AsJoin() (v FunctionJoin) {
 	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
 	return
 }
 
-func (u FunctionResponseFunctionUnion) AsPayloadShaping() (v FunctionResponseFunctionPayloadShaping) {
+func (u FunctionUnion) AsPayloadShaping() (v FunctionPayloadShaping) {
 	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
 	return
 }
 
-func (u FunctionResponseFunctionUnion) AsEnrich() (v FunctionResponseFunctionEnrich) {
+func (u FunctionUnion) AsEnrich() (v FunctionEnrich) {
 	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
 	return
 }
 
 // Returns the unmodified JSON received from the API
-func (u FunctionResponseFunctionUnion) RawJSON() string { return u.JSON.raw }
+func (u FunctionUnion) RawJSON() string { return u.JSON.raw }
 
-func (r *FunctionResponseFunctionUnion) UnmarshalJSON(data []byte) error {
+func (r *FunctionUnion) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type FunctionResponseFunctionTransform struct {
+type FunctionTransform struct {
 	// Email address automatically created by bem. You can forward emails with or
 	// without attachments, to be transformed.
 	EmailAddress string `json:"emailAddress" api:"required"`
@@ -792,15 +1252,15 @@ type FunctionResponseFunctionTransform struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r FunctionResponseFunctionTransform) RawJSON() string { return r.JSON.raw }
-func (r *FunctionResponseFunctionTransform) UnmarshalJSON(data []byte) error {
+func (r FunctionTransform) RawJSON() string { return r.JSON.raw }
+func (r *FunctionTransform) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
 // A function that extracts structured JSON from documents and images. Accepts a
 // wide range of input types including PDFs, images, spreadsheets, emails, and
 // more.
-type FunctionResponseFunctionExtract struct {
+type FunctionExtract struct {
 	// Unique identifier of function.
 	FunctionID string `json:"functionID" api:"required"`
 	// Name of function. Must be UNIQUE on a per-environment basis.
@@ -842,12 +1302,12 @@ type FunctionResponseFunctionExtract struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r FunctionResponseFunctionExtract) RawJSON() string { return r.JSON.raw }
-func (r *FunctionResponseFunctionExtract) UnmarshalJSON(data []byte) error {
+func (r FunctionExtract) RawJSON() string { return r.JSON.raw }
+func (r *FunctionExtract) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type FunctionResponseFunctionAnalyze struct {
+type FunctionAnalyze struct {
 	// Whether bounding box extraction is enabled. Only applicable to analyze and
 	// extract functions. When true, the function returns the document regions (page,
 	// coordinates) from which each field was extracted.
@@ -894,13 +1354,13 @@ type FunctionResponseFunctionAnalyze struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r FunctionResponseFunctionAnalyze) RawJSON() string { return r.JSON.raw }
-func (r *FunctionResponseFunctionAnalyze) UnmarshalJSON(data []byte) error {
+func (r FunctionAnalyze) RawJSON() string { return r.JSON.raw }
+func (r *FunctionAnalyze) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
 // V3 read-side shape of a Classify (internally Route) function. Mirrors {
-type FunctionResponseFunctionClassify struct {
+type FunctionClassify struct {
 	// V3 create/update variants of the shared function payloads.
 	//
 	// The V3 Functions API no longer accepts the legacy `transform` or `analyze`
@@ -914,7 +1374,7 @@ type FunctionResponseFunctionClassify struct {
 	// `ClassificationList`). Platform-internal storage and processing still use
 	// `route` / `routes`; the rename is applied only at the V3 API boundary.V3-facing
 	// name for the list of classifications a classify function can produce.
-	Classifications []FunctionResponseFunctionClassifyClassification `json:"classifications" api:"required"`
+	Classifications []ClassificationListItem `json:"classifications" api:"required"`
 	// Description of classifier. Can be used to provide additional context on
 	// classifier's purpose and expected inputs.
 	Description string `json:"description" api:"required"`
@@ -955,93 +1415,15 @@ type FunctionResponseFunctionClassify struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r FunctionResponseFunctionClassify) RawJSON() string { return r.JSON.raw }
-func (r *FunctionResponseFunctionClassify) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionResponseFunctionClassifyClassification struct {
-	Name            string                                               `json:"name" api:"required"`
-	Description     string                                               `json:"description"`
-	FunctionID      string                                               `json:"functionID"`
-	FunctionName    string                                               `json:"functionName"`
-	IsErrorFallback bool                                                 `json:"isErrorFallback"`
-	Origin          FunctionResponseFunctionClassifyClassificationOrigin `json:"origin"`
-	Regex           FunctionResponseFunctionClassifyClassificationRegex  `json:"regex"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Name            respjson.Field
-		Description     respjson.Field
-		FunctionID      respjson.Field
-		FunctionName    respjson.Field
-		IsErrorFallback respjson.Field
-		Origin          respjson.Field
-		Regex           respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionResponseFunctionClassifyClassification) RawJSON() string { return r.JSON.raw }
-func (r *FunctionResponseFunctionClassifyClassification) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionResponseFunctionClassifyClassificationOrigin struct {
-	Email FunctionResponseFunctionClassifyClassificationOriginEmail `json:"email"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Email       respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionResponseFunctionClassifyClassificationOrigin) RawJSON() string { return r.JSON.raw }
-func (r *FunctionResponseFunctionClassifyClassificationOrigin) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionResponseFunctionClassifyClassificationOriginEmail struct {
-	Patterns []string `json:"patterns"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Patterns    respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionResponseFunctionClassifyClassificationOriginEmail) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionResponseFunctionClassifyClassificationOriginEmail) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionResponseFunctionClassifyClassificationRegex struct {
-	Patterns []string `json:"patterns"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Patterns    respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionResponseFunctionClassifyClassificationRegex) RawJSON() string { return r.JSON.raw }
-func (r *FunctionResponseFunctionClassifyClassificationRegex) UnmarshalJSON(data []byte) error {
+func (r FunctionClassify) RawJSON() string { return r.JSON.raw }
+func (r *FunctionClassify) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
 // A function that delivers workflow outputs to an external destination. Send
 // functions receive the output of an upstream workflow node and forward it to a
 // webhook, S3 bucket, or Google Drive folder.
-type FunctionResponseFunctionSend struct {
+type FunctionSend struct {
 	// Destination type for a Send function.
 	//
 	// Any of "webhook", "s3", "google_drive".
@@ -1094,12 +1476,12 @@ type FunctionResponseFunctionSend struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r FunctionResponseFunctionSend) RawJSON() string { return r.JSON.raw }
-func (r *FunctionResponseFunctionSend) UnmarshalJSON(data []byte) error {
+func (r FunctionSend) RawJSON() string { return r.JSON.raw }
+func (r *FunctionSend) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type FunctionResponseFunctionSplit struct {
+type FunctionSplit struct {
 	// Unique identifier of function.
 	FunctionID string `json:"functionID" api:"required"`
 	// Name of function. Must be UNIQUE on a per-environment basis.
@@ -1116,9 +1498,9 @@ type FunctionResponseFunctionSplit struct {
 	// Display name of function. Human-readable name to help you identify the function.
 	DisplayName string `json:"displayName"`
 	// Configuration for print page splitting.
-	PrintPageSplitConfig FunctionResponseFunctionSplitPrintPageSplitConfig `json:"printPageSplitConfig"`
+	PrintPageSplitConfig FunctionSplitPrintPageSplitConfig `json:"printPageSplitConfig"`
 	// Configuration for semantic page splitting.
-	SemanticPageSplitConfig FunctionResponseFunctionSplitSemanticPageSplitConfig `json:"semanticPageSplitConfig"`
+	SemanticPageSplitConfig FunctionSplitSemanticPageSplitConfig `json:"semanticPageSplitConfig"`
 	// Array of tags to categorize and organize functions.
 	Tags []string `json:"tags"`
 	// List of workflows that use this function.
@@ -1142,13 +1524,13 @@ type FunctionResponseFunctionSplit struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r FunctionResponseFunctionSplit) RawJSON() string { return r.JSON.raw }
-func (r *FunctionResponseFunctionSplit) UnmarshalJSON(data []byte) error {
+func (r FunctionSplit) RawJSON() string { return r.JSON.raw }
+func (r *FunctionSplit) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
 // Configuration for print page splitting.
-type FunctionResponseFunctionSplitPrintPageSplitConfig struct {
+type FunctionSplitPrintPageSplitConfig struct {
 	NextFunctionID string `json:"nextFunctionID"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -1159,13 +1541,13 @@ type FunctionResponseFunctionSplitPrintPageSplitConfig struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r FunctionResponseFunctionSplitPrintPageSplitConfig) RawJSON() string { return r.JSON.raw }
-func (r *FunctionResponseFunctionSplitPrintPageSplitConfig) UnmarshalJSON(data []byte) error {
+func (r FunctionSplitPrintPageSplitConfig) RawJSON() string { return r.JSON.raw }
+func (r *FunctionSplitPrintPageSplitConfig) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
 // Configuration for semantic page splitting.
-type FunctionResponseFunctionSplitSemanticPageSplitConfig struct {
+type FunctionSplitSemanticPageSplitConfig struct {
 	ItemClasses []SplitFunctionSemanticPageItemClass `json:"itemClasses"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -1176,12 +1558,12 @@ type FunctionResponseFunctionSplitSemanticPageSplitConfig struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r FunctionResponseFunctionSplitSemanticPageSplitConfig) RawJSON() string { return r.JSON.raw }
-func (r *FunctionResponseFunctionSplitSemanticPageSplitConfig) UnmarshalJSON(data []byte) error {
+func (r FunctionSplitSemanticPageSplitConfig) RawJSON() string { return r.JSON.raw }
+func (r *FunctionSplitSemanticPageSplitConfig) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type FunctionResponseFunctionJoin struct {
+type FunctionJoin struct {
 	// Description of join function.
 	Description string `json:"description" api:"required"`
 	// Unique identifier of function.
@@ -1227,8 +1609,8 @@ type FunctionResponseFunctionJoin struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r FunctionResponseFunctionJoin) RawJSON() string { return r.JSON.raw }
-func (r *FunctionResponseFunctionJoin) UnmarshalJSON(data []byte) error {
+func (r FunctionJoin) RawJSON() string { return r.JSON.raw }
+func (r *FunctionJoin) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -1236,7 +1618,7 @@ func (r *FunctionResponseFunctionJoin) UnmarshalJSON(data []byte) error {
 // expressions. Payload shaping allows you to extract specific data, perform
 // calculations, and reshape complex input structures into simplified, standardized
 // output formats tailored to your downstream systems or business requirements.
-type FunctionResponseFunctionPayloadShaping struct {
+type FunctionPayloadShaping struct {
 	// Unique identifier of function.
 	FunctionID string `json:"functionID" api:"required"`
 	// Name of function. Must be UNIQUE on a per-environment basis.
@@ -1275,12 +1657,12 @@ type FunctionResponseFunctionPayloadShaping struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r FunctionResponseFunctionPayloadShaping) RawJSON() string { return r.JSON.raw }
-func (r *FunctionResponseFunctionPayloadShaping) UnmarshalJSON(data []byte) error {
+func (r FunctionPayloadShaping) RawJSON() string { return r.JSON.raw }
+func (r *FunctionPayloadShaping) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type FunctionResponseFunctionEnrich struct {
+type FunctionEnrich struct {
 	// Configuration for enrich function with semantic search steps.
 	//
 	// **How Enrich Functions Work:**
@@ -1339,8 +1721,53 @@ type FunctionResponseFunctionEnrich struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r FunctionResponseFunctionEnrich) RawJSON() string { return r.JSON.raw }
-func (r *FunctionResponseFunctionEnrich) UnmarshalJSON(data []byte) error {
+func (r FunctionEnrich) RawJSON() string { return r.JSON.raw }
+func (r *FunctionEnrich) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type FunctionAudit struct {
+	// Information about who created the function.
+	FunctionCreatedBy UserActionSummary `json:"functionCreatedBy"`
+	// Information about who last updated the function.
+	FunctionLastUpdatedBy UserActionSummary `json:"functionLastUpdatedBy"`
+	// Information about who created the current version.
+	VersionCreatedBy UserActionSummary `json:"versionCreatedBy"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		FunctionCreatedBy     respjson.Field
+		FunctionLastUpdatedBy respjson.Field
+		VersionCreatedBy      respjson.Field
+		ExtraFields           map[string]respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r FunctionAudit) RawJSON() string { return r.JSON.raw }
+func (r *FunctionAudit) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Single-function response wrapper used by V3 function endpoints. V3 wraps
+// individual function responses in a `{"function": ...}` envelope for consistency
+// with other V3 resource endpoints.
+type FunctionResponse struct {
+	// V3 read-side union. Same shape as the shared `Function` union but with
+	// `classify` in place of `route`. Legacy `transform` and `analyze` functions
+	// remain readable via V3.
+	Function FunctionUnion `json:"function" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Function    respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r FunctionResponse) RawJSON() string { return r.JSON.raw }
+func (r *FunctionResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -1358,6 +1785,25 @@ const (
 	FunctionTypePayloadShaping FunctionType = "payload_shaping"
 	FunctionTypeEnrich         FunctionType = "enrich"
 )
+
+type ListFunctionsResponse struct {
+	Functions []FunctionUnion `json:"functions"`
+	// The total number of results available.
+	TotalCount int64 `json:"totalCount"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Functions   respjson.Field
+		TotalCount  respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r ListFunctionsResponse) RawJSON() string { return r.JSON.raw }
+func (r *ListFunctionsResponse) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
 
 type SplitFunctionSemanticPageItemClass struct {
 	Name        string `json:"name" api:"required"`
@@ -1409,6 +1855,326 @@ func (r SplitFunctionSemanticPageItemClassParam) MarshalJSON() (data []byte, err
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *SplitFunctionSemanticPageItemClassParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Only one field can be non-zero.
+//
+// Use [param.IsOmitted] to confirm if a field is set.
+type UpdateFunctionUnionParam struct {
+	OfExtract        *UpdateFunctionExtractParam        `json:",omitzero,inline"`
+	OfClassify       *UpdateFunctionClassifyParam       `json:",omitzero,inline"`
+	OfSend           *UpdateFunctionSendParam           `json:",omitzero,inline"`
+	OfSplit          *UpdateFunctionSplitParam          `json:",omitzero,inline"`
+	OfJoin           *UpdateFunctionJoinParam           `json:",omitzero,inline"`
+	OfPayloadShaping *UpdateFunctionPayloadShapingParam `json:",omitzero,inline"`
+	OfEnrich         *UpdateFunctionEnrichParam         `json:",omitzero,inline"`
+	paramUnion
+}
+
+func (u UpdateFunctionUnionParam) MarshalJSON() ([]byte, error) {
+	return param.MarshalUnion(u, u.OfExtract,
+		u.OfClassify,
+		u.OfSend,
+		u.OfSplit,
+		u.OfJoin,
+		u.OfPayloadShaping,
+		u.OfEnrich)
+}
+func (u *UpdateFunctionUnionParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, u)
+}
+
+func init() {
+	apijson.RegisterUnion[UpdateFunctionUnionParam](
+		"type",
+		apijson.Discriminator[UpdateFunctionExtractParam]("extract"),
+		apijson.Discriminator[UpdateFunctionClassifyParam]("classify"),
+		apijson.Discriminator[UpdateFunctionSendParam]("send"),
+		apijson.Discriminator[UpdateFunctionSplitParam]("split"),
+		apijson.Discriminator[UpdateFunctionJoinParam]("join"),
+		apijson.Discriminator[UpdateFunctionPayloadShapingParam]("payload_shaping"),
+		apijson.Discriminator[UpdateFunctionEnrichParam]("enrich"),
+	)
+}
+
+// The property Type is required.
+type UpdateFunctionExtractParam struct {
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName param.Opt[string] `json:"functionName,omitzero"`
+	// Name of output schema object.
+	OutputSchemaName param.Opt[string] `json:"outputSchemaName,omitzero"`
+	// Whether tabular chunking is enabled. When true, tables in CSV/Excel files are
+	// processed in row batches rather than all at once.
+	TabularChunkingEnabled param.Opt[bool] `json:"tabularChunkingEnabled,omitzero"`
+	// Desired output structure defined in standard JSON Schema convention.
+	OutputSchema any `json:"outputSchema,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "extract".
+	Type constant.Extract `json:"type" default:"extract"`
+	paramObj
+}
+
+func (r UpdateFunctionExtractParam) MarshalJSON() (data []byte, err error) {
+	type shadow UpdateFunctionExtractParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *UpdateFunctionExtractParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// V3 wire form of the Route (classify) function upsert payload. Mirrors {
+//
+// The property Type is required.
+type UpdateFunctionClassifyParam struct {
+	// Description of classifier. Can be used to provide additional context on
+	// classifier's purpose and expected inputs.
+	Description param.Opt[string] `json:"description,omitzero"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName param.Opt[string] `json:"functionName,omitzero"`
+	// V3 create/update variants of the shared function payloads.
+	//
+	// The V3 Functions API no longer accepts the legacy `transform` or `analyze`
+	// function types when creating new functions or updating existing ones — both have
+	// been unified under `extract`. Existing functions of those types remain readable
+	// and callable via V3, so the V3 read-side unions still include `transform` and
+	// `analyze` variants.
+	//
+	// The V3 API also renames the internal `route` function type to `classify` on the
+	// wire, and the associated `routes` field to `classifications` (type
+	// `ClassificationList`). Platform-internal storage and processing still use
+	// `route` / `routes`; the rename is applied only at the V3 API boundary.V3-facing
+	// name for the list of classifications a classify function can produce.
+	Classifications []ClassificationListItemParam `json:"classifications,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "classify".
+	Type constant.Classify `json:"type" default:"classify"`
+	paramObj
+}
+
+func (r UpdateFunctionClassifyParam) MarshalJSON() (data []byte, err error) {
+	type shadow UpdateFunctionClassifyParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *UpdateFunctionClassifyParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The property Type is required.
+type UpdateFunctionSendParam struct {
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName param.Opt[string] `json:"functionName,omitzero"`
+	// Google Drive folder ID. Required when destinationType is google_drive. Managed
+	// via Paragon OAuth.
+	GoogleDriveFolderID param.Opt[string] `json:"googleDriveFolderId,omitzero"`
+	// S3 bucket to upload the payload to. Required when destinationType is s3.
+	S3Bucket param.Opt[string] `json:"s3Bucket,omitzero"`
+	// Optional S3 key prefix (folder path).
+	S3Prefix param.Opt[string] `json:"s3Prefix,omitzero"`
+	// Whether to sign webhook deliveries with an HMAC-SHA256 `bem-signature` header.
+	// Defaults to `true` when omitted — signing is on by default for new send
+	// functions. Set explicitly to `false` to disable.
+	WebhookSigningEnabled param.Opt[bool] `json:"webhookSigningEnabled,omitzero"`
+	// Webhook URL to POST the payload to. Required when destinationType is webhook.
+	WebhookURL param.Opt[string] `json:"webhookUrl,omitzero"`
+	// Destination type for a Send function.
+	//
+	// Any of "webhook", "s3", "google_drive".
+	DestinationType string `json:"destinationType,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "send".
+	Type constant.Send `json:"type" default:"send"`
+	paramObj
+}
+
+func (r UpdateFunctionSendParam) MarshalJSON() (data []byte, err error) {
+	type shadow UpdateFunctionSendParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *UpdateFunctionSendParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[UpdateFunctionSendParam](
+		"destinationType", "webhook", "s3", "google_drive",
+	)
+}
+
+// The property Type is required.
+type UpdateFunctionSplitParam struct {
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName            param.Opt[string]                               `json:"functionName,omitzero"`
+	PrintPageSplitConfig    UpdateFunctionSplitPrintPageSplitConfigParam    `json:"printPageSplitConfig,omitzero"`
+	SemanticPageSplitConfig UpdateFunctionSplitSemanticPageSplitConfigParam `json:"semanticPageSplitConfig,omitzero"`
+	// Any of "print_page", "semantic_page".
+	SplitType string `json:"splitType,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "split".
+	Type constant.Split `json:"type" default:"split"`
+	paramObj
+}
+
+func (r UpdateFunctionSplitParam) MarshalJSON() (data []byte, err error) {
+	type shadow UpdateFunctionSplitParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *UpdateFunctionSplitParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[UpdateFunctionSplitParam](
+		"splitType", "print_page", "semantic_page",
+	)
+}
+
+type UpdateFunctionSplitPrintPageSplitConfigParam struct {
+	NextFunctionID   param.Opt[string] `json:"nextFunctionID,omitzero"`
+	NextFunctionName param.Opt[string] `json:"nextFunctionName,omitzero"`
+	paramObj
+}
+
+func (r UpdateFunctionSplitPrintPageSplitConfigParam) MarshalJSON() (data []byte, err error) {
+	type shadow UpdateFunctionSplitPrintPageSplitConfigParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *UpdateFunctionSplitPrintPageSplitConfigParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type UpdateFunctionSplitSemanticPageSplitConfigParam struct {
+	ItemClasses []SplitFunctionSemanticPageItemClassParam `json:"itemClasses,omitzero"`
+	paramObj
+}
+
+func (r UpdateFunctionSplitSemanticPageSplitConfigParam) MarshalJSON() (data []byte, err error) {
+	type shadow UpdateFunctionSplitSemanticPageSplitConfigParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *UpdateFunctionSplitSemanticPageSplitConfigParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The property Type is required.
+type UpdateFunctionJoinParam struct {
+	// Description of join function.
+	Description param.Opt[string] `json:"description,omitzero"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName param.Opt[string] `json:"functionName,omitzero"`
+	// Name of output schema object.
+	OutputSchemaName param.Opt[string] `json:"outputSchemaName,omitzero"`
+	// The type of join to perform.
+	//
+	// Any of "standard".
+	JoinType string `json:"joinType,omitzero"`
+	// Desired output structure defined in standard JSON Schema convention.
+	OutputSchema any `json:"outputSchema,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "join".
+	Type constant.Join `json:"type" default:"join"`
+	paramObj
+}
+
+func (r UpdateFunctionJoinParam) MarshalJSON() (data []byte, err error) {
+	type shadow UpdateFunctionJoinParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *UpdateFunctionJoinParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[UpdateFunctionJoinParam](
+		"joinType", "standard",
+	)
+}
+
+// A function that transforms and customizes input payloads using JMESPath
+// expressions. Payload shaping allows you to extract specific data, perform
+// calculations, and reshape complex input structures into simplified, standardized
+// output formats tailored to your downstream systems or business requirements.
+//
+// The property Type is required.
+type UpdateFunctionPayloadShapingParam struct {
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName param.Opt[string] `json:"functionName,omitzero"`
+	// JMESPath expression that defines how to transform and customize the input
+	// payload structure. Payload shaping allows you to extract, reshape, and
+	// reorganize data from complex input payloads into a simplified, standardized
+	// output format. Use JMESPath syntax to select specific fields, perform
+	// calculations, and create new data structures tailored to your needs.
+	ShapingSchema param.Opt[string] `json:"shapingSchema,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "payload_shaping".
+	Type constant.PayloadShaping `json:"type" default:"payload_shaping"`
+	paramObj
+}
+
+func (r UpdateFunctionPayloadShapingParam) MarshalJSON() (data []byte, err error) {
+	type shadow UpdateFunctionPayloadShapingParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *UpdateFunctionPayloadShapingParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The property Type is required.
+type UpdateFunctionEnrichParam struct {
+	// Configuration for enrich function with semantic search steps.
+	//
+	// **How Enrich Functions Work:**
+	//
+	// Enrich functions use semantic search to augment JSON data with relevant
+	// information from collections. They take JSON input (typically from a transform
+	// function), extract specified fields, perform vector-based semantic search
+	// against collections, and inject the results back into the data.
+	//
+	// **Input Requirements:**
+	//
+	// - Must receive JSON input (typically uploaded to S3 from a previous function)
+	// - Can be chained after transform or other functions that produce JSON output
+	//
+	// **Example Use Cases:**
+	//
+	// - Match product descriptions to SKU codes from a product catalog
+	// - Enrich customer data with account information
+	// - Link order line items to inventory records
+	//
+	// **Configuration:**
+	//
+	// - Define one or more enrichment steps
+	// - Each step extracts values, searches a collection, and injects results
+	// - Steps are executed sequentially
+	Config EnrichConfigParam `json:"config,omitzero"`
+	// This field can be elided, and will marshal its zero value as "enrich".
+	Type constant.Enrich `json:"type" default:"enrich"`
+	paramObj
+}
+
+func (r UpdateFunctionEnrichParam) MarshalJSON() (data []byte, err error) {
+	type shadow UpdateFunctionEnrichParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *UpdateFunctionEnrichParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -1472,1556 +2238,29 @@ func (r *WorkflowUsageInfo) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// FunctionListResponseUnion contains all possible properties and values from
-// [FunctionListResponseTransform], [FunctionListResponseExtract],
-// [FunctionListResponseAnalyze], [FunctionListResponseClassify],
-// [FunctionListResponseSend], [FunctionListResponseSplit],
-// [FunctionListResponseJoin], [FunctionListResponsePayloadShaping],
-// [FunctionListResponseEnrich].
-//
-// Use the [FunctionListResponseUnion.AsAny] method to switch on the variant.
-//
-// Use the methods beginning with 'As' to cast the union to one of its variants.
-type FunctionListResponseUnion struct {
-	EmailAddress           string `json:"emailAddress"`
-	FunctionID             string `json:"functionID"`
-	FunctionName           string `json:"functionName"`
-	OutputSchema           any    `json:"outputSchema"`
-	OutputSchemaName       string `json:"outputSchemaName"`
-	TabularChunkingEnabled bool   `json:"tabularChunkingEnabled"`
-	// Any of "transform", "extract", "analyze", "classify", "send", "split", "join",
-	// "payload_shaping", "enrich".
-	Type       string `json:"type"`
-	VersionNum int64  `json:"versionNum"`
-	// This field is from variant [FunctionListResponseTransform].
-	Audit           FunctionAudit       `json:"audit"`
-	DisplayName     string              `json:"displayName"`
-	Tags            []string            `json:"tags"`
-	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
-	// This field is from variant [FunctionListResponseAnalyze].
-	EnableBoundingBoxes bool `json:"enableBoundingBoxes"`
-	// This field is from variant [FunctionListResponseAnalyze].
-	PreCount bool `json:"preCount"`
-	// This field is from variant [FunctionListResponseClassify].
-	Classifications []FunctionListResponseClassifyClassification `json:"classifications"`
-	Description     string                                       `json:"description"`
-	// This field is from variant [FunctionListResponseSend].
-	DestinationType string `json:"destinationType"`
-	// This field is from variant [FunctionListResponseSend].
-	GoogleDriveFolderID string `json:"googleDriveFolderId"`
-	// This field is from variant [FunctionListResponseSend].
-	S3Bucket string `json:"s3Bucket"`
-	// This field is from variant [FunctionListResponseSend].
-	S3Prefix string `json:"s3Prefix"`
-	// This field is from variant [FunctionListResponseSend].
-	WebhookSigningEnabled bool `json:"webhookSigningEnabled"`
-	// This field is from variant [FunctionListResponseSend].
-	WebhookURL string `json:"webhookUrl"`
-	// This field is from variant [FunctionListResponseSplit].
-	SplitType string `json:"splitType"`
-	// This field is from variant [FunctionListResponseSplit].
-	PrintPageSplitConfig FunctionListResponseSplitPrintPageSplitConfig `json:"printPageSplitConfig"`
-	// This field is from variant [FunctionListResponseSplit].
-	SemanticPageSplitConfig FunctionListResponseSplitSemanticPageSplitConfig `json:"semanticPageSplitConfig"`
-	// This field is from variant [FunctionListResponseJoin].
-	JoinType string `json:"joinType"`
-	// This field is from variant [FunctionListResponsePayloadShaping].
-	ShapingSchema string `json:"shapingSchema"`
-	// This field is from variant [FunctionListResponseEnrich].
-	Config EnrichConfig `json:"config"`
-	JSON   struct {
-		EmailAddress            respjson.Field
-		FunctionID              respjson.Field
-		FunctionName            respjson.Field
-		OutputSchema            respjson.Field
-		OutputSchemaName        respjson.Field
-		TabularChunkingEnabled  respjson.Field
-		Type                    respjson.Field
-		VersionNum              respjson.Field
-		Audit                   respjson.Field
-		DisplayName             respjson.Field
-		Tags                    respjson.Field
-		UsedInWorkflows         respjson.Field
-		EnableBoundingBoxes     respjson.Field
-		PreCount                respjson.Field
-		Classifications         respjson.Field
-		Description             respjson.Field
-		DestinationType         respjson.Field
-		GoogleDriveFolderID     respjson.Field
-		S3Bucket                respjson.Field
-		S3Prefix                respjson.Field
-		WebhookSigningEnabled   respjson.Field
-		WebhookURL              respjson.Field
-		SplitType               respjson.Field
-		PrintPageSplitConfig    respjson.Field
-		SemanticPageSplitConfig respjson.Field
-		JoinType                respjson.Field
-		ShapingSchema           respjson.Field
-		Config                  respjson.Field
-		raw                     string
-	} `json:"-"`
-}
-
-// anyFunctionListResponse is implemented by each variant of
-// [FunctionListResponseUnion] to add type safety for the return type of
-// [FunctionListResponseUnion.AsAny]
-type anyFunctionListResponse interface {
-	implFunctionListResponseUnion()
-}
-
-func (FunctionListResponseTransform) implFunctionListResponseUnion()      {}
-func (FunctionListResponseExtract) implFunctionListResponseUnion()        {}
-func (FunctionListResponseAnalyze) implFunctionListResponseUnion()        {}
-func (FunctionListResponseClassify) implFunctionListResponseUnion()       {}
-func (FunctionListResponseSend) implFunctionListResponseUnion()           {}
-func (FunctionListResponseSplit) implFunctionListResponseUnion()          {}
-func (FunctionListResponseJoin) implFunctionListResponseUnion()           {}
-func (FunctionListResponsePayloadShaping) implFunctionListResponseUnion() {}
-func (FunctionListResponseEnrich) implFunctionListResponseUnion()         {}
-
-// Use the following switch statement to find the correct variant
-//
-//	switch variant := FunctionListResponseUnion.AsAny().(type) {
-//	case bem.FunctionListResponseTransform:
-//	case bem.FunctionListResponseExtract:
-//	case bem.FunctionListResponseAnalyze:
-//	case bem.FunctionListResponseClassify:
-//	case bem.FunctionListResponseSend:
-//	case bem.FunctionListResponseSplit:
-//	case bem.FunctionListResponseJoin:
-//	case bem.FunctionListResponsePayloadShaping:
-//	case bem.FunctionListResponseEnrich:
-//	default:
-//	  fmt.Errorf("no variant present")
-//	}
-func (u FunctionListResponseUnion) AsAny() anyFunctionListResponse {
-	switch u.Type {
-	case "transform":
-		return u.AsTransform()
-	case "extract":
-		return u.AsExtract()
-	case "analyze":
-		return u.AsAnalyze()
-	case "classify":
-		return u.AsClassify()
-	case "send":
-		return u.AsSend()
-	case "split":
-		return u.AsSplit()
-	case "join":
-		return u.AsJoin()
-	case "payload_shaping":
-		return u.AsPayloadShaping()
-	case "enrich":
-		return u.AsEnrich()
-	}
-	return nil
-}
-
-func (u FunctionListResponseUnion) AsTransform() (v FunctionListResponseTransform) {
-	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
-	return
-}
-
-func (u FunctionListResponseUnion) AsExtract() (v FunctionListResponseExtract) {
-	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
-	return
-}
-
-func (u FunctionListResponseUnion) AsAnalyze() (v FunctionListResponseAnalyze) {
-	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
-	return
-}
-
-func (u FunctionListResponseUnion) AsClassify() (v FunctionListResponseClassify) {
-	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
-	return
-}
-
-func (u FunctionListResponseUnion) AsSend() (v FunctionListResponseSend) {
-	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
-	return
-}
-
-func (u FunctionListResponseUnion) AsSplit() (v FunctionListResponseSplit) {
-	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
-	return
-}
-
-func (u FunctionListResponseUnion) AsJoin() (v FunctionListResponseJoin) {
-	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
-	return
-}
-
-func (u FunctionListResponseUnion) AsPayloadShaping() (v FunctionListResponsePayloadShaping) {
-	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
-	return
-}
-
-func (u FunctionListResponseUnion) AsEnrich() (v FunctionListResponseEnrich) {
-	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
-	return
-}
-
-// Returns the unmodified JSON received from the API
-func (u FunctionListResponseUnion) RawJSON() string { return u.JSON.raw }
-
-func (r *FunctionListResponseUnion) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionListResponseTransform struct {
-	// Email address automatically created by bem. You can forward emails with or
-	// without attachments, to be transformed.
-	EmailAddress string `json:"emailAddress" api:"required"`
-	// Unique identifier of function.
-	FunctionID string `json:"functionID" api:"required"`
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName string `json:"functionName" api:"required"`
-	// Desired output structure defined in standard JSON Schema convention.
-	OutputSchema any `json:"outputSchema" api:"required"`
-	// Name of output schema object.
-	OutputSchemaName string `json:"outputSchemaName" api:"required"`
-	// Whether tabular chunking is enabled on the pipeline. This processes tables in
-	// CSV/Excel in row batches, rather than all rows at once.
-	TabularChunkingEnabled bool               `json:"tabularChunkingEnabled" api:"required"`
-	Type                   constant.Transform `json:"type" default:"transform"`
-	// Version number of function.
-	VersionNum int64 `json:"versionNum" api:"required"`
-	// Audit trail information for the function.
-	Audit FunctionAudit `json:"audit"`
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName string `json:"displayName"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags"`
-	// List of workflows that use this function.
-	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		EmailAddress           respjson.Field
-		FunctionID             respjson.Field
-		FunctionName           respjson.Field
-		OutputSchema           respjson.Field
-		OutputSchemaName       respjson.Field
-		TabularChunkingEnabled respjson.Field
-		Type                   respjson.Field
-		VersionNum             respjson.Field
-		Audit                  respjson.Field
-		DisplayName            respjson.Field
-		Tags                   respjson.Field
-		UsedInWorkflows        respjson.Field
-		ExtraFields            map[string]respjson.Field
-		raw                    string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionListResponseTransform) RawJSON() string { return r.JSON.raw }
-func (r *FunctionListResponseTransform) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// A function that extracts structured JSON from documents and images. Accepts a
-// wide range of input types including PDFs, images, spreadsheets, emails, and
-// more.
-type FunctionListResponseExtract struct {
-	// Unique identifier of function.
-	FunctionID string `json:"functionID" api:"required"`
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName string `json:"functionName" api:"required"`
-	// Desired output structure defined in standard JSON Schema convention.
-	OutputSchema any `json:"outputSchema" api:"required"`
-	// Name of output schema object.
-	OutputSchemaName string `json:"outputSchemaName" api:"required"`
-	// Whether tabular chunking is enabled. When true, tables in CSV/Excel files are
-	// processed in row batches rather than all at once.
-	TabularChunkingEnabled bool             `json:"tabularChunkingEnabled" api:"required"`
-	Type                   constant.Extract `json:"type" default:"extract"`
-	// Version number of function.
-	VersionNum int64 `json:"versionNum" api:"required"`
-	// Audit trail information for the function.
-	Audit FunctionAudit `json:"audit"`
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName string `json:"displayName"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags"`
-	// List of workflows that use this function.
-	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		FunctionID             respjson.Field
-		FunctionName           respjson.Field
-		OutputSchema           respjson.Field
-		OutputSchemaName       respjson.Field
-		TabularChunkingEnabled respjson.Field
-		Type                   respjson.Field
-		VersionNum             respjson.Field
-		Audit                  respjson.Field
-		DisplayName            respjson.Field
-		Tags                   respjson.Field
-		UsedInWorkflows        respjson.Field
-		ExtraFields            map[string]respjson.Field
-		raw                    string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionListResponseExtract) RawJSON() string { return r.JSON.raw }
-func (r *FunctionListResponseExtract) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionListResponseAnalyze struct {
-	// Whether bounding box extraction is enabled. Only applicable to analyze and
-	// extract functions. When true, the function returns the document regions (page,
-	// coordinates) from which each field was extracted.
-	EnableBoundingBoxes bool `json:"enableBoundingBoxes" api:"required"`
-	// Unique identifier of function.
-	FunctionID string `json:"functionID" api:"required"`
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName string `json:"functionName" api:"required"`
-	// Desired output structure defined in standard JSON Schema convention.
-	OutputSchema any `json:"outputSchema" api:"required"`
-	// Name of output schema object.
-	OutputSchemaName string `json:"outputSchemaName" api:"required"`
-	// Reducing the risk of the model stopping early on long documents. Trade-off:
-	// Increases total latency.
-	PreCount bool             `json:"preCount" api:"required"`
-	Type     constant.Analyze `json:"type" default:"analyze"`
-	// Version number of function.
-	VersionNum int64 `json:"versionNum" api:"required"`
-	// Audit trail information for the function.
-	Audit FunctionAudit `json:"audit"`
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName string `json:"displayName"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags"`
-	// List of workflows that use this function.
-	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		EnableBoundingBoxes respjson.Field
-		FunctionID          respjson.Field
-		FunctionName        respjson.Field
-		OutputSchema        respjson.Field
-		OutputSchemaName    respjson.Field
-		PreCount            respjson.Field
-		Type                respjson.Field
-		VersionNum          respjson.Field
-		Audit               respjson.Field
-		DisplayName         respjson.Field
-		Tags                respjson.Field
-		UsedInWorkflows     respjson.Field
-		ExtraFields         map[string]respjson.Field
-		raw                 string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionListResponseAnalyze) RawJSON() string { return r.JSON.raw }
-func (r *FunctionListResponseAnalyze) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// V3 read-side shape of a Classify (internally Route) function. Mirrors {
-type FunctionListResponseClassify struct {
-	// V3 create/update variants of the shared function payloads.
-	//
-	// The V3 Functions API no longer accepts the legacy `transform` or `analyze`
-	// function types when creating new functions or updating existing ones — both have
-	// been unified under `extract`. Existing functions of those types remain readable
-	// and callable via V3, so the V3 read-side unions still include `transform` and
-	// `analyze` variants.
-	//
-	// The V3 API also renames the internal `route` function type to `classify` on the
-	// wire, and the associated `routes` field to `classifications` (type
-	// `ClassificationList`). Platform-internal storage and processing still use
-	// `route` / `routes`; the rename is applied only at the V3 API boundary.V3-facing
-	// name for the list of classifications a classify function can produce.
-	Classifications []FunctionListResponseClassifyClassification `json:"classifications" api:"required"`
-	// Description of classifier. Can be used to provide additional context on
-	// classifier's purpose and expected inputs.
-	Description string `json:"description" api:"required"`
-	// Email address automatically created by bem. You can forward emails with or
-	// without attachments, to be classified.
-	EmailAddress string `json:"emailAddress" api:"required"`
-	// Unique identifier of function.
-	FunctionID string `json:"functionID" api:"required"`
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName string            `json:"functionName" api:"required"`
-	Type         constant.Classify `json:"type" default:"classify"`
-	// Version number of function.
-	VersionNum int64 `json:"versionNum" api:"required"`
-	// Audit trail information for the function.
-	Audit FunctionAudit `json:"audit"`
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName string `json:"displayName"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags"`
-	// List of workflows that use this function.
-	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Classifications respjson.Field
-		Description     respjson.Field
-		EmailAddress    respjson.Field
-		FunctionID      respjson.Field
-		FunctionName    respjson.Field
-		Type            respjson.Field
-		VersionNum      respjson.Field
-		Audit           respjson.Field
-		DisplayName     respjson.Field
-		Tags            respjson.Field
-		UsedInWorkflows respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionListResponseClassify) RawJSON() string { return r.JSON.raw }
-func (r *FunctionListResponseClassify) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionListResponseClassifyClassification struct {
-	Name            string                                           `json:"name" api:"required"`
-	Description     string                                           `json:"description"`
-	FunctionID      string                                           `json:"functionID"`
-	FunctionName    string                                           `json:"functionName"`
-	IsErrorFallback bool                                             `json:"isErrorFallback"`
-	Origin          FunctionListResponseClassifyClassificationOrigin `json:"origin"`
-	Regex           FunctionListResponseClassifyClassificationRegex  `json:"regex"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Name            respjson.Field
-		Description     respjson.Field
-		FunctionID      respjson.Field
-		FunctionName    respjson.Field
-		IsErrorFallback respjson.Field
-		Origin          respjson.Field
-		Regex           respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionListResponseClassifyClassification) RawJSON() string { return r.JSON.raw }
-func (r *FunctionListResponseClassifyClassification) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionListResponseClassifyClassificationOrigin struct {
-	Email FunctionListResponseClassifyClassificationOriginEmail `json:"email"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Email       respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionListResponseClassifyClassificationOrigin) RawJSON() string { return r.JSON.raw }
-func (r *FunctionListResponseClassifyClassificationOrigin) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionListResponseClassifyClassificationOriginEmail struct {
-	Patterns []string `json:"patterns"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Patterns    respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionListResponseClassifyClassificationOriginEmail) RawJSON() string { return r.JSON.raw }
-func (r *FunctionListResponseClassifyClassificationOriginEmail) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionListResponseClassifyClassificationRegex struct {
-	Patterns []string `json:"patterns"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Patterns    respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionListResponseClassifyClassificationRegex) RawJSON() string { return r.JSON.raw }
-func (r *FunctionListResponseClassifyClassificationRegex) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// A function that delivers workflow outputs to an external destination. Send
-// functions receive the output of an upstream workflow node and forward it to a
-// webhook, S3 bucket, or Google Drive folder.
-type FunctionListResponseSend struct {
-	// Destination type for a Send function.
-	//
-	// Any of "webhook", "s3", "google_drive".
-	DestinationType string `json:"destinationType" api:"required"`
-	// Unique identifier of function.
-	FunctionID string `json:"functionID" api:"required"`
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName string        `json:"functionName" api:"required"`
-	Type         constant.Send `json:"type" default:"send"`
-	// Version number of function.
-	VersionNum int64 `json:"versionNum" api:"required"`
-	// Audit trail information for the function.
-	Audit FunctionAudit `json:"audit"`
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName string `json:"displayName"`
-	// Google Drive folder ID. Present when destinationType is google_drive. Managed
-	// via Paragon OAuth.
-	GoogleDriveFolderID string `json:"googleDriveFolderId"`
-	// S3 bucket to upload the payload to. Present when destinationType is s3.
-	S3Bucket string `json:"s3Bucket"`
-	// S3 key prefix (folder path). Optional, present when destinationType is s3.
-	S3Prefix string `json:"s3Prefix"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags"`
-	// List of workflows that use this function.
-	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
-	// Whether webhook payloads are signed with an HMAC-SHA256 `bem-signature` header.
-	WebhookSigningEnabled bool `json:"webhookSigningEnabled"`
-	// Webhook URL to POST the payload to. Present when destinationType is webhook.
-	WebhookURL string `json:"webhookUrl"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		DestinationType       respjson.Field
-		FunctionID            respjson.Field
-		FunctionName          respjson.Field
-		Type                  respjson.Field
-		VersionNum            respjson.Field
-		Audit                 respjson.Field
-		DisplayName           respjson.Field
-		GoogleDriveFolderID   respjson.Field
-		S3Bucket              respjson.Field
-		S3Prefix              respjson.Field
-		Tags                  respjson.Field
-		UsedInWorkflows       respjson.Field
-		WebhookSigningEnabled respjson.Field
-		WebhookURL            respjson.Field
-		ExtraFields           map[string]respjson.Field
-		raw                   string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionListResponseSend) RawJSON() string { return r.JSON.raw }
-func (r *FunctionListResponseSend) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionListResponseSplit struct {
-	// Unique identifier of function.
-	FunctionID string `json:"functionID" api:"required"`
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName string `json:"functionName" api:"required"`
-	// The method used to split pages.
-	//
-	// Any of "print_page", "semantic_page".
-	SplitType string         `json:"splitType" api:"required"`
-	Type      constant.Split `json:"type" default:"split"`
-	// Version number of function.
-	VersionNum int64 `json:"versionNum" api:"required"`
-	// Audit trail information for the function.
-	Audit FunctionAudit `json:"audit"`
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName string `json:"displayName"`
-	// Configuration for print page splitting.
-	PrintPageSplitConfig FunctionListResponseSplitPrintPageSplitConfig `json:"printPageSplitConfig"`
-	// Configuration for semantic page splitting.
-	SemanticPageSplitConfig FunctionListResponseSplitSemanticPageSplitConfig `json:"semanticPageSplitConfig"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags"`
-	// List of workflows that use this function.
-	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		FunctionID              respjson.Field
-		FunctionName            respjson.Field
-		SplitType               respjson.Field
-		Type                    respjson.Field
-		VersionNum              respjson.Field
-		Audit                   respjson.Field
-		DisplayName             respjson.Field
-		PrintPageSplitConfig    respjson.Field
-		SemanticPageSplitConfig respjson.Field
-		Tags                    respjson.Field
-		UsedInWorkflows         respjson.Field
-		ExtraFields             map[string]respjson.Field
-		raw                     string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionListResponseSplit) RawJSON() string { return r.JSON.raw }
-func (r *FunctionListResponseSplit) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Configuration for print page splitting.
-type FunctionListResponseSplitPrintPageSplitConfig struct {
-	NextFunctionID string `json:"nextFunctionID"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		NextFunctionID respjson.Field
-		ExtraFields    map[string]respjson.Field
-		raw            string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionListResponseSplitPrintPageSplitConfig) RawJSON() string { return r.JSON.raw }
-func (r *FunctionListResponseSplitPrintPageSplitConfig) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Configuration for semantic page splitting.
-type FunctionListResponseSplitSemanticPageSplitConfig struct {
-	ItemClasses []SplitFunctionSemanticPageItemClass `json:"itemClasses"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		ItemClasses respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionListResponseSplitSemanticPageSplitConfig) RawJSON() string { return r.JSON.raw }
-func (r *FunctionListResponseSplitSemanticPageSplitConfig) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionListResponseJoin struct {
-	// Description of join function.
-	Description string `json:"description" api:"required"`
-	// Unique identifier of function.
-	FunctionID string `json:"functionID" api:"required"`
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName string `json:"functionName" api:"required"`
-	// The type of join to perform.
-	//
-	// Any of "standard".
-	JoinType string `json:"joinType" api:"required"`
-	// Desired output structure defined in standard JSON Schema convention.
-	OutputSchema any `json:"outputSchema" api:"required"`
-	// Name of output schema object.
-	OutputSchemaName string        `json:"outputSchemaName" api:"required"`
-	Type             constant.Join `json:"type" default:"join"`
-	// Version number of function.
-	VersionNum int64 `json:"versionNum" api:"required"`
-	// Audit trail information for the function.
-	Audit FunctionAudit `json:"audit"`
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName string `json:"displayName"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags"`
-	// List of workflows that use this function.
-	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Description      respjson.Field
-		FunctionID       respjson.Field
-		FunctionName     respjson.Field
-		JoinType         respjson.Field
-		OutputSchema     respjson.Field
-		OutputSchemaName respjson.Field
-		Type             respjson.Field
-		VersionNum       respjson.Field
-		Audit            respjson.Field
-		DisplayName      respjson.Field
-		Tags             respjson.Field
-		UsedInWorkflows  respjson.Field
-		ExtraFields      map[string]respjson.Field
-		raw              string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionListResponseJoin) RawJSON() string { return r.JSON.raw }
-func (r *FunctionListResponseJoin) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// A function that transforms and customizes input payloads using JMESPath
-// expressions. Payload shaping allows you to extract specific data, perform
-// calculations, and reshape complex input structures into simplified, standardized
-// output formats tailored to your downstream systems or business requirements.
-type FunctionListResponsePayloadShaping struct {
-	// Unique identifier of function.
-	FunctionID string `json:"functionID" api:"required"`
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName string `json:"functionName" api:"required"`
-	// JMESPath expression that defines how to transform and customize the input
-	// payload structure. Payload shaping allows you to extract, reshape, and
-	// reorganize data from complex input payloads into a simplified, standardized
-	// output format. Use JMESPath syntax to select specific fields, perform
-	// calculations, and create new data structures tailored to your needs.
-	ShapingSchema string                  `json:"shapingSchema" api:"required"`
-	Type          constant.PayloadShaping `json:"type" default:"payload_shaping"`
-	// Version number of function.
-	VersionNum int64 `json:"versionNum" api:"required"`
-	// Audit trail information for the function.
-	Audit FunctionAudit `json:"audit"`
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName string `json:"displayName"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags"`
-	// List of workflows that use this function.
-	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		FunctionID      respjson.Field
-		FunctionName    respjson.Field
-		ShapingSchema   respjson.Field
-		Type            respjson.Field
-		VersionNum      respjson.Field
-		Audit           respjson.Field
-		DisplayName     respjson.Field
-		Tags            respjson.Field
-		UsedInWorkflows respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionListResponsePayloadShaping) RawJSON() string { return r.JSON.raw }
-func (r *FunctionListResponsePayloadShaping) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionListResponseEnrich struct {
-	// Configuration for enrich function with semantic search steps.
-	//
-	// **How Enrich Functions Work:**
-	//
-	// Enrich functions use semantic search to augment JSON data with relevant
-	// information from collections. They take JSON input (typically from a transform
-	// function), extract specified fields, perform vector-based semantic search
-	// against collections, and inject the results back into the data.
-	//
-	// **Input Requirements:**
-	//
-	// - Must receive JSON input (typically uploaded to S3 from a previous function)
-	// - Can be chained after transform or other functions that produce JSON output
-	//
-	// **Example Use Cases:**
-	//
-	// - Match product descriptions to SKU codes from a product catalog
-	// - Enrich customer data with account information
-	// - Link order line items to inventory records
-	//
-	// **Configuration:**
-	//
-	// - Define one or more enrichment steps
-	// - Each step extracts values, searches a collection, and injects results
-	// - Steps are executed sequentially
-	Config EnrichConfig `json:"config" api:"required"`
-	// Unique identifier of function.
-	FunctionID string `json:"functionID" api:"required"`
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName string          `json:"functionName" api:"required"`
-	Type         constant.Enrich `json:"type" default:"enrich"`
-	// Version number of function.
-	VersionNum int64 `json:"versionNum" api:"required"`
-	// Audit trail information for the function.
-	Audit FunctionAudit `json:"audit"`
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName string `json:"displayName"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags"`
-	// List of workflows that use this function.
-	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Config          respjson.Field
-		FunctionID      respjson.Field
-		FunctionName    respjson.Field
-		Type            respjson.Field
-		VersionNum      respjson.Field
-		Audit           respjson.Field
-		DisplayName     respjson.Field
-		Tags            respjson.Field
-		UsedInWorkflows respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionListResponseEnrich) RawJSON() string { return r.JSON.raw }
-func (r *FunctionListResponseEnrich) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 type FunctionNewParams struct {
-
-	//
-	// Request body variants
-	//
-
-	// This field is a request body variant, only one variant field can be set.
-	OfExtract *FunctionNewParamsBodyExtract `json:",inline"`
-	// This field is a request body variant, only one variant field can be set. V3 wire
-	// form of the Route (classify) function create payload. Mirrors {
-	OfClassify *FunctionNewParamsBodyClassify `json:",inline"`
-	// This field is a request body variant, only one variant field can be set.
-	OfSend *FunctionNewParamsBodySend `json:",inline"`
-	// This field is a request body variant, only one variant field can be set.
-	OfSplit *FunctionNewParamsBodySplit `json:",inline"`
-	// This field is a request body variant, only one variant field can be set.
-	OfJoin *FunctionNewParamsBodyJoin `json:",inline"`
-	// This field is a request body variant, only one variant field can be set.
-	OfPayloadShaping *FunctionNewParamsBodyPayloadShaping `json:",inline"`
-	// This field is a request body variant, only one variant field can be set.
-	OfEnrich *FunctionNewParamsBodyEnrich `json:",inline"`
-
+	// V3 wire form of the Route (classify) function create payload. Mirrors {
+	CreateFunction CreateFunctionUnionParam
 	paramObj
 }
 
-func (u FunctionNewParams) MarshalJSON() ([]byte, error) {
-	return param.MarshalUnion(u, u.OfExtract,
-		u.OfClassify,
-		u.OfSend,
-		u.OfSplit,
-		u.OfJoin,
-		u.OfPayloadShaping,
-		u.OfEnrich)
+func (r FunctionNewParams) MarshalJSON() (data []byte, err error) {
+	return shimjson.Marshal(r.CreateFunction)
 }
 func (r *FunctionNewParams) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// The properties FunctionName, Type are required.
-type FunctionNewParamsBodyExtract struct {
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName string `json:"functionName" api:"required"`
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName param.Opt[string] `json:"displayName,omitzero"`
-	// Name of output schema object.
-	OutputSchemaName param.Opt[string] `json:"outputSchemaName,omitzero"`
-	// Whether tabular chunking is enabled. When true, tables in CSV/Excel files are
-	// processed in row batches rather than all at once.
-	TabularChunkingEnabled param.Opt[bool] `json:"tabularChunkingEnabled,omitzero"`
-	// Desired output structure defined in standard JSON Schema convention.
-	OutputSchema any `json:"outputSchema,omitzero"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags,omitzero"`
-	// This field can be elided, and will marshal its zero value as "extract".
-	Type constant.Extract `json:"type" default:"extract"`
-	paramObj
-}
-
-func (r FunctionNewParamsBodyExtract) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionNewParamsBodyExtract
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionNewParamsBodyExtract) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// V3 wire form of the Route (classify) function create payload. Mirrors {
-//
-// The properties FunctionName, Type are required.
-type FunctionNewParamsBodyClassify struct {
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName string `json:"functionName" api:"required"`
-	// Description of classifier. Can be used to provide additional context on
-	// classifier's purpose and expected inputs.
-	Description param.Opt[string] `json:"description,omitzero"`
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName param.Opt[string] `json:"displayName,omitzero"`
-	// V3 create/update variants of the shared function payloads.
-	//
-	// The V3 Functions API no longer accepts the legacy `transform` or `analyze`
-	// function types when creating new functions or updating existing ones — both have
-	// been unified under `extract`. Existing functions of those types remain readable
-	// and callable via V3, so the V3 read-side unions still include `transform` and
-	// `analyze` variants.
-	//
-	// The V3 API also renames the internal `route` function type to `classify` on the
-	// wire, and the associated `routes` field to `classifications` (type
-	// `ClassificationList`). Platform-internal storage and processing still use
-	// `route` / `routes`; the rename is applied only at the V3 API boundary.V3-facing
-	// name for the list of classifications a classify function can produce.
-	Classifications []FunctionNewParamsBodyClassifyClassification `json:"classifications,omitzero"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags,omitzero"`
-	// This field can be elided, and will marshal its zero value as "classify".
-	Type constant.Classify `json:"type" default:"classify"`
-	paramObj
-}
-
-func (r FunctionNewParamsBodyClassify) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionNewParamsBodyClassify
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionNewParamsBodyClassify) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// The property Name is required.
-type FunctionNewParamsBodyClassifyClassification struct {
-	Name            string                                            `json:"name" api:"required"`
-	Description     param.Opt[string]                                 `json:"description,omitzero"`
-	FunctionID      param.Opt[string]                                 `json:"functionID,omitzero"`
-	FunctionName    param.Opt[string]                                 `json:"functionName,omitzero"`
-	IsErrorFallback param.Opt[bool]                                   `json:"isErrorFallback,omitzero"`
-	Origin          FunctionNewParamsBodyClassifyClassificationOrigin `json:"origin,omitzero"`
-	Regex           FunctionNewParamsBodyClassifyClassificationRegex  `json:"regex,omitzero"`
-	paramObj
-}
-
-func (r FunctionNewParamsBodyClassifyClassification) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionNewParamsBodyClassifyClassification
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionNewParamsBodyClassifyClassification) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionNewParamsBodyClassifyClassificationOrigin struct {
-	Email FunctionNewParamsBodyClassifyClassificationOriginEmail `json:"email,omitzero"`
-	paramObj
-}
-
-func (r FunctionNewParamsBodyClassifyClassificationOrigin) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionNewParamsBodyClassifyClassificationOrigin
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionNewParamsBodyClassifyClassificationOrigin) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionNewParamsBodyClassifyClassificationOriginEmail struct {
-	Patterns []string `json:"patterns,omitzero"`
-	paramObj
-}
-
-func (r FunctionNewParamsBodyClassifyClassificationOriginEmail) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionNewParamsBodyClassifyClassificationOriginEmail
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionNewParamsBodyClassifyClassificationOriginEmail) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionNewParamsBodyClassifyClassificationRegex struct {
-	Patterns []string `json:"patterns,omitzero"`
-	paramObj
-}
-
-func (r FunctionNewParamsBodyClassifyClassificationRegex) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionNewParamsBodyClassifyClassificationRegex
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionNewParamsBodyClassifyClassificationRegex) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// The properties FunctionName, Type are required.
-type FunctionNewParamsBodySend struct {
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName string `json:"functionName" api:"required"`
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName param.Opt[string] `json:"displayName,omitzero"`
-	// Google Drive folder ID. Required when destinationType is google_drive. Managed
-	// via Paragon OAuth.
-	GoogleDriveFolderID param.Opt[string] `json:"googleDriveFolderId,omitzero"`
-	// S3 bucket to upload the payload to. Required when destinationType is s3.
-	S3Bucket param.Opt[string] `json:"s3Bucket,omitzero"`
-	// Optional S3 key prefix (folder path).
-	S3Prefix param.Opt[string] `json:"s3Prefix,omitzero"`
-	// Whether to sign webhook deliveries with an HMAC-SHA256 `bem-signature` header.
-	// Defaults to `true` when omitted — signing is on by default for new send
-	// functions. Set explicitly to `false` to disable.
-	WebhookSigningEnabled param.Opt[bool] `json:"webhookSigningEnabled,omitzero"`
-	// Webhook URL to POST the payload to. Required when destinationType is webhook.
-	WebhookURL param.Opt[string] `json:"webhookUrl,omitzero"`
-	// Destination type for a Send function.
-	//
-	// Any of "webhook", "s3", "google_drive".
-	DestinationType string `json:"destinationType,omitzero"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags,omitzero"`
-	// This field can be elided, and will marshal its zero value as "send".
-	Type constant.Send `json:"type" default:"send"`
-	paramObj
-}
-
-func (r FunctionNewParamsBodySend) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionNewParamsBodySend
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionNewParamsBodySend) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func init() {
-	apijson.RegisterFieldValidator[FunctionNewParamsBodySend](
-		"destinationType", "webhook", "s3", "google_drive",
-	)
-}
-
-// The properties FunctionName, Type are required.
-type FunctionNewParamsBodySplit struct {
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName string `json:"functionName" api:"required"`
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName             param.Opt[string]                                 `json:"displayName,omitzero"`
-	PrintPageSplitConfig    FunctionNewParamsBodySplitPrintPageSplitConfig    `json:"printPageSplitConfig,omitzero"`
-	SemanticPageSplitConfig FunctionNewParamsBodySplitSemanticPageSplitConfig `json:"semanticPageSplitConfig,omitzero"`
-	// Any of "print_page", "semantic_page".
-	SplitType string `json:"splitType,omitzero"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags,omitzero"`
-	// This field can be elided, and will marshal its zero value as "split".
-	Type constant.Split `json:"type" default:"split"`
-	paramObj
-}
-
-func (r FunctionNewParamsBodySplit) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionNewParamsBodySplit
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionNewParamsBodySplit) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func init() {
-	apijson.RegisterFieldValidator[FunctionNewParamsBodySplit](
-		"splitType", "print_page", "semantic_page",
-	)
-}
-
-type FunctionNewParamsBodySplitPrintPageSplitConfig struct {
-	NextFunctionID   param.Opt[string] `json:"nextFunctionID,omitzero"`
-	NextFunctionName param.Opt[string] `json:"nextFunctionName,omitzero"`
-	paramObj
-}
-
-func (r FunctionNewParamsBodySplitPrintPageSplitConfig) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionNewParamsBodySplitPrintPageSplitConfig
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionNewParamsBodySplitPrintPageSplitConfig) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionNewParamsBodySplitSemanticPageSplitConfig struct {
-	ItemClasses []SplitFunctionSemanticPageItemClassParam `json:"itemClasses,omitzero"`
-	paramObj
-}
-
-func (r FunctionNewParamsBodySplitSemanticPageSplitConfig) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionNewParamsBodySplitSemanticPageSplitConfig
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionNewParamsBodySplitSemanticPageSplitConfig) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// The properties FunctionName, Type are required.
-type FunctionNewParamsBodyJoin struct {
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName string `json:"functionName" api:"required"`
-	// Description of join function.
-	Description param.Opt[string] `json:"description,omitzero"`
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName param.Opt[string] `json:"displayName,omitzero"`
-	// Name of output schema object.
-	OutputSchemaName param.Opt[string] `json:"outputSchemaName,omitzero"`
-	// The type of join to perform.
-	//
-	// Any of "standard".
-	JoinType string `json:"joinType,omitzero"`
-	// Desired output structure defined in standard JSON Schema convention.
-	OutputSchema any `json:"outputSchema,omitzero"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags,omitzero"`
-	// This field can be elided, and will marshal its zero value as "join".
-	Type constant.Join `json:"type" default:"join"`
-	paramObj
-}
-
-func (r FunctionNewParamsBodyJoin) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionNewParamsBodyJoin
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionNewParamsBodyJoin) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func init() {
-	apijson.RegisterFieldValidator[FunctionNewParamsBodyJoin](
-		"joinType", "standard",
-	)
-}
-
-// The properties FunctionName, Type are required.
-type FunctionNewParamsBodyPayloadShaping struct {
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName string `json:"functionName" api:"required"`
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName param.Opt[string] `json:"displayName,omitzero"`
-	// JMESPath expression that defines how to transform and customize the input
-	// payload structure. Payload shaping allows you to extract, reshape, and
-	// reorganize data from complex input payloads into a simplified, standardized
-	// output format. Use JMESPath syntax to select specific fields, perform
-	// calculations, and create new data structures tailored to your needs.
-	ShapingSchema param.Opt[string] `json:"shapingSchema,omitzero"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags,omitzero"`
-	// This field can be elided, and will marshal its zero value as "payload_shaping".
-	Type constant.PayloadShaping `json:"type" default:"payload_shaping"`
-	paramObj
-}
-
-func (r FunctionNewParamsBodyPayloadShaping) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionNewParamsBodyPayloadShaping
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionNewParamsBodyPayloadShaping) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// The properties FunctionName, Type are required.
-type FunctionNewParamsBodyEnrich struct {
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName string `json:"functionName" api:"required"`
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName param.Opt[string] `json:"displayName,omitzero"`
-	// Configuration for enrich function with semantic search steps.
-	//
-	// **How Enrich Functions Work:**
-	//
-	// Enrich functions use semantic search to augment JSON data with relevant
-	// information from collections. They take JSON input (typically from a transform
-	// function), extract specified fields, perform vector-based semantic search
-	// against collections, and inject the results back into the data.
-	//
-	// **Input Requirements:**
-	//
-	// - Must receive JSON input (typically uploaded to S3 from a previous function)
-	// - Can be chained after transform or other functions that produce JSON output
-	//
-	// **Example Use Cases:**
-	//
-	// - Match product descriptions to SKU codes from a product catalog
-	// - Enrich customer data with account information
-	// - Link order line items to inventory records
-	//
-	// **Configuration:**
-	//
-	// - Define one or more enrichment steps
-	// - Each step extracts values, searches a collection, and injects results
-	// - Steps are executed sequentially
-	Config EnrichConfigParam `json:"config,omitzero"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags,omitzero"`
-	// This field can be elided, and will marshal its zero value as "enrich".
-	Type constant.Enrich `json:"type" default:"enrich"`
-	paramObj
-}
-
-func (r FunctionNewParamsBodyEnrich) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionNewParamsBodyEnrich
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionNewParamsBodyEnrich) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 type FunctionUpdateParams struct {
-
-	//
-	// Request body variants
-	//
-
-	// This field is a request body variant, only one variant field can be set.
-	OfExtract *FunctionUpdateParamsBodyExtract `json:",inline"`
-	// This field is a request body variant, only one variant field can be set. V3 wire
-	// form of the Route (classify) function upsert payload. Mirrors {
-	OfClassify *FunctionUpdateParamsBodyClassify `json:",inline"`
-	// This field is a request body variant, only one variant field can be set.
-	OfSend *FunctionUpdateParamsBodySend `json:",inline"`
-	// This field is a request body variant, only one variant field can be set.
-	OfSplit *FunctionUpdateParamsBodySplit `json:",inline"`
-	// This field is a request body variant, only one variant field can be set.
-	OfJoin *FunctionUpdateParamsBodyJoin `json:",inline"`
-	// This field is a request body variant, only one variant field can be set. A
-	// function that transforms and customizes input payloads using JMESPath
-	// expressions. Payload shaping allows you to extract specific data, perform
-	// calculations, and reshape complex input structures into simplified, standardized
-	// output formats tailored to your downstream systems or business requirements.
-	OfPayloadShaping *FunctionUpdateParamsBodyPayloadShaping `json:",inline"`
-	// This field is a request body variant, only one variant field can be set.
-	OfEnrich *FunctionUpdateParamsBodyEnrich `json:",inline"`
-
+	// V3 wire form of the Route (classify) function upsert payload. Mirrors {
+	UpdateFunction UpdateFunctionUnionParam
 	paramObj
 }
 
-func (u FunctionUpdateParams) MarshalJSON() ([]byte, error) {
-	return param.MarshalUnion(u, u.OfExtract,
-		u.OfClassify,
-		u.OfSend,
-		u.OfSplit,
-		u.OfJoin,
-		u.OfPayloadShaping,
-		u.OfEnrich)
+func (r FunctionUpdateParams) MarshalJSON() (data []byte, err error) {
+	return shimjson.Marshal(r.UpdateFunction)
 }
 func (r *FunctionUpdateParams) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// The property Type is required.
-type FunctionUpdateParamsBodyExtract struct {
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName param.Opt[string] `json:"displayName,omitzero"`
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName param.Opt[string] `json:"functionName,omitzero"`
-	// Name of output schema object.
-	OutputSchemaName param.Opt[string] `json:"outputSchemaName,omitzero"`
-	// Whether tabular chunking is enabled. When true, tables in CSV/Excel files are
-	// processed in row batches rather than all at once.
-	TabularChunkingEnabled param.Opt[bool] `json:"tabularChunkingEnabled,omitzero"`
-	// Desired output structure defined in standard JSON Schema convention.
-	OutputSchema any `json:"outputSchema,omitzero"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags,omitzero"`
-	// This field can be elided, and will marshal its zero value as "extract".
-	Type constant.Extract `json:"type" default:"extract"`
-	paramObj
-}
-
-func (r FunctionUpdateParamsBodyExtract) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionUpdateParamsBodyExtract
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionUpdateParamsBodyExtract) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// V3 wire form of the Route (classify) function upsert payload. Mirrors {
-//
-// The property Type is required.
-type FunctionUpdateParamsBodyClassify struct {
-	// Description of classifier. Can be used to provide additional context on
-	// classifier's purpose and expected inputs.
-	Description param.Opt[string] `json:"description,omitzero"`
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName param.Opt[string] `json:"displayName,omitzero"`
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName param.Opt[string] `json:"functionName,omitzero"`
-	// V3 create/update variants of the shared function payloads.
-	//
-	// The V3 Functions API no longer accepts the legacy `transform` or `analyze`
-	// function types when creating new functions or updating existing ones — both have
-	// been unified under `extract`. Existing functions of those types remain readable
-	// and callable via V3, so the V3 read-side unions still include `transform` and
-	// `analyze` variants.
-	//
-	// The V3 API also renames the internal `route` function type to `classify` on the
-	// wire, and the associated `routes` field to `classifications` (type
-	// `ClassificationList`). Platform-internal storage and processing still use
-	// `route` / `routes`; the rename is applied only at the V3 API boundary.V3-facing
-	// name for the list of classifications a classify function can produce.
-	Classifications []FunctionUpdateParamsBodyClassifyClassification `json:"classifications,omitzero"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags,omitzero"`
-	// This field can be elided, and will marshal its zero value as "classify".
-	Type constant.Classify `json:"type" default:"classify"`
-	paramObj
-}
-
-func (r FunctionUpdateParamsBodyClassify) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionUpdateParamsBodyClassify
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionUpdateParamsBodyClassify) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// The property Name is required.
-type FunctionUpdateParamsBodyClassifyClassification struct {
-	Name            string                                               `json:"name" api:"required"`
-	Description     param.Opt[string]                                    `json:"description,omitzero"`
-	FunctionID      param.Opt[string]                                    `json:"functionID,omitzero"`
-	FunctionName    param.Opt[string]                                    `json:"functionName,omitzero"`
-	IsErrorFallback param.Opt[bool]                                      `json:"isErrorFallback,omitzero"`
-	Origin          FunctionUpdateParamsBodyClassifyClassificationOrigin `json:"origin,omitzero"`
-	Regex           FunctionUpdateParamsBodyClassifyClassificationRegex  `json:"regex,omitzero"`
-	paramObj
-}
-
-func (r FunctionUpdateParamsBodyClassifyClassification) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionUpdateParamsBodyClassifyClassification
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionUpdateParamsBodyClassifyClassification) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionUpdateParamsBodyClassifyClassificationOrigin struct {
-	Email FunctionUpdateParamsBodyClassifyClassificationOriginEmail `json:"email,omitzero"`
-	paramObj
-}
-
-func (r FunctionUpdateParamsBodyClassifyClassificationOrigin) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionUpdateParamsBodyClassifyClassificationOrigin
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionUpdateParamsBodyClassifyClassificationOrigin) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionUpdateParamsBodyClassifyClassificationOriginEmail struct {
-	Patterns []string `json:"patterns,omitzero"`
-	paramObj
-}
-
-func (r FunctionUpdateParamsBodyClassifyClassificationOriginEmail) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionUpdateParamsBodyClassifyClassificationOriginEmail
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionUpdateParamsBodyClassifyClassificationOriginEmail) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionUpdateParamsBodyClassifyClassificationRegex struct {
-	Patterns []string `json:"patterns,omitzero"`
-	paramObj
-}
-
-func (r FunctionUpdateParamsBodyClassifyClassificationRegex) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionUpdateParamsBodyClassifyClassificationRegex
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionUpdateParamsBodyClassifyClassificationRegex) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// The property Type is required.
-type FunctionUpdateParamsBodySend struct {
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName param.Opt[string] `json:"displayName,omitzero"`
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName param.Opt[string] `json:"functionName,omitzero"`
-	// Google Drive folder ID. Required when destinationType is google_drive. Managed
-	// via Paragon OAuth.
-	GoogleDriveFolderID param.Opt[string] `json:"googleDriveFolderId,omitzero"`
-	// S3 bucket to upload the payload to. Required when destinationType is s3.
-	S3Bucket param.Opt[string] `json:"s3Bucket,omitzero"`
-	// Optional S3 key prefix (folder path).
-	S3Prefix param.Opt[string] `json:"s3Prefix,omitzero"`
-	// Whether to sign webhook deliveries with an HMAC-SHA256 `bem-signature` header.
-	// Defaults to `true` when omitted — signing is on by default for new send
-	// functions. Set explicitly to `false` to disable.
-	WebhookSigningEnabled param.Opt[bool] `json:"webhookSigningEnabled,omitzero"`
-	// Webhook URL to POST the payload to. Required when destinationType is webhook.
-	WebhookURL param.Opt[string] `json:"webhookUrl,omitzero"`
-	// Destination type for a Send function.
-	//
-	// Any of "webhook", "s3", "google_drive".
-	DestinationType string `json:"destinationType,omitzero"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags,omitzero"`
-	// This field can be elided, and will marshal its zero value as "send".
-	Type constant.Send `json:"type" default:"send"`
-	paramObj
-}
-
-func (r FunctionUpdateParamsBodySend) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionUpdateParamsBodySend
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionUpdateParamsBodySend) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func init() {
-	apijson.RegisterFieldValidator[FunctionUpdateParamsBodySend](
-		"destinationType", "webhook", "s3", "google_drive",
-	)
-}
-
-// The property Type is required.
-type FunctionUpdateParamsBodySplit struct {
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName param.Opt[string] `json:"displayName,omitzero"`
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName            param.Opt[string]                                    `json:"functionName,omitzero"`
-	PrintPageSplitConfig    FunctionUpdateParamsBodySplitPrintPageSplitConfig    `json:"printPageSplitConfig,omitzero"`
-	SemanticPageSplitConfig FunctionUpdateParamsBodySplitSemanticPageSplitConfig `json:"semanticPageSplitConfig,omitzero"`
-	// Any of "print_page", "semantic_page".
-	SplitType string `json:"splitType,omitzero"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags,omitzero"`
-	// This field can be elided, and will marshal its zero value as "split".
-	Type constant.Split `json:"type" default:"split"`
-	paramObj
-}
-
-func (r FunctionUpdateParamsBodySplit) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionUpdateParamsBodySplit
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionUpdateParamsBodySplit) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func init() {
-	apijson.RegisterFieldValidator[FunctionUpdateParamsBodySplit](
-		"splitType", "print_page", "semantic_page",
-	)
-}
-
-type FunctionUpdateParamsBodySplitPrintPageSplitConfig struct {
-	NextFunctionID   param.Opt[string] `json:"nextFunctionID,omitzero"`
-	NextFunctionName param.Opt[string] `json:"nextFunctionName,omitzero"`
-	paramObj
-}
-
-func (r FunctionUpdateParamsBodySplitPrintPageSplitConfig) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionUpdateParamsBodySplitPrintPageSplitConfig
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionUpdateParamsBodySplitPrintPageSplitConfig) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-type FunctionUpdateParamsBodySplitSemanticPageSplitConfig struct {
-	ItemClasses []SplitFunctionSemanticPageItemClassParam `json:"itemClasses,omitzero"`
-	paramObj
-}
-
-func (r FunctionUpdateParamsBodySplitSemanticPageSplitConfig) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionUpdateParamsBodySplitSemanticPageSplitConfig
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionUpdateParamsBodySplitSemanticPageSplitConfig) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// The property Type is required.
-type FunctionUpdateParamsBodyJoin struct {
-	// Description of join function.
-	Description param.Opt[string] `json:"description,omitzero"`
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName param.Opt[string] `json:"displayName,omitzero"`
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName param.Opt[string] `json:"functionName,omitzero"`
-	// Name of output schema object.
-	OutputSchemaName param.Opt[string] `json:"outputSchemaName,omitzero"`
-	// The type of join to perform.
-	//
-	// Any of "standard".
-	JoinType string `json:"joinType,omitzero"`
-	// Desired output structure defined in standard JSON Schema convention.
-	OutputSchema any `json:"outputSchema,omitzero"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags,omitzero"`
-	// This field can be elided, and will marshal its zero value as "join".
-	Type constant.Join `json:"type" default:"join"`
-	paramObj
-}
-
-func (r FunctionUpdateParamsBodyJoin) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionUpdateParamsBodyJoin
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionUpdateParamsBodyJoin) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func init() {
-	apijson.RegisterFieldValidator[FunctionUpdateParamsBodyJoin](
-		"joinType", "standard",
-	)
-}
-
-// A function that transforms and customizes input payloads using JMESPath
-// expressions. Payload shaping allows you to extract specific data, perform
-// calculations, and reshape complex input structures into simplified, standardized
-// output formats tailored to your downstream systems or business requirements.
-//
-// The property Type is required.
-type FunctionUpdateParamsBodyPayloadShaping struct {
-	// Display name of function. Human-readable name to help you identify the function.
-	DisplayName param.Opt[string] `json:"displayName,omitzero"`
-	// Name of function. Must be UNIQUE on a per-environment basis.
-	FunctionName param.Opt[string] `json:"functionName,omitzero"`
-	// JMESPath expression that defines how to transform and customize the input
-	// payload structure. Payload shaping allows you to extract, reshape, and
-	// reorganize data from complex input payloads into a simplified, standardized
-	// output format. Use JMESPath syntax to select specific fields, perform
-	// calculations, and create new data structures tailored to your needs.
-	ShapingSchema param.Opt[string] `json:"shapingSchema,omitzero"`
-	// Array of tags to categorize and organize functions.
-	Tags []string `json:"tags,omitzero"`
-	// This field can be elided, and will marshal its zero value as "payload_shaping".
-	Type constant.PayloadShaping `json:"type" default:"payload_shaping"`
-	paramObj
-}
-
-func (r FunctionUpdateParamsBodyPayloadShaping) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionUpdateParamsBodyPayloadShaping
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionUpdateParamsBodyPayloadShaping) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// The property Type is required.
-type FunctionUpdateParamsBodyEnrich struct {
-	// Configuration for enrich function with semantic search steps.
-	//
-	// **How Enrich Functions Work:**
-	//
-	// Enrich functions use semantic search to augment JSON data with relevant
-	// information from collections. They take JSON input (typically from a transform
-	// function), extract specified fields, perform vector-based semantic search
-	// against collections, and inject the results back into the data.
-	//
-	// **Input Requirements:**
-	//
-	// - Must receive JSON input (typically uploaded to S3 from a previous function)
-	// - Can be chained after transform or other functions that produce JSON output
-	//
-	// **Example Use Cases:**
-	//
-	// - Match product descriptions to SKU codes from a product catalog
-	// - Enrich customer data with account information
-	// - Link order line items to inventory records
-	//
-	// **Configuration:**
-	//
-	// - Define one or more enrichment steps
-	// - Each step extracts values, searches a collection, and injects results
-	// - Steps are executed sequentially
-	Config EnrichConfigParam `json:"config,omitzero"`
-	// This field can be elided, and will marshal its zero value as "enrich".
-	Type constant.Enrich `json:"type" default:"enrich"`
-	paramObj
-}
-
-func (r FunctionUpdateParamsBodyEnrich) MarshalJSON() (data []byte, err error) {
-	type shadow FunctionUpdateParamsBodyEnrich
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *FunctionUpdateParamsBodyEnrich) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

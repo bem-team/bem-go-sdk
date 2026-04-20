@@ -39,8 +39,10 @@ func TestUserAgentHeader(t *testing.T) {
 		}),
 	)
 	_, _ = client.Functions.New(context.Background(), bem.FunctionNewParams{
-		OfExtract: &bem.FunctionNewParamsBodyExtract{
-			FunctionName: "functionName",
+		CreateFunction: bem.CreateFunctionUnionParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
+				FunctionName: "functionName",
+			},
 		},
 	})
 	if userAgent != fmt.Sprintf("Bem/Go %s", internal.PackageVersion) {
@@ -67,8 +69,10 @@ func TestRetryAfter(t *testing.T) {
 		}),
 	)
 	_, err := client.Functions.New(context.Background(), bem.FunctionNewParams{
-		OfExtract: &bem.FunctionNewParamsBodyExtract{
-			FunctionName: "functionName",
+		CreateFunction: bem.CreateFunctionUnionParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
+				FunctionName: "functionName",
+			},
 		},
 	})
 	if err == nil {
@@ -106,8 +110,10 @@ func TestDeleteRetryCountHeader(t *testing.T) {
 		option.WithHeaderDel("X-Stainless-Retry-Count"),
 	)
 	_, err := client.Functions.New(context.Background(), bem.FunctionNewParams{
-		OfExtract: &bem.FunctionNewParamsBodyExtract{
-			FunctionName: "functionName",
+		CreateFunction: bem.CreateFunctionUnionParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
+				FunctionName: "functionName",
+			},
 		},
 	})
 	if err == nil {
@@ -140,8 +146,10 @@ func TestOverwriteRetryCountHeader(t *testing.T) {
 		option.WithHeader("X-Stainless-Retry-Count", "42"),
 	)
 	_, err := client.Functions.New(context.Background(), bem.FunctionNewParams{
-		OfExtract: &bem.FunctionNewParamsBodyExtract{
-			FunctionName: "functionName",
+		CreateFunction: bem.CreateFunctionUnionParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
+				FunctionName: "functionName",
+			},
 		},
 	})
 	if err == nil {
@@ -173,8 +181,10 @@ func TestRetryAfterMs(t *testing.T) {
 		}),
 	)
 	_, err := client.Functions.New(context.Background(), bem.FunctionNewParams{
-		OfExtract: &bem.FunctionNewParamsBodyExtract{
-			FunctionName: "functionName",
+		CreateFunction: bem.CreateFunctionUnionParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
+				FunctionName: "functionName",
+			},
 		},
 	})
 	if err == nil {
@@ -200,8 +210,10 @@ func TestContextCancel(t *testing.T) {
 	cancelCtx, cancel := context.WithCancel(context.Background())
 	cancel()
 	_, err := client.Functions.New(cancelCtx, bem.FunctionNewParams{
-		OfExtract: &bem.FunctionNewParamsBodyExtract{
-			FunctionName: "functionName",
+		CreateFunction: bem.CreateFunctionUnionParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
+				FunctionName: "functionName",
+			},
 		},
 	})
 	if err == nil {
@@ -224,8 +236,10 @@ func TestContextCancelDelay(t *testing.T) {
 	cancelCtx, cancel := context.WithTimeout(context.Background(), 2*time.Millisecond)
 	defer cancel()
 	_, err := client.Functions.New(cancelCtx, bem.FunctionNewParams{
-		OfExtract: &bem.FunctionNewParamsBodyExtract{
-			FunctionName: "functionName",
+		CreateFunction: bem.CreateFunctionUnionParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
+				FunctionName: "functionName",
+			},
 		},
 	})
 	if err == nil {
@@ -254,8 +268,10 @@ func TestContextDeadline(t *testing.T) {
 			}),
 		)
 		_, err := client.Functions.New(deadlineCtx, bem.FunctionNewParams{
-			OfExtract: &bem.FunctionNewParamsBodyExtract{
-				FunctionName: "functionName",
+			CreateFunction: bem.CreateFunctionUnionParam{
+				OfExtract: &bem.CreateFunctionExtractParam{
+					FunctionName: "functionName",
+				},
 			},
 		})
 		if err == nil {

@@ -27,15 +27,13 @@ func TestFunctionNewWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.Functions.New(context.TODO(), bem.FunctionNewParams{
-		CreateFunction: bem.CreateFunctionUnionParam{
-			OfTransform: &bem.CreateFunctionTransformParam{
-				FunctionName:           "functionName",
-				DisplayName:            bem.String("displayName"),
-				OutputSchema:           map[string]any{},
-				OutputSchemaName:       bem.String("outputSchemaName"),
-				TabularChunkingEnabled: bem.Bool(true),
-				Tags:                   []string{"string"},
-			},
+		OfExtract: &bem.FunctionNewParamsBodyExtract{
+			FunctionName:           "functionName",
+			DisplayName:            bem.String("displayName"),
+			OutputSchema:           map[string]any{},
+			OutputSchemaName:       bem.String("outputSchemaName"),
+			TabularChunkingEnabled: bem.Bool(true),
+			Tags:                   []string{"string"},
 		},
 	})
 	if err != nil {
@@ -87,15 +85,13 @@ func TestFunctionUpdateWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"functionName",
 		bem.FunctionUpdateParams{
-			UpdateFunction: bem.UpdateFunctionUnionParam{
-				OfTransform: &bem.UpdateFunctionTransformParam{
-					DisplayName:            bem.String("displayName"),
-					FunctionName:           bem.String("functionName"),
-					OutputSchema:           map[string]any{},
-					OutputSchemaName:       bem.String("outputSchemaName"),
-					TabularChunkingEnabled: bem.Bool(true),
-					Tags:                   []string{"string"},
-				},
+			OfExtract: &bem.FunctionUpdateParamsBodyExtract{
+				DisplayName:            bem.String("displayName"),
+				FunctionName:           bem.String("functionName"),
+				OutputSchema:           map[string]any{},
+				OutputSchemaName:       bem.String("outputSchemaName"),
+				TabularChunkingEnabled: bem.Bool(true),
+				Tags:                   []string{"string"},
 			},
 		},
 	)

@@ -66,8 +66,10 @@ func main() {
 		option.WithAPIKey("My API Key"), // defaults to os.LookupEnv("BEM_API_KEY")
 	)
 	functionResponse, err := client.Functions.New(context.TODO(), bem.FunctionNewParams{
-		OfExtract: &bem.FunctionNewParamsBodyExtract{
-			FunctionName: "functionName",
+		CreateFunction: bem.CreateFunctionUnionParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
+				FunctionName: "functionName",
+			},
 		},
 	})
 	if err != nil {
@@ -301,8 +303,8 @@ You can use `.ListAutoPaging()` methods to iterate through items across all page
 iter := client.Functions.ListAutoPaging(context.TODO(), bem.FunctionListParams{})
 // Automatically fetches more pages as needed.
 for iter.Next() {
-	functionListResponse := iter.Current()
-	fmt.Printf("%+v\n", functionListResponse)
+	function := iter.Current()
+	fmt.Printf("%+v\n", function)
 }
 if err := iter.Err(); err != nil {
 	panic(err.Error())
@@ -336,8 +338,10 @@ To handle errors, we recommend that you use the `errors.As` pattern:
 
 ```go
 _, err := client.Functions.New(context.TODO(), bem.FunctionNewParams{
-	OfExtract: &bem.FunctionNewParamsBodyExtract{
-		FunctionName: "functionName",
+	CreateFunction: bem.CreateFunctionUnionParam{
+		OfExtract: &bem.CreateFunctionExtractParam{
+			FunctionName: "functionName",
+		},
 	},
 })
 if err != nil {
@@ -367,8 +371,10 @@ defer cancel()
 client.Functions.New(
 	ctx,
 	bem.FunctionNewParams{
-		OfExtract: &bem.FunctionNewParamsBodyExtract{
-			FunctionName: "functionName",
+		CreateFunction: bem.CreateFunctionUnionParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
+				FunctionName: "functionName",
+			},
 		},
 	},
 	// This sets the per-retry timeout
@@ -407,8 +413,10 @@ client := bem.NewClient(
 client.Functions.New(
 	context.TODO(),
 	bem.FunctionNewParams{
-		OfExtract: &bem.FunctionNewParamsBodyExtract{
-			FunctionName: "functionName",
+		CreateFunction: bem.CreateFunctionUnionParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
+				FunctionName: "functionName",
+			},
 		},
 	},
 	option.WithMaxRetries(5),
@@ -426,8 +434,10 @@ var response *http.Response
 functionResponse, err := client.Functions.New(
 	context.TODO(),
 	bem.FunctionNewParams{
-		OfExtract: &bem.FunctionNewParamsBodyExtract{
-			FunctionName: "functionName",
+		CreateFunction: bem.CreateFunctionUnionParam{
+			OfExtract: &bem.CreateFunctionExtractParam{
+				FunctionName: "functionName",
+			},
 		},
 	},
 	option.WithResponseInto(&response),

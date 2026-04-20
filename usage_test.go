@@ -26,10 +26,8 @@ func TestUsage(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	functionResponse, err := client.Functions.New(context.TODO(), bem.FunctionNewParams{
-		CreateFunction: bem.CreateFunctionUnionParam{
-			OfTransform: &bem.CreateFunctionTransformParam{
-				FunctionName: "functionName",
-			},
+		OfExtract: &bem.FunctionNewParamsBodyExtract{
+			FunctionName: "functionName",
 		},
 	})
 	if err != nil {

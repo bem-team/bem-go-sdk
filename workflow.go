@@ -78,11 +78,16 @@ func NewWorkflowService(opts ...option.RequestOption) (r WorkflowService) {
 }
 
 // Create a Workflow
-func (r *WorkflowService) New(ctx context.Context, body WorkflowNewParams, opts ...option.RequestOption) (res *WorkflowNewResponse, err error) {
+func (r *WorkflowService) New(ctx context.Context, body WorkflowNewParams, opts ...option.RequestOption) (res *Workflow, err error) {
+	var env WorkflowNewResponseEnvelope
 	opts = slices.Concat(r.options, opts)
 	path := "v3/workflows"
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return res, err
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &env, opts...)
+	if err != nil {
+		return nil, err
+	}
+	res = &env.Workflow
+	return res, nil
 }
 
 // Get a Workflow
@@ -486,62 +491,6 @@ func (r *WorkflowNodeResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type WorkflowNewResponse struct {
-	// Per-connector failures from the diff/apply phase. Empty or omitted when all
-	// operations succeeded.
-	ConnectorErrors []WorkflowNewResponseConnectorError `json:"connectorErrors"`
-	// Error message if the workflow creation failed.
-	Error string `json:"error"`
-	// V3 read representation of a workflow version.
-	Workflow Workflow `json:"workflow"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		ConnectorErrors respjson.Field
-		Error           respjson.Field
-		Workflow        respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowNewResponse) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowNewResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Per-connector failure surfaced alongside a successful workflow DAG save.
-type WorkflowNewResponseConnectorError struct {
-	// Machine-readable error code.
-	Code string `json:"code" api:"required"`
-	// Human-readable error message.
-	Message string `json:"message" api:"required"`
-	// Which diff operation was attempted.
-	//
-	// Any of "create", "update", "delete".
-	Operation string `json:"operation" api:"required"`
-	// Populated for update/delete failures.
-	ConnectorID string `json:"connectorID"`
-	// Populated for create failures.
-	Name string `json:"name"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Code        respjson.Field
-		Message     respjson.Field
-		Operation   respjson.Field
-		ConnectorID respjson.Field
-		Name        respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WorkflowNewResponseConnectorError) RawJSON() string { return r.JSON.raw }
-func (r *WorkflowNewResponseConnectorError) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 type WorkflowGetResponse struct {
 	// Error message if the workflow retrieval failed.
 	Error string `json:"error"`
@@ -800,6 +749,62 @@ func (r WorkflowNewParamsEdge) MarshalJSON() (data []byte, err error) {
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *WorkflowNewParamsEdge) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type WorkflowNewResponseEnvelope struct {
+	// Per-connector failures from the diff/apply phase. Empty or omitted when all
+	// operations succeeded.
+	ConnectorErrors []WorkflowNewResponseEnvelopeConnectorError `json:"connectorErrors"`
+	// Error message if the workflow creation failed.
+	Error string `json:"error"`
+	// V3 read representation of a workflow version.
+	Workflow Workflow `json:"workflow"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		ConnectorErrors respjson.Field
+		Error           respjson.Field
+		Workflow        respjson.Field
+		ExtraFields     map[string]respjson.Field
+		raw             string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r WorkflowNewResponseEnvelope) RawJSON() string { return r.JSON.raw }
+func (r *WorkflowNewResponseEnvelope) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Per-connector failure surfaced alongside a successful workflow DAG save.
+type WorkflowNewResponseEnvelopeConnectorError struct {
+	// Machine-readable error code.
+	Code string `json:"code" api:"required"`
+	// Human-readable error message.
+	Message string `json:"message" api:"required"`
+	// Which diff operation was attempted.
+	//
+	// Any of "create", "update", "delete".
+	Operation string `json:"operation" api:"required"`
+	// Populated for update/delete failures.
+	ConnectorID string `json:"connectorID"`
+	// Populated for create failures.
+	Name string `json:"name"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Code        respjson.Field
+		Message     respjson.Field
+		Operation   respjson.Field
+		ConnectorID respjson.Field
+		Name        respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r WorkflowNewResponseEnvelopeConnectorError) RawJSON() string { return r.JSON.raw }
+func (r *WorkflowNewResponseEnvelopeConnectorError) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.8.0 (2026-04-22)
+
+Full Changelog: [v0.7.0...v0.8.0](https://github.com/bem-team/bem-go-sdk/compare/v0.7.0...v0.8.0)
+
+### Features
+
+* **api:** manual updates ([0ef6609](https://github.com/bem-team/bem-go-sdk/commit/0ef660978ab0e6547e4f2f5409c21e9a1aded092))
+
+
+### Chores
+
+* **internal:** more robust bootstrap script ([7bb9ec4](https://github.com/bem-team/bem-go-sdk/commit/7bb9ec453d96b4d6d8b4c645b1967c5f70db4f29))
+
 ## 0.7.0 (2026-04-20)
 
 Full Changelog: [v0.6.0...v0.7.0](https://github.com/bem-team/bem-go-sdk/compare/v0.6.0...v0.7.0)

@@ -13,7 +13,7 @@ import (
 	"github.com/bem-team/bem-go-sdk/option"
 )
 
-func TestCallGet(t *testing.T) {
+func TestWebhookSecretNew(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -26,7 +26,7 @@ func TestCallGet(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	_, err := client.Calls.Get(context.TODO(), "callID")
+	_, err := client.WebhookSecret.New(context.TODO())
 	if err != nil {
 		var apierr *bem.Error
 		if errors.As(err, &apierr) {
@@ -36,7 +36,7 @@ func TestCallGet(t *testing.T) {
 	}
 }
 
-func TestCallListWithOptionalParams(t *testing.T) {
+func TestWebhookSecretGet(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -49,18 +49,7 @@ func TestCallListWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	_, err := client.Calls.List(context.TODO(), bem.CallListParams{
-		CallIDs:              []string{"string"},
-		EndingBefore:         bem.String("endingBefore"),
-		Limit:                bem.Int(1),
-		ReferenceIDs:         []string{"string"},
-		ReferenceIDSubstring: bem.String("referenceIDSubstring"),
-		SortOrder:            bem.CallListParamsSortOrderAsc,
-		StartingAfter:        bem.String("startingAfter"),
-		Statuses:             []string{"pending"},
-		WorkflowIDs:          []string{"string"},
-		WorkflowNames:        []string{"string"},
-	})
+	_, err := client.WebhookSecret.Get(context.TODO())
 	if err != nil {
 		var apierr *bem.Error
 		if errors.As(err, &apierr) {
@@ -70,7 +59,7 @@ func TestCallListWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestCallGetTrace(t *testing.T) {
+func TestWebhookSecretRevoke(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -83,7 +72,7 @@ func TestCallGetTrace(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	_, err := client.Calls.GetTrace(context.TODO(), "callID")
+	err := client.WebhookSecret.Revoke(context.TODO())
 	if err != nil {
 		var apierr *bem.Error
 		if errors.As(err, &apierr) {

@@ -132,6 +132,35 @@ func (r *CallService) ListAutoPaging(ctx context.Context, query CallListParams, 
 	return pagination.NewCallsPageAutoPager(r.List(ctx, query, opts...))
 }
 
+// **Retrieve the full execution trace of a workflow call.**
+//
+// Returns all function calls and events emitted during the call as flat arrays.
+// The DAG can be reconstructed using `FunctionCallResponseBase.sourceEventID` (the
+// event that spawned each function call) and each event's `functionCallID` (the
+// function call that emitted it).
+//
+// ## Graph structure
+//
+//   - A function call with no `sourceEventID` is the root.
+//   - An event's `functionCallID` points to the function call that emitted it.
+//   - A function call's `sourceEventID` points to the event that triggered it.
+//   - `workflowNodeName` identifies the DAG node; `incomingDestinationName`
+//     identifies the labelled outlet used to reach this call (absent for unlabelled
+//     edges and root calls).
+//
+// The trace is available as soon as the call exists and grows as execution
+// proceeds.
+func (r *CallService) GetTrace(ctx context.Context, callID string, opts ...option.RequestOption) (res *CallGetTraceResponse, err error) {
+	opts = slices.Concat(r.options, opts)
+	if callID == "" {
+		err = errors.New("missing required callID parameter")
+		return nil, err
+	}
+	path := fmt.Sprintf("v3/calls/%s/trace", url.PathEscape(callID))
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	return res, err
+}
+
 // A workflow call returned by the V3 API.
 //
 // Compared to the V2 `Call` model:
@@ -325,6 +354,174 @@ type CallGetResponse struct {
 // Returns the unmodified JSON received from the API
 func (r CallGetResponse) RawJSON() string { return r.JSON.raw }
 func (r *CallGetResponse) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Response from `GET /v3/calls/{callID}/trace`.
+//
+// Contains the full execution DAG as flat arrays of function calls and events.
+// Reconstruct the graph using `FunctionCallResponseBase.sourceEventID` (the event
+// that spawned each function call) and each event's `functionCallID` (the function
+// call that emitted it).
+type CallGetTraceResponse struct {
+	// Error message if trace retrieval failed.
+	Error string `json:"error"`
+	// Full execution DAG of a call as flat arrays. Reconstruct the graph using
+	// FunctionCallResponseBase.sourceEventID and each event's functionCallID.
+	Trace CallGetTraceResponseTrace `json:"trace"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Error       respjson.Field
+		Trace       respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallGetTraceResponse) RawJSON() string { return r.JSON.raw }
+func (r *CallGetTraceResponse) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Full execution DAG of a call as flat arrays. Reconstruct the graph using
+// FunctionCallResponseBase.sourceEventID and each event's functionCallID.
+type CallGetTraceResponseTrace struct {
+	// All events emitted within this call, polymorphic by eventType.
+	Events []any `json:"events" api:"required"`
+	// All function calls executed within this call.
+	FunctionCalls []CallGetTraceResponseTraceFunctionCall `json:"functionCalls" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Events        respjson.Field
+		FunctionCalls respjson.Field
+		ExtraFields   map[string]respjson.Field
+		raw           string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallGetTraceResponseTrace) RawJSON() string { return r.JSON.raw }
+func (r *CallGetTraceResponseTrace) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallGetTraceResponseTraceFunctionCall struct {
+	// Unique identifier for this function call
+	FunctionCallID string `json:"functionCallID" api:"required"`
+	// ID of the function that was called
+	FunctionID string `json:"functionID" api:"required"`
+	// Name of the function that was called
+	FunctionName string `json:"functionName" api:"required"`
+	// User-provided reference ID for tracking
+	ReferenceID string `json:"referenceID" api:"required"`
+	// The date and time this function call started.
+	StartedAt time.Time `json:"startedAt" api:"required" format:"date-time"`
+	// The status of the action.
+	//
+	// Any of "pending", "running", "completed", "failed".
+	Status string `json:"status" api:"required"`
+	// The type of the function.
+	//
+	// Any of "transform", "extract", "route", "send", "split", "join", "analyze",
+	// "payload_shaping", "enrich".
+	Type FunctionType `json:"type" api:"required"`
+	// Array of activity steps for this function call
+	Activity []CallGetTraceResponseTraceFunctionCallActivity `json:"activity"`
+	// The date and time this function call finished. Absent while still running.
+	FinishedAt time.Time `json:"finishedAt" format:"date-time"`
+	// Version number of the function
+	FunctionVersionNum int64 `json:"functionVersionNum"`
+	// The labelled outlet on the upstream node that routed execution to this call.
+	// Absent for root calls, unlabelled edges, and pre-migration rows.
+	IncomingDestinationName string `json:"incomingDestinationName"`
+	// Array of all file inputs with their S3 URLs
+	Inputs []CallGetTraceResponseTraceFunctionCallInput `json:"inputs"`
+	// Input type for single file input (set when there's exactly one file input)
+	InputType string `json:"inputType"`
+	// Presigned S3 URL for single file input (set when there's exactly one file input)
+	S3URL string `json:"s3URL"`
+	// ID of the event that spawned this function call (for DAG reconstruction). Nil
+	// for the root function call.
+	SourceEventID string `json:"sourceEventID"`
+	// ID of the function call that spawned this function call (for DAG reconstruction)
+	SourceFunctionCallID string `json:"sourceFunctionCallID"`
+	// ID of the workflow call this function call belongs to (top-level execution
+	// context)
+	WorkflowCallID string `json:"workflowCallID"`
+	// Name of the workflow DAG call-site node this function call is executing. Absent
+	// for non-workflow calls and pre-migration rows.
+	WorkflowNodeName string `json:"workflowNodeName"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		FunctionCallID          respjson.Field
+		FunctionID              respjson.Field
+		FunctionName            respjson.Field
+		ReferenceID             respjson.Field
+		StartedAt               respjson.Field
+		Status                  respjson.Field
+		Type                    respjson.Field
+		Activity                respjson.Field
+		FinishedAt              respjson.Field
+		FunctionVersionNum      respjson.Field
+		IncomingDestinationName respjson.Field
+		Inputs                  respjson.Field
+		InputType               respjson.Field
+		S3URL                   respjson.Field
+		SourceEventID           respjson.Field
+		SourceFunctionCallID    respjson.Field
+		WorkflowCallID          respjson.Field
+		WorkflowNodeName        respjson.Field
+		ExtraFields             map[string]respjson.Field
+		raw                     string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallGetTraceResponseTraceFunctionCall) RawJSON() string { return r.JSON.raw }
+func (r *CallGetTraceResponseTraceFunctionCall) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallGetTraceResponseTraceFunctionCallActivity struct {
+	DisplayName string `json:"displayName"`
+	// Any of "pending", "running", "completed", "failed".
+	Status string `json:"status"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DisplayName respjson.Field
+		Status      respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallGetTraceResponseTraceFunctionCallActivity) RawJSON() string { return r.JSON.raw }
+func (r *CallGetTraceResponseTraceFunctionCallActivity) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallGetTraceResponseTraceFunctionCallInput struct {
+	// Input type of the file
+	InputType string `json:"inputType"`
+	// Item reference ID for batch inputs
+	ItemReferenceID string `json:"itemReferenceID"`
+	// Presigned S3 URL for the file input
+	S3URL string `json:"s3URL"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		InputType       respjson.Field
+		ItemReferenceID respjson.Field
+		S3URL           respjson.Field
+		ExtraFields     map[string]respjson.Field
+		raw             string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallGetTraceResponseTraceFunctionCallInput) RawJSON() string { return r.JSON.raw }
+func (r *CallGetTraceResponseTraceFunctionCallInput) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

@@ -106,6 +106,55 @@ type Client struct {
 	// The schema is designed to be broadly applicable to documents of the same type,
 	// not just the specific file uploaded.
 	InferSchema InferSchemaService
+	// Collections are named groups of embedded items used by Enrich functions for
+	// semantic search.
+	//
+	// Each collection is referenced by a `collectionName`, which supports dot notation
+	// for hierarchical paths (e.g. `customers.premium.vip`). Names must contain only
+	// letters, digits, underscores, and dots, and each segment must start with a
+	// letter or underscore.
+	//
+	// ## Items
+	//
+	// Items carry either a string or a JSON object in their `data` field. When items
+	// are added or updated, their `data` is embedded asynchronously —
+	// `POST /v3/collections/items` and `PUT /v3/collections/items` return immediately
+	// with a `pending` status and an `eventID` that can be correlated with webhook
+	// notifications once processing completes.
+	//
+	// ## Listing and hierarchy
+	//
+	// Use `GET /v3/collections` with `parentCollectionName` to list collections under
+	// a path, or `collectionNameSearch` for a case-insensitive substring match.
+	// `GET /v3/collections/items` retrieves a specific collection's items; pass
+	// `includeSubcollections=true` to fold in items from all descendant collections.
+	//
+	// ## Token counting
+	//
+	// Use `POST /v3/collections/token-count` to check whether texts fit within the
+	// embedding model's 8,192-token-per-text limit before submitting them for
+	// embedding.
+	Collections CollectionService
+	// Submit training corrections for `extract`, `classify`, and `join` events.
+	//
+	// Feedback is event-centric — each correction is attached to an event by its
+	// `eventID`, and the server resolves the correct underlying storage (extract/join
+	// transformations or classify route events) from the event's function type.
+	//
+	// Split and enrich function types do not support feedback.
+	Events EventService
+	// Manage the webhook signing secret used to authenticate outbound webhook
+	// deliveries.
+	//
+	// When a signing secret is active, every webhook delivery includes a
+	// `bem-signature` header in the format `t={unix_timestamp},v1={hex_hmac_sha256}`.
+	// The signature covers `{timestamp}.{raw_request_body}` and can be verified using
+	// HMAC-SHA256 with your secret.
+	//
+	// Rotate the secret at any time with `POST /v3/webhook-secret`. To avoid downtime
+	// during rotation, update your verification logic to accept both the old and new
+	// secret briefly before revoking the old one.
+	WebhookSecret WebhookSecretService
 }
 
 // DefaultClientOptions read from the environment (BEM_API_KEY, BEM_BASE_URL). This
@@ -136,6 +185,9 @@ func NewClient(opts ...option.RequestOption) (r Client) {
 	r.Outputs = NewOutputService(opts...)
 	r.Workflows = NewWorkflowService(opts...)
 	r.InferSchema = NewInferSchemaService(opts...)
+	r.Collections = NewCollectionService(opts...)
+	r.Events = NewEventService(opts...)
+	r.WebhookSecret = NewWebhookSecretService(opts...)
 
 	return
 }

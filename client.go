@@ -155,6 +155,53 @@ type Client struct {
 	// during rotation, update your verification logic to accept both the old and new
 	// secret briefly before revoking the old one.
 	WebhookSecret WebhookSecretService
+	// Trigger and retrieve evaluations for completed transformations.
+	//
+	// Evaluations run asynchronously and score each transformation's output against
+	// the function's schema for confidence, per-field hallucination detection, and
+	// relevance. Evaluations are supported for `extract`, `transform`, `analyze`, and
+	// `join` events.
+	//
+	// ## Lifecycle
+	//
+	//  1. **Trigger** — `POST /v3/eval` queues jobs for a batch of transformation IDs
+	//     and returns immediately with `queued` / `skipped` counts plus per-ID errors.
+	//  2. **Poll** — `POST /v3/eval/results` (body) or `GET /v3/eval/results` (query)
+	//     returns the current state of each requested transformation, partitioned into
+	//     `results` (completed), `pending` (still running), and `failed` (terminal
+	//     failures or unknown transformation IDs).
+	//
+	// Up to 100 transformation IDs may be submitted per request.
+	Eval EvalService
+	// Unix-shell-style nav over parsed documents and the cross-doc memory store.
+	//
+	// `POST /v3/fs` is a single op-driven endpoint designed for LLM agents and
+	// programmatic consumers that want to walk a corpus the way they'd walk a
+	// filesystem.
+	//
+	// ## Doc-level ops (every parsed document)
+	//
+	// - `ls` — list parsed documents with rich per-doc metadata.
+	// - `cat` — read one doc's parse JSON, sliced (`range`) or projected (`select`).
+	// - `head` — first N sections of one doc.
+	// - `grep` — substring or regex search; `scope`, `path`, `countOnly` available.
+	// - `stat` — metadata only (page/section/entity counts, timestamps).
+	//
+	// ## Memory-level ops (require `linkAcrossDocuments: true` on the parse function)
+	//
+	// - `find` — list canonical entities across the corpus.
+	// - `open` — entity + mentions.
+	// - `xref` — for one entity, sections across docs that mention it (with content).
+	//
+	// Memory ops return an empty list with a `hint` when no docs in this environment
+	// have been memory-linked.
+	//
+	// ## Pagination
+	//
+	// List ops paginate by cursor — pass the previous response's `nextCursor` back as
+	// `cursor`; `hasMore: false` signals the last page. Same idiom as `/v3/calls` and
+	// `/v3/outputs`.
+	Fs FService
 }
 
 // DefaultClientOptions read from the environment (BEM_API_KEY, BEM_BASE_URL). This
@@ -188,6 +235,8 @@ func NewClient(opts ...option.RequestOption) (r Client) {
 	r.Collections = NewCollectionService(opts...)
 	r.Events = NewEventService(opts...)
 	r.WebhookSecret = NewWebhookSecretService(opts...)
+	r.Eval = NewEvalService(opts...)
+	r.Fs = NewFService(opts...)
 
 	return
 }

@@ -31,8 +31,10 @@ func TestFunctionNewWithOptionalParams(t *testing.T) {
 			OfExtract: &bem.CreateFunctionExtractParam{
 				FunctionName:           "functionName",
 				DisplayName:            bem.String("displayName"),
+				EnableBoundingBoxes:    bem.Bool(true),
 				OutputSchema:           map[string]any{},
 				OutputSchemaName:       bem.String("outputSchemaName"),
+				PreCount:               bem.Bool(true),
 				TabularChunkingEnabled: bem.Bool(true),
 				Tags:                   []string{"string"},
 			},
@@ -90,9 +92,11 @@ func TestFunctionUpdateWithOptionalParams(t *testing.T) {
 			UpdateFunction: bem.UpdateFunctionUnionParam{
 				OfExtract: &bem.UpdateFunctionExtractParam{
 					DisplayName:            bem.String("displayName"),
+					EnableBoundingBoxes:    bem.Bool(true),
 					FunctionName:           bem.String("functionName"),
 					OutputSchema:           map[string]any{},
 					OutputSchemaName:       bem.String("outputSchemaName"),
+					PreCount:               bem.Bool(true),
 					TabularChunkingEnabled: bem.Bool(true),
 					Tags:                   []string{"string"},
 				},

@@ -13,7 +13,7 @@ import (
 	"github.com/bem-team/bem-go-sdk/option"
 )
 
-func TestOutputGet(t *testing.T) {
+func TestEvalResultFetchResultsWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -26,7 +26,10 @@ func TestOutputGet(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	_, err := client.Outputs.Get(context.TODO(), "eventID")
+	_, err := client.Eval.Results.FetchResults(context.TODO(), bem.EvalResultFetchResultsParams{
+		TransformationIDs: []string{"tr_01HXAB...", "tr_01HXCD..."},
+		EvaluationVersion: bem.String("0.1.0-gemini"),
+	})
 	if err != nil {
 		var apierr *bem.Error
 		if errors.As(err, &apierr) {
@@ -36,7 +39,7 @@ func TestOutputGet(t *testing.T) {
 	}
 }
 
-func TestOutputListWithOptionalParams(t *testing.T) {
+func TestEvalResultGetResultsWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -49,24 +52,9 @@ func TestOutputListWithOptionalParams(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	_, err := client.Outputs.List(context.TODO(), bem.OutputListParams{
-		CallIDs:              []string{"string"},
-		EndingBefore:         bem.String("endingBefore"),
-		EventIDs:             []string{"string"},
-		FunctionIDs:          []string{"string"},
-		FunctionNames:        []string{"string"},
-		FunctionVersionNums:  []int64{0},
-		IncludeIntermediate:  bem.Bool(true),
-		IsLabelled:           bem.Bool(true),
-		IsRegression:         bem.Bool(true),
-		Limit:                bem.Int(1),
-		ReferenceIDs:         []string{"string"},
-		ReferenceIDSubstring: bem.String("referenceIDSubstring"),
-		SortOrder:            bem.OutputListParamsSortOrderAsc,
-		StartingAfter:        bem.String("startingAfter"),
-		TransformationIDs:    []string{"string"},
-		WorkflowIDs:          []string{"string"},
-		WorkflowNames:        []string{"string"},
+	_, err := client.Eval.Results.GetResults(context.TODO(), bem.EvalResultGetResultsParams{
+		TransformationIDs: "transformationIDs",
+		EvaluationVersion: bem.String("evaluationVersion"),
 	})
 	if err != nil {
 		var apierr *bem.Error

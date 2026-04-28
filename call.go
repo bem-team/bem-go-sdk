@@ -423,8 +423,8 @@ type CallGetTraceResponseTraceFunctionCall struct {
 	Status string `json:"status" api:"required"`
 	// The type of the function.
 	//
-	// Any of "transform", "extract", "route", "send", "split", "join", "analyze",
-	// "payload_shaping", "enrich".
+	// Any of "transform", "extract", "route", "classify", "send", "split", "join",
+	// "analyze", "payload_shaping", "enrich", "parse".
 	Type FunctionType `json:"type" api:"required"`
 	// Array of activity steps for this function call
 	Activity []CallGetTraceResponseTraceFunctionCallActivity `json:"activity"`

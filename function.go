@@ -92,7 +92,27 @@ func NewFunctionService(opts ...option.RequestOption) (r FunctionService) {
 	return
 }
 
-// Create a Function
+// **Create a function.**
+//
+// The function type (`extract`, `classify`, `split`, `join`, `enrich`, or
+// `payload_shaping`) determines which configuration fields are required — see
+// [Function types overview](/guide/function-types/overview) for the per-type
+// contract.
+//
+// The response contains both `functionID` and `functionName`. Either is a stable
+// handle you can use elsewhere; most workflows reference functions by
+// `functionName` because it's human-readable.
+//
+// ## Naming rules
+//
+//   - `functionName` must be unique per environment.
+//   - Allowed characters: letters, digits, hyphens, and underscores.
+//   - Names cannot be reused after deletion within the same environment for at least
+//     the retention window of the previous record.
+//
+// The new function is created at `versionNum: 1`. Subsequent
+// `PATCH /v3/functions/{functionName}` calls produce new versions — the version-1
+// configuration remains immutable and addressable.
 func (r *FunctionService) New(ctx context.Context, body FunctionNewParams, opts ...option.RequestOption) (res *FunctionResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	path := "v3/functions"
@@ -100,7 +120,11 @@ func (r *FunctionService) New(ctx context.Context, body FunctionNewParams, opts 
 	return res, err
 }
 
-// Get a Function
+// **Retrieve a function's current version by name.**
+//
+// Returns the function record with its `currentVersionNum` and the configuration
+// of that version. To inspect a historical version, use
+// `GET /v3/functions/{functionName}/versions/{versionNum}`.
 func (r *FunctionService) Get(ctx context.Context, functionName string, opts ...option.RequestOption) (res *FunctionResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if functionName == "" {
@@ -112,7 +136,26 @@ func (r *FunctionService) Get(ctx context.Context, functionName string, opts ...
 	return res, err
 }
 
-// Update a Function
+// **Update a function. Updates create a new version.**
+//
+// The previous version remains addressable and immutable. Workflow nodes that
+// pinned the function with a `versionNum` continue to use the pinned version;
+// nodes that reference the function by name with no version automatically pick up
+// the new version on their next call.
+//
+// ## What you can change
+//
+// Any field allowed by the function's type. Most commonly: `outputSchema` (for
+// `extract`/`join`), `classifications` (for `classify`), `displayName`, and
+// `tags`.
+//
+// ## Versioning behaviour
+//
+//   - Each successful update increments `currentVersionNum` by 1.
+//   - `displayName`, `tags`, and `functionName` updates also create a new version,
+//     so the version history is a complete record of every change.
+//   - To revert, fetch the previous version and re-submit its configuration as a new
+//     update — versions themselves are immutable.
 func (r *FunctionService) Update(ctx context.Context, pathFunctionName string, body FunctionUpdateParams, opts ...option.RequestOption) (res *FunctionResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if pathFunctionName == "" {
@@ -124,7 +167,27 @@ func (r *FunctionService) Update(ctx context.Context, pathFunctionName string, b
 	return res, err
 }
 
-// List Functions
+// **List functions in the current environment.**
+//
+// Returns each function's current version. Combine filters freely — they AND
+// together.
+//
+// ## Filtering
+//
+//   - `functionIDs` / `functionNames`: exact-match identity filters.
+//   - `displayName`: case-insensitive substring match.
+//   - `types`: one or more of `extract`, `classify`, `split`, `join`, `enrich`,
+//     `payload_shaping`. Legacy `transform`, `analyze`, `route`, and `send` types
+//     remain readable via this filter.
+//   - `tags`: returns functions tagged with any of the supplied tags.
+//   - `workflowIDs` / `workflowNames`: returns only functions referenced by the
+//     named workflows. Useful for "what functions does this workflow depend on?"
+//     lookups.
+//
+// ## Pagination
+//
+// Cursor-based with `startingAfter` and `endingBefore` (functionIDs). Default
+// limit 50, maximum 100.
 func (r *FunctionService) List(ctx context.Context, query FunctionListParams, opts ...option.RequestOption) (res *pagination.FunctionsPage[FunctionUnion], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.options, opts)
@@ -142,12 +205,48 @@ func (r *FunctionService) List(ctx context.Context, query FunctionListParams, op
 	return res, nil
 }
 
-// List Functions
+// **List functions in the current environment.**
+//
+// Returns each function's current version. Combine filters freely — they AND
+// together.
+//
+// ## Filtering
+//
+//   - `functionIDs` / `functionNames`: exact-match identity filters.
+//   - `displayName`: case-insensitive substring match.
+//   - `types`: one or more of `extract`, `classify`, `split`, `join`, `enrich`,
+//     `payload_shaping`. Legacy `transform`, `analyze`, `route`, and `send` types
+//     remain readable via this filter.
+//   - `tags`: returns functions tagged with any of the supplied tags.
+//   - `workflowIDs` / `workflowNames`: returns only functions referenced by the
+//     named workflows. Useful for "what functions does this workflow depend on?"
+//     lookups.
+//
+// ## Pagination
+//
+// Cursor-based with `startingAfter` and `endingBefore` (functionIDs). Default
+// limit 50, maximum 100.
 func (r *FunctionService) ListAutoPaging(ctx context.Context, query FunctionListParams, opts ...option.RequestOption) *pagination.FunctionsPageAutoPager[FunctionUnion] {
 	return pagination.NewFunctionsPageAutoPager(r.List(ctx, query, opts...))
 }
 
-// Delete a Function
+// **Delete a function and every one of its versions.**
+//
+// Permanent. Running and queued calls that reference this function continue to
+// completion against the version they captured at call time, but no new calls can
+// target it.
+//
+// ## Before deleting
+//
+// Workflow nodes that reference this function will fail at call time after
+// deletion. List workflows that reference it first:
+//
+// ```
+// GET /v3/workflows?functionNames=my-function
+// ```
+//
+// Update or remove those workflows, or create a replacement function and re-point
+// the workflow nodes, before deleting.
 func (r *FunctionService) Delete(ctx context.Context, functionName string, opts ...option.RequestOption) (err error) {
 	opts = slices.Concat(r.options, opts)
 	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
@@ -346,6 +445,12 @@ func CreateFunctionParamOfEnrich(functionName string) CreateFunctionUnionParam {
 	return CreateFunctionUnionParam{OfEnrich: &enrich}
 }
 
+func CreateFunctionParamOfParse(functionName string) CreateFunctionUnionParam {
+	var parse CreateFunctionParseParam
+	parse.FunctionName = functionName
+	return CreateFunctionUnionParam{OfParse: &parse}
+}
+
 // Only one field can be non-zero.
 //
 // Use [param.IsOmitted] to confirm if a field is set.
@@ -357,6 +462,7 @@ type CreateFunctionUnionParam struct {
 	OfJoin           *CreateFunctionJoinParam           `json:",omitzero,inline"`
 	OfPayloadShaping *CreateFunctionPayloadShapingParam `json:",omitzero,inline"`
 	OfEnrich         *CreateFunctionEnrichParam         `json:",omitzero,inline"`
+	OfParse          *CreateFunctionParseParam          `json:",omitzero,inline"`
 	paramUnion
 }
 
@@ -367,7 +473,8 @@ func (u CreateFunctionUnionParam) MarshalJSON() ([]byte, error) {
 		u.OfSplit,
 		u.OfJoin,
 		u.OfPayloadShaping,
-		u.OfEnrich)
+		u.OfEnrich,
+		u.OfParse)
 }
 func (u *CreateFunctionUnionParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, u)
@@ -383,6 +490,7 @@ func init() {
 		apijson.Discriminator[CreateFunctionJoinParam]("join"),
 		apijson.Discriminator[CreateFunctionPayloadShapingParam]("payload_shaping"),
 		apijson.Discriminator[CreateFunctionEnrichParam]("enrich"),
+		apijson.Discriminator[CreateFunctionParseParam]("parse"),
 	)
 }
 
@@ -392,8 +500,17 @@ type CreateFunctionExtractParam struct {
 	FunctionName string `json:"functionName" api:"required"`
 	// Display name of function. Human-readable name to help you identify the function.
 	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Whether bounding box extraction is enabled. Applies to vision input types (pdf,
+	// png, jpeg, heic, heif, webp) that dispatch through the analyze path. When true,
+	// the function returns the document regions (page, coordinates) from which each
+	// field was extracted. Enabling this automatically configures the function to use
+	// the bounding box model. Disabling resets to the default.
+	EnableBoundingBoxes param.Opt[bool] `json:"enableBoundingBoxes,omitzero"`
 	// Name of output schema object.
 	OutputSchemaName param.Opt[string] `json:"outputSchemaName,omitzero"`
+	// Reducing the risk of the model stopping early on long documents. Trade-off:
+	// Increases total latency. Compatible with `enableBoundingBoxes`.
+	PreCount param.Opt[bool] `json:"preCount,omitzero"`
 	// Whether tabular chunking is enabled. When true, tables in CSV/Excel files are
 	// processed in row batches rather than all at once.
 	TabularChunkingEnabled param.Opt[bool] `json:"tabularChunkingEnabled,omitzero"`
@@ -414,7 +531,7 @@ func (r *CreateFunctionExtractParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// V3 wire form of the Route (classify) function create payload. Mirrors {
+// V3 wire form of the classify function create payload.
 //
 // The properties FunctionName, Type are required.
 type CreateFunctionClassifyParam struct {
@@ -425,19 +542,8 @@ type CreateFunctionClassifyParam struct {
 	Description param.Opt[string] `json:"description,omitzero"`
 	// Display name of function. Human-readable name to help you identify the function.
 	DisplayName param.Opt[string] `json:"displayName,omitzero"`
-	// V3 create/update variants of the shared function payloads.
-	//
-	// The V3 Functions API no longer accepts the legacy `transform` or `analyze`
-	// function types when creating new functions or updating existing ones — both have
-	// been unified under `extract`. Existing functions of those types remain readable
-	// and callable via V3, so the V3 read-side unions still include `transform` and
-	// `analyze` variants.
-	//
-	// The V3 API also renames the internal `route` function type to `classify` on the
-	// wire, and the associated `routes` field to `classifications` (type
-	// `ClassificationList`). Platform-internal storage and processing still use
-	// `route` / `routes`; the rename is applied only at the V3 API boundary.V3-facing
-	// name for the list of classifications a classify function can produce.
+	// List of classifications a classify function can produce. Shares the underlying
+	// route list shape.
 	Classifications []ClassificationListItemParam `json:"classifications,omitzero"`
 	// Array of tags to categorize and organize functions.
 	Tags []string `json:"tags,omitzero"`
@@ -664,6 +770,66 @@ func (r CreateFunctionEnrichParam) MarshalJSON() (data []byte, err error) {
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *CreateFunctionEnrichParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The properties FunctionName, Type are required.
+type CreateFunctionParseParam struct {
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName string `json:"functionName" api:"required"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Per-version configuration for a Parse function.
+	//
+	// Parse renders document pages (PDF, image) via vision LLM and emits structured
+	// JSON. The two toggles below independently control entity extraction (a per-call
+	// output concern) and cross-document memory linking (an environment-wide concern).
+	ParseConfig CreateFunctionParseParseConfigParam `json:"parseConfig,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "parse".
+	Type constant.Parse `json:"type" default:"parse"`
+	paramObj
+}
+
+func (r CreateFunctionParseParam) MarshalJSON() (data []byte, err error) {
+	type shadow CreateFunctionParseParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *CreateFunctionParseParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Per-version configuration for a Parse function.
+//
+// Parse renders document pages (PDF, image) via vision LLM and emits structured
+// JSON. The two toggles below independently control entity extraction (a per-call
+// output concern) and cross-document memory linking (an environment-wide concern).
+type CreateFunctionParseParseConfigParam struct {
+	// When true, extract named entities (people, organizations, products, studies,
+	// identifiers, etc.) and the relationships between them, and dedupe by canonical
+	// name within the document. When false, only `sections[]` is extracted;
+	// `entities[]` and `relationships[]` come back empty in the parse output. Defaults
+	// to true.
+	ExtractEntities param.Opt[bool] `json:"extractEntities,omitzero"`
+	// When true, link this document's entities to entities seen in earlier documents
+	// in this environment, building one canonical record per real-world thing across
+	// the corpus. Visible in the Memory tab and queryable via `POST /v3/fs` (op=find /
+	// open / xref). Doesn't change this call's parse output. Requires
+	// `extractEntities=true`. Defaults to true.
+	LinkAcrossDocuments param.Opt[bool] `json:"linkAcrossDocuments,omitzero"`
+	// Optional JSONSchema. When provided, each chunk performs schema-guided
+	// extraction. When absent, chunks perform open-ended discovery and return
+	// sections, entities, and relationships per the discovery schema.
+	Schema any `json:"schema,omitzero"`
+	paramObj
+}
+
+func (r CreateFunctionParseParseConfigParam) MarshalJSON() (data []byte, err error) {
+	type shadow CreateFunctionParseParseConfigParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *CreateFunctionParseParseConfigParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -1014,31 +1180,30 @@ func (r *EnrichStepParam) UnmarshalJSON(data []byte) error {
 // FunctionUnion contains all possible properties and values from
 // [FunctionTransform], [FunctionExtract], [FunctionAnalyze], [FunctionClassify],
 // [FunctionSend], [FunctionSplit], [FunctionJoin], [FunctionPayloadShaping],
-// [FunctionEnrich].
+// [FunctionEnrich], [FunctionParse].
 //
 // Use the [FunctionUnion.AsAny] method to switch on the variant.
 //
 // Use the methods beginning with 'As' to cast the union to one of its variants.
 type FunctionUnion struct {
-	EmailAddress           string `json:"emailAddress"`
-	FunctionID             string `json:"functionID"`
-	FunctionName           string `json:"functionName"`
-	OutputSchema           any    `json:"outputSchema"`
-	OutputSchemaName       string `json:"outputSchemaName"`
-	TabularChunkingEnabled bool   `json:"tabularChunkingEnabled"`
+	EmailAddress     string `json:"emailAddress"`
+	FunctionID       string `json:"functionID"`
+	FunctionName     string `json:"functionName"`
+	OutputSchema     any    `json:"outputSchema"`
+	OutputSchemaName string `json:"outputSchemaName"`
+	// This field is from variant [FunctionTransform].
+	TabularChunkingEnabled bool `json:"tabularChunkingEnabled"`
 	// Any of "transform", "extract", "analyze", "classify", "send", "split", "join",
-	// "payload_shaping", "enrich".
+	// "payload_shaping", "enrich", "parse".
 	Type       string `json:"type"`
 	VersionNum int64  `json:"versionNum"`
 	// This field is from variant [FunctionTransform].
-	Audit           FunctionAudit       `json:"audit"`
-	DisplayName     string              `json:"displayName"`
-	Tags            []string            `json:"tags"`
-	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
-	// This field is from variant [FunctionAnalyze].
-	EnableBoundingBoxes bool `json:"enableBoundingBoxes"`
-	// This field is from variant [FunctionAnalyze].
-	PreCount bool `json:"preCount"`
+	Audit               FunctionAudit       `json:"audit"`
+	DisplayName         string              `json:"displayName"`
+	Tags                []string            `json:"tags"`
+	UsedInWorkflows     []WorkflowUsageInfo `json:"usedInWorkflows"`
+	EnableBoundingBoxes bool                `json:"enableBoundingBoxes"`
+	PreCount            bool                `json:"preCount"`
 	// This field is from variant [FunctionClassify].
 	Classifications []ClassificationListItem `json:"classifications"`
 	Description     string                   `json:"description"`
@@ -1066,7 +1231,9 @@ type FunctionUnion struct {
 	ShapingSchema string `json:"shapingSchema"`
 	// This field is from variant [FunctionEnrich].
 	Config EnrichConfig `json:"config"`
-	JSON   struct {
+	// This field is from variant [FunctionParse].
+	ParseConfig FunctionParseParseConfig `json:"parseConfig"`
+	JSON        struct {
 		EmailAddress            respjson.Field
 		FunctionID              respjson.Field
 		FunctionName            respjson.Field
@@ -1095,6 +1262,7 @@ type FunctionUnion struct {
 		JoinType                respjson.Field
 		ShapingSchema           respjson.Field
 		Config                  respjson.Field
+		ParseConfig             respjson.Field
 		raw                     string
 	} `json:"-"`
 }
@@ -1114,6 +1282,7 @@ func (FunctionSplit) implFunctionUnion()          {}
 func (FunctionJoin) implFunctionUnion()           {}
 func (FunctionPayloadShaping) implFunctionUnion() {}
 func (FunctionEnrich) implFunctionUnion()         {}
+func (FunctionParse) implFunctionUnion()          {}
 
 // Use the following switch statement to find the correct variant
 //
@@ -1127,6 +1296,7 @@ func (FunctionEnrich) implFunctionUnion()         {}
 //	case bem.FunctionJoin:
 //	case bem.FunctionPayloadShaping:
 //	case bem.FunctionEnrich:
+//	case bem.FunctionParse:
 //	default:
 //	  fmt.Errorf("no variant present")
 //	}
@@ -1150,6 +1320,8 @@ func (u FunctionUnion) AsAny() anyFunction {
 		return u.AsPayloadShaping()
 	case "enrich":
 		return u.AsEnrich()
+	case "parse":
+		return u.AsParse()
 	}
 	return nil
 }
@@ -1195,6 +1367,11 @@ func (u FunctionUnion) AsPayloadShaping() (v FunctionPayloadShaping) {
 }
 
 func (u FunctionUnion) AsEnrich() (v FunctionEnrich) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u FunctionUnion) AsParse() (v FunctionParse) {
 	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
 	return
 }
@@ -1261,6 +1438,11 @@ func (r *FunctionTransform) UnmarshalJSON(data []byte) error {
 // wide range of input types including PDFs, images, spreadsheets, emails, and
 // more.
 type FunctionExtract struct {
+	// Whether bounding box extraction is enabled. Applies to vision input types (pdf,
+	// png, jpeg, heic, heif, webp) that dispatch through the analyze path. When true,
+	// the function returns the document regions (page, coordinates) from which each
+	// field was extracted.
+	EnableBoundingBoxes bool `json:"enableBoundingBoxes" api:"required"`
 	// Unique identifier of function.
 	FunctionID string `json:"functionID" api:"required"`
 	// Name of function. Must be UNIQUE on a per-environment basis.
@@ -1269,10 +1451,10 @@ type FunctionExtract struct {
 	OutputSchema any `json:"outputSchema" api:"required"`
 	// Name of output schema object.
 	OutputSchemaName string `json:"outputSchemaName" api:"required"`
-	// Whether tabular chunking is enabled. When true, tables in CSV/Excel files are
-	// processed in row batches rather than all at once.
-	TabularChunkingEnabled bool             `json:"tabularChunkingEnabled" api:"required"`
-	Type                   constant.Extract `json:"type" default:"extract"`
+	// Reducing the risk of the model stopping early on long documents. Trade-off:
+	// Increases total latency.
+	PreCount bool             `json:"preCount" api:"required"`
+	Type     constant.Extract `json:"type" default:"extract"`
 	// Version number of function.
 	VersionNum int64 `json:"versionNum" api:"required"`
 	// Audit trail information for the function.
@@ -1285,19 +1467,20 @@ type FunctionExtract struct {
 	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		FunctionID             respjson.Field
-		FunctionName           respjson.Field
-		OutputSchema           respjson.Field
-		OutputSchemaName       respjson.Field
-		TabularChunkingEnabled respjson.Field
-		Type                   respjson.Field
-		VersionNum             respjson.Field
-		Audit                  respjson.Field
-		DisplayName            respjson.Field
-		Tags                   respjson.Field
-		UsedInWorkflows        respjson.Field
-		ExtraFields            map[string]respjson.Field
-		raw                    string
+		EnableBoundingBoxes respjson.Field
+		FunctionID          respjson.Field
+		FunctionName        respjson.Field
+		OutputSchema        respjson.Field
+		OutputSchemaName    respjson.Field
+		PreCount            respjson.Field
+		Type                respjson.Field
+		VersionNum          respjson.Field
+		Audit               respjson.Field
+		DisplayName         respjson.Field
+		Tags                respjson.Field
+		UsedInWorkflows     respjson.Field
+		ExtraFields         map[string]respjson.Field
+		raw                 string
 	} `json:"-"`
 }
 
@@ -1359,21 +1542,9 @@ func (r *FunctionAnalyze) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// V3 read-side shape of a Classify (internally Route) function. Mirrors {
 type FunctionClassify struct {
-	// V3 create/update variants of the shared function payloads.
-	//
-	// The V3 Functions API no longer accepts the legacy `transform` or `analyze`
-	// function types when creating new functions or updating existing ones — both have
-	// been unified under `extract`. Existing functions of those types remain readable
-	// and callable via V3, so the V3 read-side unions still include `transform` and
-	// `analyze` variants.
-	//
-	// The V3 API also renames the internal `route` function type to `classify` on the
-	// wire, and the associated `routes` field to `classifications` (type
-	// `ClassificationList`). Platform-internal storage and processing still use
-	// `route` / `routes`; the rename is applied only at the V3 API boundary.V3-facing
-	// name for the list of classifications a classify function can produce.
+	// List of classifications a classify function can produce. Shares the underlying
+	// route list shape.
 	Classifications []ClassificationListItem `json:"classifications" api:"required"`
 	// Description of classifier. Can be used to provide additional context on
 	// classifier's purpose and expected inputs.
@@ -1726,6 +1897,88 @@ func (r *FunctionEnrich) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
+type FunctionParse struct {
+	// Unique identifier of function.
+	FunctionID string `json:"functionID" api:"required"`
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName string         `json:"functionName" api:"required"`
+	Type         constant.Parse `json:"type" default:"parse"`
+	// Version number of function.
+	VersionNum int64 `json:"versionNum" api:"required"`
+	// Audit trail information for the function.
+	Audit FunctionAudit `json:"audit"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName string `json:"displayName"`
+	// Per-version configuration for a Parse function.
+	//
+	// Parse renders document pages (PDF, image) via vision LLM and emits structured
+	// JSON. The two toggles below independently control entity extraction (a per-call
+	// output concern) and cross-document memory linking (an environment-wide concern).
+	ParseConfig FunctionParseParseConfig `json:"parseConfig"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags"`
+	// List of workflows that use this function.
+	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		FunctionID      respjson.Field
+		FunctionName    respjson.Field
+		Type            respjson.Field
+		VersionNum      respjson.Field
+		Audit           respjson.Field
+		DisplayName     respjson.Field
+		ParseConfig     respjson.Field
+		Tags            respjson.Field
+		UsedInWorkflows respjson.Field
+		ExtraFields     map[string]respjson.Field
+		raw             string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r FunctionParse) RawJSON() string { return r.JSON.raw }
+func (r *FunctionParse) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Per-version configuration for a Parse function.
+//
+// Parse renders document pages (PDF, image) via vision LLM and emits structured
+// JSON. The two toggles below independently control entity extraction (a per-call
+// output concern) and cross-document memory linking (an environment-wide concern).
+type FunctionParseParseConfig struct {
+	// When true, extract named entities (people, organizations, products, studies,
+	// identifiers, etc.) and the relationships between them, and dedupe by canonical
+	// name within the document. When false, only `sections[]` is extracted;
+	// `entities[]` and `relationships[]` come back empty in the parse output. Defaults
+	// to true.
+	ExtractEntities bool `json:"extractEntities"`
+	// When true, link this document's entities to entities seen in earlier documents
+	// in this environment, building one canonical record per real-world thing across
+	// the corpus. Visible in the Memory tab and queryable via `POST /v3/fs` (op=find /
+	// open / xref). Doesn't change this call's parse output. Requires
+	// `extractEntities=true`. Defaults to true.
+	LinkAcrossDocuments bool `json:"linkAcrossDocuments"`
+	// Optional JSONSchema. When provided, each chunk performs schema-guided
+	// extraction. When absent, chunks perform open-ended discovery and return
+	// sections, entities, and relationships per the discovery schema.
+	Schema any `json:"schema"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		ExtractEntities     respjson.Field
+		LinkAcrossDocuments respjson.Field
+		Schema              respjson.Field
+		ExtraFields         map[string]respjson.Field
+		raw                 string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r FunctionParseParseConfig) RawJSON() string { return r.JSON.raw }
+func (r *FunctionParseParseConfig) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
 type FunctionAudit struct {
 	// Information about who created the function.
 	FunctionCreatedBy UserActionSummary `json:"functionCreatedBy"`
@@ -1778,12 +2031,14 @@ const (
 	FunctionTypeTransform      FunctionType = "transform"
 	FunctionTypeExtract        FunctionType = "extract"
 	FunctionTypeRoute          FunctionType = "route"
+	FunctionTypeClassify       FunctionType = "classify"
 	FunctionTypeSend           FunctionType = "send"
 	FunctionTypeSplit          FunctionType = "split"
 	FunctionTypeJoin           FunctionType = "join"
 	FunctionTypeAnalyze        FunctionType = "analyze"
 	FunctionTypePayloadShaping FunctionType = "payload_shaping"
 	FunctionTypeEnrich         FunctionType = "enrich"
+	FunctionTypeParse          FunctionType = "parse"
 )
 
 type ListFunctionsResponse struct {
@@ -1869,6 +2124,7 @@ type UpdateFunctionUnionParam struct {
 	OfJoin           *UpdateFunctionJoinParam           `json:",omitzero,inline"`
 	OfPayloadShaping *UpdateFunctionPayloadShapingParam `json:",omitzero,inline"`
 	OfEnrich         *UpdateFunctionEnrichParam         `json:",omitzero,inline"`
+	OfParse          *UpdateFunctionParseParam          `json:",omitzero,inline"`
 	paramUnion
 }
 
@@ -1879,7 +2135,8 @@ func (u UpdateFunctionUnionParam) MarshalJSON() ([]byte, error) {
 		u.OfSplit,
 		u.OfJoin,
 		u.OfPayloadShaping,
-		u.OfEnrich)
+		u.OfEnrich,
+		u.OfParse)
 }
 func (u *UpdateFunctionUnionParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, u)
@@ -1895,6 +2152,7 @@ func init() {
 		apijson.Discriminator[UpdateFunctionJoinParam]("join"),
 		apijson.Discriminator[UpdateFunctionPayloadShapingParam]("payload_shaping"),
 		apijson.Discriminator[UpdateFunctionEnrichParam]("enrich"),
+		apijson.Discriminator[UpdateFunctionParseParam]("parse"),
 	)
 }
 
@@ -1902,10 +2160,19 @@ func init() {
 type UpdateFunctionExtractParam struct {
 	// Display name of function. Human-readable name to help you identify the function.
 	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Whether bounding box extraction is enabled. Applies to vision input types (pdf,
+	// png, jpeg, heic, heif, webp) that dispatch through the analyze path. When true,
+	// the function returns the document regions (page, coordinates) from which each
+	// field was extracted. Enabling this automatically configures the function to use
+	// the bounding box model. Disabling resets to the default.
+	EnableBoundingBoxes param.Opt[bool] `json:"enableBoundingBoxes,omitzero"`
 	// Name of function. Must be UNIQUE on a per-environment basis.
 	FunctionName param.Opt[string] `json:"functionName,omitzero"`
 	// Name of output schema object.
 	OutputSchemaName param.Opt[string] `json:"outputSchemaName,omitzero"`
+	// Reducing the risk of the model stopping early on long documents. Trade-off:
+	// Increases total latency. Compatible with `enableBoundingBoxes`.
+	PreCount param.Opt[bool] `json:"preCount,omitzero"`
 	// Whether tabular chunking is enabled. When true, tables in CSV/Excel files are
 	// processed in row batches rather than all at once.
 	TabularChunkingEnabled param.Opt[bool] `json:"tabularChunkingEnabled,omitzero"`
@@ -1926,7 +2193,20 @@ func (r *UpdateFunctionExtractParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// V3 wire form of the Route (classify) function upsert payload. Mirrors {
+// V3 create/update variants of the shared function payloads.
+//
+// The V3 Functions API no longer accepts the legacy `transform` or `analyze`
+// function types when creating new functions or updating existing ones — both have
+// been unified under `extract`. Existing functions of those types remain readable
+// and callable via V3, so the V3 read-side unions still include `transform` and
+// `analyze` variants.
+//
+// The V3 API also exposes `classify` in place of the legacy `route` type on
+// create/update, with `classifications` in place of `routes`. Read-side
+// `ClassifyFunction` / `ClassifyFunctionVersion` / `ClassificationList` are
+// defined in the shared functions models and used by both the V2 and V3 response
+// unions (existing classify functions are returned from V2 GET endpoints
+// verbatim).V3 wire form of the classify function upsert payload.
 //
 // The property Type is required.
 type UpdateFunctionClassifyParam struct {
@@ -1937,19 +2217,8 @@ type UpdateFunctionClassifyParam struct {
 	DisplayName param.Opt[string] `json:"displayName,omitzero"`
 	// Name of function. Must be UNIQUE on a per-environment basis.
 	FunctionName param.Opt[string] `json:"functionName,omitzero"`
-	// V3 create/update variants of the shared function payloads.
-	//
-	// The V3 Functions API no longer accepts the legacy `transform` or `analyze`
-	// function types when creating new functions or updating existing ones — both have
-	// been unified under `extract`. Existing functions of those types remain readable
-	// and callable via V3, so the V3 read-side unions still include `transform` and
-	// `analyze` variants.
-	//
-	// The V3 API also renames the internal `route` function type to `classify` on the
-	// wire, and the associated `routes` field to `classifications` (type
-	// `ClassificationList`). Platform-internal storage and processing still use
-	// `route` / `routes`; the rename is applied only at the V3 API boundary.V3-facing
-	// name for the list of classifications a classify function can produce.
+	// List of classifications a classify function can produce. Shares the underlying
+	// route list shape.
 	Classifications []ClassificationListItemParam `json:"classifications,omitzero"`
 	// Array of tags to categorize and organize functions.
 	Tags []string `json:"tags,omitzero"`
@@ -2178,6 +2447,66 @@ func (r *UpdateFunctionEnrichParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
+// The property Type is required.
+type UpdateFunctionParseParam struct {
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName param.Opt[string] `json:"functionName,omitzero"`
+	// Per-version configuration for a Parse function.
+	//
+	// Parse renders document pages (PDF, image) via vision LLM and emits structured
+	// JSON. The two toggles below independently control entity extraction (a per-call
+	// output concern) and cross-document memory linking (an environment-wide concern).
+	ParseConfig UpdateFunctionParseParseConfigParam `json:"parseConfig,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "parse".
+	Type constant.Parse `json:"type" default:"parse"`
+	paramObj
+}
+
+func (r UpdateFunctionParseParam) MarshalJSON() (data []byte, err error) {
+	type shadow UpdateFunctionParseParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *UpdateFunctionParseParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Per-version configuration for a Parse function.
+//
+// Parse renders document pages (PDF, image) via vision LLM and emits structured
+// JSON. The two toggles below independently control entity extraction (a per-call
+// output concern) and cross-document memory linking (an environment-wide concern).
+type UpdateFunctionParseParseConfigParam struct {
+	// When true, extract named entities (people, organizations, products, studies,
+	// identifiers, etc.) and the relationships between them, and dedupe by canonical
+	// name within the document. When false, only `sections[]` is extracted;
+	// `entities[]` and `relationships[]` come back empty in the parse output. Defaults
+	// to true.
+	ExtractEntities param.Opt[bool] `json:"extractEntities,omitzero"`
+	// When true, link this document's entities to entities seen in earlier documents
+	// in this environment, building one canonical record per real-world thing across
+	// the corpus. Visible in the Memory tab and queryable via `POST /v3/fs` (op=find /
+	// open / xref). Doesn't change this call's parse output. Requires
+	// `extractEntities=true`. Defaults to true.
+	LinkAcrossDocuments param.Opt[bool] `json:"linkAcrossDocuments,omitzero"`
+	// Optional JSONSchema. When provided, each chunk performs schema-guided
+	// extraction. When absent, chunks perform open-ended discovery and return
+	// sections, entities, and relationships per the discovery schema.
+	Schema any `json:"schema,omitzero"`
+	paramObj
+}
+
+func (r UpdateFunctionParseParseConfigParam) MarshalJSON() (data []byte, err error) {
+	type shadow UpdateFunctionParseParseConfigParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *UpdateFunctionParseParseConfigParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
 type UserActionSummary struct {
 	// The date and time the action was created.
 	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
@@ -2239,7 +2568,7 @@ func (r *WorkflowUsageInfo) UnmarshalJSON(data []byte) error {
 }
 
 type FunctionNewParams struct {
-	// V3 wire form of the Route (classify) function create payload. Mirrors {
+	// V3 wire form of the classify function create payload.
 	CreateFunction CreateFunctionUnionParam
 	paramObj
 }
@@ -2252,7 +2581,20 @@ func (r *FunctionNewParams) UnmarshalJSON(data []byte) error {
 }
 
 type FunctionUpdateParams struct {
-	// V3 wire form of the Route (classify) function upsert payload. Mirrors {
+	// V3 create/update variants of the shared function payloads.
+	//
+	// The V3 Functions API no longer accepts the legacy `transform` or `analyze`
+	// function types when creating new functions or updating existing ones — both have
+	// been unified under `extract`. Existing functions of those types remain readable
+	// and callable via V3, so the V3 read-side unions still include `transform` and
+	// `analyze` variants.
+	//
+	// The V3 API also exposes `classify` in place of the legacy `route` type on
+	// create/update, with `classifications` in place of `routes`. Read-side
+	// `ClassifyFunction` / `ClassifyFunctionVersion` / `ClassificationList` are
+	// defined in the shared functions models and used by both the V2 and V3 response
+	// unions (existing classify functions are returned from V2 GET endpoints
+	// verbatim).V3 wire form of the classify function upsert payload.
 	UpdateFunction UpdateFunctionUnionParam
 	paramObj
 }

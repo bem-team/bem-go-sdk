@@ -87,13 +87,13 @@ Methods:
 Response Types:
 
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#AnyTypeUnion">AnyTypeUnion</a>
-- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EventUnion">EventUnion</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#OutputGetResponse">OutputGetResponse</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#OutputListResponseUnion">OutputListResponseUnion</a>
 
 Methods:
 
 - <code title="get /v3/outputs/{eventID}">client.Outputs.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#OutputService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, eventID <a href="https://pkg.go.dev/builtin#string">string</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#OutputGetResponse">OutputGetResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
-- <code title="get /v3/outputs">client.Outputs.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#OutputService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#OutputListParams">OutputListParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk/packages/pagination">pagination</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk/packages/pagination#OutputsPage">OutputsPage</a>[<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EventUnion">EventUnion</a>], <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="get /v3/outputs">client.Outputs.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#OutputService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#OutputListParams">OutputListParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk/packages/pagination">pagination</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk/packages/pagination#OutputsPage">OutputsPage</a>[<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#OutputListResponseUnion">OutputListResponseUnion</a>], <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
 # Workflows
 

@@ -4,6 +4,7 @@ package bem
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -190,7 +191,7 @@ type Call struct {
 	//
 	// Each element is a polymorphic event object; inspect `eventType` to determine the
 	// type. Retrieve individual outputs via `GET /v3/outputs/{eventID}`.
-	Outputs []EventUnion `json:"outputs" api:"required"`
+	Outputs []CallOutputUnion `json:"outputs" api:"required"`
 	// Hint URL for the full execution trace: `GET /v3/calls/{callID}/trace`.
 	TraceURL string `json:"traceUrl" api:"required"`
 	// Hint URL for retrieving this call: `GET /v3/calls/{callID}`.
@@ -235,6 +236,1889 @@ type Call struct {
 // Returns the unmodified JSON received from the API
 func (r Call) RawJSON() string { return r.JSON.raw }
 func (r *Call) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// CallOutputUnion contains all possible properties and values from
+// [CallOutputTransform], [CallOutputExtract], [CallOutputRoute],
+// [CallOutputClassify], [CallOutputSplitCollection], [CallOutputSplitItem],
+// [ErrorEvent], [CallOutputJoin], [CallOutputEnrich],
+// [CallOutputCollectionProcessing], [CallOutputSend].
+//
+// Use the [CallOutputUnion.AsAny] method to switch on the variant.
+//
+// Use the methods beginning with 'As' to cast the union to one of its variants.
+type CallOutputUnion struct {
+	EventID            string  `json:"eventID"`
+	FunctionID         string  `json:"functionID"`
+	FunctionName       string  `json:"functionName"`
+	ItemCount          int64   `json:"itemCount"`
+	ItemOffset         int64   `json:"itemOffset"`
+	ReferenceID        string  `json:"referenceID"`
+	TransformedContent any     `json:"transformedContent"`
+	AvgConfidence      float64 `json:"avgConfidence"`
+	CallID             string  `json:"callID"`
+	// This field is a union of [CallOutputTransformCorrectedContentUnion],
+	// [CallOutputExtractCorrectedContentUnion]
+	CorrectedContent CallOutputUnionCorrectedContent `json:"correctedContent"`
+	CreatedAt        time.Time                       `json:"createdAt"`
+	// Any of "transform", "extract", "route", "classify", "split_collection",
+	// "split_item", "error", "join", "enrich", "collection_processing", "send".
+	EventType             string `json:"eventType"`
+	FieldConfidences      any    `json:"fieldConfidences"`
+	FunctionCallID        string `json:"functionCallID"`
+	FunctionCallTryNumber int64  `json:"functionCallTryNumber"`
+	FunctionVersionNum    int64  `json:"functionVersionNum"`
+	// This field is from variant [CallOutputTransform].
+	InboundEmail InboundEmailEvent `json:"inboundEmail"`
+	// This field is a union of [[]CallOutputTransformInput],
+	// [[]CallOutputExtractInput]
+	Inputs            CallOutputUnionInputs `json:"inputs"`
+	InputType         string                `json:"inputType"`
+	InvalidProperties []string              `json:"invalidProperties"`
+	// This field is from variant [CallOutputTransform].
+	IsRegression bool `json:"isRegression"`
+	// This field is from variant [CallOutputTransform].
+	LastPublishErrorAt string `json:"lastPublishErrorAt"`
+	// This field is a union of [CallOutputTransformMetadata],
+	// [CallOutputExtractMetadata], [CallOutputRouteMetadata],
+	// [CallOutputClassifyMetadata], [CallOutputSplitCollectionMetadata],
+	// [CallOutputSplitItemMetadata], [ErrorEventMetadata], [CallOutputJoinMetadata],
+	// [CallOutputEnrichMetadata], [CallOutputCollectionProcessingMetadata],
+	// [CallOutputSendMetadata]
+	Metadata CallOutputUnionMetadata `json:"metadata"`
+	// This field is from variant [CallOutputTransform].
+	Metrics CallOutputTransformMetrics `json:"metrics"`
+	// This field is from variant [CallOutputTransform].
+	OrderMatching bool `json:"orderMatching"`
+	// This field is from variant [CallOutputTransform].
+	PipelineID string `json:"pipelineID"`
+	// This field is from variant [CallOutputTransform].
+	PublishedAt        time.Time `json:"publishedAt"`
+	S3URL              string    `json:"s3URL"`
+	TransformationID   string    `json:"transformationID"`
+	WorkflowID         string    `json:"workflowID"`
+	WorkflowName       string    `json:"workflowName"`
+	WorkflowVersionNum int64     `json:"workflowVersionNum"`
+	Choice             string    `json:"choice"`
+	OutputType         string    `json:"outputType"`
+	// This field is a union of [CallOutputSplitCollectionPrintPageOutput],
+	// [CallOutputSplitItemPrintPageOutput]
+	PrintPageOutput CallOutputUnionPrintPageOutput `json:"printPageOutput"`
+	// This field is a union of [CallOutputSplitCollectionSemanticPageOutput],
+	// [CallOutputSplitItemSemanticPageOutput]
+	SemanticPageOutput CallOutputUnionSemanticPageOutput `json:"semanticPageOutput"`
+	// This field is from variant [ErrorEvent].
+	Message string `json:"message"`
+	// This field is from variant [CallOutputJoin].
+	Items []CallOutputJoinItem `json:"items"`
+	// This field is from variant [CallOutputJoin].
+	JoinType string `json:"joinType"`
+	// This field is from variant [CallOutputEnrich].
+	EnrichedContent any `json:"enrichedContent"`
+	// This field is from variant [CallOutputCollectionProcessing].
+	CollectionID string `json:"collectionID"`
+	// This field is from variant [CallOutputCollectionProcessing].
+	CollectionName string `json:"collectionName"`
+	// This field is from variant [CallOutputCollectionProcessing].
+	Operation string `json:"operation"`
+	// This field is from variant [CallOutputCollectionProcessing].
+	ProcessedCount int64 `json:"processedCount"`
+	// This field is from variant [CallOutputCollectionProcessing].
+	Status string `json:"status"`
+	// This field is from variant [CallOutputCollectionProcessing].
+	CollectionItemIDs []string `json:"collectionItemIDs"`
+	// This field is from variant [CallOutputCollectionProcessing].
+	ErrorMessage string `json:"errorMessage"`
+	// This field is from variant [CallOutputSend].
+	DeliveryStatus string `json:"deliveryStatus"`
+	// This field is from variant [CallOutputSend].
+	DestinationType string `json:"destinationType"`
+	// This field is from variant [CallOutputSend].
+	DeliveredContent any `json:"deliveredContent"`
+	// This field is from variant [CallOutputSend].
+	GoogleDriveOutput CallOutputSendGoogleDriveOutput `json:"googleDriveOutput"`
+	// This field is from variant [CallOutputSend].
+	S3Output CallOutputSendS3Output `json:"s3Output"`
+	// This field is from variant [CallOutputSend].
+	WebhookOutput CallOutputSendWebhookOutput `json:"webhookOutput"`
+	JSON          struct {
+		EventID               respjson.Field
+		FunctionID            respjson.Field
+		FunctionName          respjson.Field
+		ItemCount             respjson.Field
+		ItemOffset            respjson.Field
+		ReferenceID           respjson.Field
+		TransformedContent    respjson.Field
+		AvgConfidence         respjson.Field
+		CallID                respjson.Field
+		CorrectedContent      respjson.Field
+		CreatedAt             respjson.Field
+		EventType             respjson.Field
+		FieldConfidences      respjson.Field
+		FunctionCallID        respjson.Field
+		FunctionCallTryNumber respjson.Field
+		FunctionVersionNum    respjson.Field
+		InboundEmail          respjson.Field
+		Inputs                respjson.Field
+		InputType             respjson.Field
+		InvalidProperties     respjson.Field
+		IsRegression          respjson.Field
+		LastPublishErrorAt    respjson.Field
+		Metadata              respjson.Field
+		Metrics               respjson.Field
+		OrderMatching         respjson.Field
+		PipelineID            respjson.Field
+		PublishedAt           respjson.Field
+		S3URL                 respjson.Field
+		TransformationID      respjson.Field
+		WorkflowID            respjson.Field
+		WorkflowName          respjson.Field
+		WorkflowVersionNum    respjson.Field
+		Choice                respjson.Field
+		OutputType            respjson.Field
+		PrintPageOutput       respjson.Field
+		SemanticPageOutput    respjson.Field
+		Message               respjson.Field
+		Items                 respjson.Field
+		JoinType              respjson.Field
+		EnrichedContent       respjson.Field
+		CollectionID          respjson.Field
+		CollectionName        respjson.Field
+		Operation             respjson.Field
+		ProcessedCount        respjson.Field
+		Status                respjson.Field
+		CollectionItemIDs     respjson.Field
+		ErrorMessage          respjson.Field
+		DeliveryStatus        respjson.Field
+		DestinationType       respjson.Field
+		DeliveredContent      respjson.Field
+		GoogleDriveOutput     respjson.Field
+		S3Output              respjson.Field
+		WebhookOutput         respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// anyCallOutput is implemented by each variant of [CallOutputUnion] to add type
+// safety for the return type of [CallOutputUnion.AsAny]
+type anyCallOutput interface {
+	implCallOutputUnion()
+}
+
+func (CallOutputTransform) implCallOutputUnion()            {}
+func (CallOutputExtract) implCallOutputUnion()              {}
+func (CallOutputRoute) implCallOutputUnion()                {}
+func (CallOutputClassify) implCallOutputUnion()             {}
+func (CallOutputSplitCollection) implCallOutputUnion()      {}
+func (CallOutputSplitItem) implCallOutputUnion()            {}
+func (ErrorEvent) implCallOutputUnion()                     {}
+func (CallOutputJoin) implCallOutputUnion()                 {}
+func (CallOutputEnrich) implCallOutputUnion()               {}
+func (CallOutputCollectionProcessing) implCallOutputUnion() {}
+func (CallOutputSend) implCallOutputUnion()                 {}
+
+// Use the following switch statement to find the correct variant
+//
+//	switch variant := CallOutputUnion.AsAny().(type) {
+//	case bem.CallOutputTransform:
+//	case bem.CallOutputExtract:
+//	case bem.CallOutputRoute:
+//	case bem.CallOutputClassify:
+//	case bem.CallOutputSplitCollection:
+//	case bem.CallOutputSplitItem:
+//	case bem.ErrorEvent:
+//	case bem.CallOutputJoin:
+//	case bem.CallOutputEnrich:
+//	case bem.CallOutputCollectionProcessing:
+//	case bem.CallOutputSend:
+//	default:
+//	  fmt.Errorf("no variant present")
+//	}
+func (u CallOutputUnion) AsAny() anyCallOutput {
+	switch u.EventType {
+	case "transform":
+		return u.AsTransform()
+	case "extract":
+		return u.AsExtract()
+	case "route":
+		return u.AsRoute()
+	case "classify":
+		return u.AsClassify()
+	case "split_collection":
+		return u.AsSplitCollection()
+	case "split_item":
+		return u.AsSplitItem()
+	case "error":
+		return u.AsError()
+	case "join":
+		return u.AsJoin()
+	case "enrich":
+		return u.AsEnrich()
+	case "collection_processing":
+		return u.AsCollectionProcessing()
+	case "send":
+		return u.AsSend()
+	}
+	return nil
+}
+
+func (u CallOutputUnion) AsTransform() (v CallOutputTransform) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u CallOutputUnion) AsExtract() (v CallOutputExtract) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u CallOutputUnion) AsRoute() (v CallOutputRoute) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u CallOutputUnion) AsClassify() (v CallOutputClassify) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u CallOutputUnion) AsSplitCollection() (v CallOutputSplitCollection) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u CallOutputUnion) AsSplitItem() (v CallOutputSplitItem) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u CallOutputUnion) AsError() (v ErrorEvent) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u CallOutputUnion) AsJoin() (v CallOutputJoin) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u CallOutputUnion) AsEnrich() (v CallOutputEnrich) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u CallOutputUnion) AsCollectionProcessing() (v CallOutputCollectionProcessing) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u CallOutputUnion) AsSend() (v CallOutputSend) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+// Returns the unmodified JSON received from the API
+func (u CallOutputUnion) RawJSON() string { return u.JSON.raw }
+
+func (r *CallOutputUnion) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// CallOutputUnionCorrectedContent is an implicit subunion of [CallOutputUnion].
+// CallOutputUnionCorrectedContent provides convenient access to the sub-properties
+// of the union.
+//
+// For type safety it is recommended to directly use a variant of the
+// [CallOutputUnion].
+//
+// If the underlying value is not a json object, one of the following properties
+// will be valid: OfAnyArray OfString OfFloat OfBool]
+type CallOutputUnionCorrectedContent struct {
+	// This field will be present if the value is a [[]any] instead of an object.
+	OfAnyArray []any `json:",inline"`
+	// This field will be present if the value is a [string] instead of an object.
+	OfString string `json:",inline"`
+	// This field will be present if the value is a [float64] instead of an object.
+	OfFloat float64 `json:",inline"`
+	// This field will be present if the value is a [bool] instead of an object.
+	OfBool bool           `json:",inline"`
+	Output []AnyTypeUnion `json:"output"`
+	JSON   struct {
+		OfAnyArray respjson.Field
+		OfString   respjson.Field
+		OfFloat    respjson.Field
+		OfBool     respjson.Field
+		Output     respjson.Field
+		raw        string
+	} `json:"-"`
+}
+
+func (r *CallOutputUnionCorrectedContent) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// CallOutputUnionInputs is an implicit subunion of [CallOutputUnion].
+// CallOutputUnionInputs provides convenient access to the sub-properties of the
+// union.
+//
+// For type safety it is recommended to directly use a variant of the
+// [CallOutputUnion].
+//
+// If the underlying value is not a json object, one of the following properties
+// will be valid: OfCallOutputTransformInputs OfCallOutputExtractInputs]
+type CallOutputUnionInputs struct {
+	// This field will be present if the value is a [[]CallOutputTransformInput]
+	// instead of an object.
+	OfCallOutputTransformInputs []CallOutputTransformInput `json:",inline"`
+	// This field will be present if the value is a [[]CallOutputExtractInput] instead
+	// of an object.
+	OfCallOutputExtractInputs []CallOutputExtractInput `json:",inline"`
+	JSON                      struct {
+		OfCallOutputTransformInputs respjson.Field
+		OfCallOutputExtractInputs   respjson.Field
+		raw                         string
+	} `json:"-"`
+}
+
+func (r *CallOutputUnionInputs) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// CallOutputUnionMetadata is an implicit subunion of [CallOutputUnion].
+// CallOutputUnionMetadata provides convenient access to the sub-properties of the
+// union.
+//
+// For type safety it is recommended to directly use a variant of the
+// [CallOutputUnion].
+type CallOutputUnionMetadata struct {
+	DurationFunctionToEventSeconds float64 `json:"durationFunctionToEventSeconds"`
+	JSON                           struct {
+		DurationFunctionToEventSeconds respjson.Field
+		raw                            string
+	} `json:"-"`
+}
+
+func (r *CallOutputUnionMetadata) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// CallOutputUnionPrintPageOutput is an implicit subunion of [CallOutputUnion].
+// CallOutputUnionPrintPageOutput provides convenient access to the sub-properties
+// of the union.
+//
+// For type safety it is recommended to directly use a variant of the
+// [CallOutputUnion].
+type CallOutputUnionPrintPageOutput struct {
+	ItemCount int64 `json:"itemCount"`
+	// This field is from variant [CallOutputSplitCollectionPrintPageOutput].
+	Items []CallOutputSplitCollectionPrintPageOutputItem `json:"items"`
+	// This field is from variant [CallOutputSplitItemPrintPageOutput].
+	CollectionReferenceID string `json:"collectionReferenceID"`
+	// This field is from variant [CallOutputSplitItemPrintPageOutput].
+	ItemOffset int64 `json:"itemOffset"`
+	// This field is from variant [CallOutputSplitItemPrintPageOutput].
+	S3URL string `json:"s3URL"`
+	JSON  struct {
+		ItemCount             respjson.Field
+		Items                 respjson.Field
+		CollectionReferenceID respjson.Field
+		ItemOffset            respjson.Field
+		S3URL                 respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+func (r *CallOutputUnionPrintPageOutput) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// CallOutputUnionSemanticPageOutput is an implicit subunion of [CallOutputUnion].
+// CallOutputUnionSemanticPageOutput provides convenient access to the
+// sub-properties of the union.
+//
+// For type safety it is recommended to directly use a variant of the
+// [CallOutputUnion].
+type CallOutputUnionSemanticPageOutput struct {
+	ItemCount int64 `json:"itemCount"`
+	// This field is from variant [CallOutputSplitCollectionSemanticPageOutput].
+	Items     []CallOutputSplitCollectionSemanticPageOutputItem `json:"items"`
+	PageCount int64                                             `json:"pageCount"`
+	// This field is from variant [CallOutputSplitItemSemanticPageOutput].
+	CollectionReferenceID string `json:"collectionReferenceID"`
+	// This field is from variant [CallOutputSplitItemSemanticPageOutput].
+	ItemClass string `json:"itemClass"`
+	// This field is from variant [CallOutputSplitItemSemanticPageOutput].
+	ItemClassCount int64 `json:"itemClassCount"`
+	// This field is from variant [CallOutputSplitItemSemanticPageOutput].
+	ItemClassOffset int64 `json:"itemClassOffset"`
+	// This field is from variant [CallOutputSplitItemSemanticPageOutput].
+	ItemOffset int64 `json:"itemOffset"`
+	// This field is from variant [CallOutputSplitItemSemanticPageOutput].
+	PageEnd int64 `json:"pageEnd"`
+	// This field is from variant [CallOutputSplitItemSemanticPageOutput].
+	PageStart int64 `json:"pageStart"`
+	// This field is from variant [CallOutputSplitItemSemanticPageOutput].
+	S3URL string `json:"s3URL"`
+	JSON  struct {
+		ItemCount             respjson.Field
+		Items                 respjson.Field
+		PageCount             respjson.Field
+		CollectionReferenceID respjson.Field
+		ItemClass             respjson.Field
+		ItemClassCount        respjson.Field
+		ItemClassOffset       respjson.Field
+		ItemOffset            respjson.Field
+		PageEnd               respjson.Field
+		PageStart             respjson.Field
+		S3URL                 respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+func (r *CallOutputUnionSemanticPageOutput) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputTransform struct {
+	// Unique ID generated by bem to identify the event.
+	EventID string `json:"eventID" api:"required"`
+	// Unique identifier of function that this event is associated with.
+	FunctionID string `json:"functionID" api:"required"`
+	// Unique name of function that this event is associated with.
+	FunctionName string `json:"functionName" api:"required"`
+	// The number of items that were transformed. Used for batch transformations to
+	// indicate how many items were transformed.
+	ItemCount int64 `json:"itemCount" api:"required"`
+	// The offset of the first item that was transformed. Used for batch
+	// transformations to indicate which item in the batch this event corresponds to.
+	ItemOffset int64 `json:"itemOffset" api:"required"`
+	// The unique ID you use internally to refer to this data point, propagated from
+	// the original function input.
+	ReferenceID string `json:"referenceID" api:"required"`
+	// The transformed content of the input. The structure of this object is defined by
+	// the function configuration.
+	TransformedContent any `json:"transformedContent" api:"required"`
+	// Average confidence score across all extracted fields, in the range [0, 1].
+	AvgConfidence float64 `json:"avgConfidence" api:"nullable"`
+	// Unique identifier of workflow call that this event is associated with.
+	CallID string `json:"callID"`
+	// Corrected feedback provided for fine-tuning purposes.
+	CorrectedContent CallOutputTransformCorrectedContentUnion `json:"correctedContent" api:"nullable"`
+	// Timestamp indicating when the event was created.
+	CreatedAt time.Time `json:"createdAt" format:"date-time"`
+	// Any of "transform".
+	EventType string `json:"eventType"`
+	// Per-field confidence scores. A JSON object mapping RFC 6901 JSON Pointer paths
+	// (e.g. `"/invoiceNumber"`) to float values in the range [0, 1] indicating the
+	// model's confidence in each extracted field value.
+	FieldConfidences any `json:"fieldConfidences"`
+	// Unique identifier of function call that this event is associated with.
+	FunctionCallID string `json:"functionCallID"`
+	// The attempt number of the function call that created this event. 1 indexed.
+	FunctionCallTryNumber int64 `json:"functionCallTryNumber"`
+	// Version number of function that this event is associated with.
+	FunctionVersionNum int64 `json:"functionVersionNum"`
+	// The inbound email that triggered this event.
+	InboundEmail InboundEmailEvent `json:"inboundEmail"`
+	// Array of transformation inputs with their types and S3 URLs.
+	Inputs []CallOutputTransformInput `json:"inputs" api:"nullable"`
+	// The input type of the content you're sending for transformation.
+	//
+	// Any of "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a",
+	// "mp3", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
+	InputType string `json:"inputType"`
+	// List of properties that were invalid in the input.
+	InvalidProperties []string `json:"invalidProperties"`
+	// Indicates whether this transformation was created as part of a regression test.
+	IsRegression bool `json:"isRegression"`
+	// Last timestamp indicating when the transform was published via webhook and
+	// received a non-200 response. Set to `null` on a subsequent retry if the webhook
+	// service receives a 200 response.
+	LastPublishErrorAt string                      `json:"lastPublishErrorAt" api:"nullable"`
+	Metadata           CallOutputTransformMetadata `json:"metadata"`
+	// Accuracy, precision, recall, and F1 score when corrected JSON is provided.
+	Metrics CallOutputTransformMetrics `json:"metrics" api:"nullable"`
+	// Indicates whether array order matters when comparing corrected JSON with
+	// extracted JSON.
+	OrderMatching bool `json:"orderMatching"`
+	// ID of pipeline that transformed the original input data.
+	PipelineID string `json:"pipelineID"`
+	// Timestamp indicating when the transform was published via webhook and received a
+	// successful 200 response. Value is `null` if the transformation hasn't been sent.
+	PublishedAt time.Time `json:"publishedAt" format:"date-time"`
+	// Presigned S3 URL for the input content uploaded to S3.
+	S3URL string `json:"s3URL" api:"nullable"`
+	// Unique ID for each transformation output generated by bem following Segment's
+	// KSUID conventions.
+	TransformationID string `json:"transformationID"`
+	// Unique identifier of workflow that this event is associated with.
+	WorkflowID string `json:"workflowID"`
+	// Name of workflow that this event is associated with.
+	WorkflowName string `json:"workflowName"`
+	// Version number of workflow that this event is associated with.
+	WorkflowVersionNum int64 `json:"workflowVersionNum"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		EventID               respjson.Field
+		FunctionID            respjson.Field
+		FunctionName          respjson.Field
+		ItemCount             respjson.Field
+		ItemOffset            respjson.Field
+		ReferenceID           respjson.Field
+		TransformedContent    respjson.Field
+		AvgConfidence         respjson.Field
+		CallID                respjson.Field
+		CorrectedContent      respjson.Field
+		CreatedAt             respjson.Field
+		EventType             respjson.Field
+		FieldConfidences      respjson.Field
+		FunctionCallID        respjson.Field
+		FunctionCallTryNumber respjson.Field
+		FunctionVersionNum    respjson.Field
+		InboundEmail          respjson.Field
+		Inputs                respjson.Field
+		InputType             respjson.Field
+		InvalidProperties     respjson.Field
+		IsRegression          respjson.Field
+		LastPublishErrorAt    respjson.Field
+		Metadata              respjson.Field
+		Metrics               respjson.Field
+		OrderMatching         respjson.Field
+		PipelineID            respjson.Field
+		PublishedAt           respjson.Field
+		S3URL                 respjson.Field
+		TransformationID      respjson.Field
+		WorkflowID            respjson.Field
+		WorkflowName          respjson.Field
+		WorkflowVersionNum    respjson.Field
+		ExtraFields           map[string]respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputTransform) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputTransform) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// CallOutputTransformCorrectedContentUnion contains all possible properties and
+// values from [CallOutputTransformCorrectedContentOutput], [[]any], [string],
+// [float64], [bool].
+//
+// Use the methods beginning with 'As' to cast the union to one of its variants.
+//
+// If the underlying value is not a json object, one of the following properties
+// will be valid: OfAnyArray OfString OfFloat OfBool]
+type CallOutputTransformCorrectedContentUnion struct {
+	// This field will be present if the value is a [[]any] instead of an object.
+	OfAnyArray []any `json:",inline"`
+	// This field will be present if the value is a [string] instead of an object.
+	OfString string `json:",inline"`
+	// This field will be present if the value is a [float64] instead of an object.
+	OfFloat float64 `json:",inline"`
+	// This field will be present if the value is a [bool] instead of an object.
+	OfBool bool `json:",inline"`
+	// This field is from variant [CallOutputTransformCorrectedContentOutput].
+	Output []AnyTypeUnion `json:"output"`
+	JSON   struct {
+		OfAnyArray respjson.Field
+		OfString   respjson.Field
+		OfFloat    respjson.Field
+		OfBool     respjson.Field
+		Output     respjson.Field
+		raw        string
+	} `json:"-"`
+}
+
+func (u CallOutputTransformCorrectedContentUnion) AsCallOutputTransformCorrectedContentOutput() (v CallOutputTransformCorrectedContentOutput) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u CallOutputTransformCorrectedContentUnion) AsAnyArray() (v []any) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u CallOutputTransformCorrectedContentUnion) AsString() (v string) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u CallOutputTransformCorrectedContentUnion) AsFloat() (v float64) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u CallOutputTransformCorrectedContentUnion) AsBool() (v bool) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+// Returns the unmodified JSON received from the API
+func (u CallOutputTransformCorrectedContentUnion) RawJSON() string { return u.JSON.raw }
+
+func (r *CallOutputTransformCorrectedContentUnion) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputTransformCorrectedContentOutput struct {
+	Output []AnyTypeUnion `json:"output"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Output      respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputTransformCorrectedContentOutput) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputTransformCorrectedContentOutput) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputTransformInput struct {
+	InputContent     string `json:"inputContent" api:"nullable"`
+	InputType        string `json:"inputType" api:"nullable"`
+	JsonInputContent any    `json:"jsonInputContent" api:"nullable"`
+	S3URL            string `json:"s3URL" api:"nullable"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		InputContent     respjson.Field
+		InputType        respjson.Field
+		JsonInputContent respjson.Field
+		S3URL            respjson.Field
+		ExtraFields      map[string]respjson.Field
+		raw              string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputTransformInput) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputTransformInput) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputTransformMetadata struct {
+	DurationFunctionToEventSeconds float64 `json:"durationFunctionToEventSeconds"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DurationFunctionToEventSeconds respjson.Field
+		ExtraFields                    map[string]respjson.Field
+		raw                            string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputTransformMetadata) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputTransformMetadata) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Accuracy, precision, recall, and F1 score when corrected JSON is provided.
+type CallOutputTransformMetrics struct {
+	Differences []CallOutputTransformMetricsDifference `json:"differences"`
+	Metrics     CallOutputTransformMetricsMetrics      `json:"metrics"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Differences respjson.Field
+		Metrics     respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputTransformMetrics) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputTransformMetrics) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputTransformMetricsDifference struct {
+	Category     string `json:"category"`
+	CorrectedVal any    `json:"correctedVal"`
+	ExtractedVal any    `json:"extractedVal"`
+	JsonPointer  string `json:"jsonPointer"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Category     respjson.Field
+		CorrectedVal respjson.Field
+		ExtractedVal respjson.Field
+		JsonPointer  respjson.Field
+		ExtraFields  map[string]respjson.Field
+		raw          string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputTransformMetricsDifference) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputTransformMetricsDifference) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputTransformMetricsMetrics struct {
+	Accuracy  float64 `json:"accuracy"`
+	F1Score   float64 `json:"f1Score"`
+	Precision float64 `json:"precision"`
+	Recall    float64 `json:"recall"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Accuracy    respjson.Field
+		F1Score     respjson.Field
+		Precision   respjson.Field
+		Recall      respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputTransformMetricsMetrics) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputTransformMetricsMetrics) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// V3 event variants that do not exist in the shared `Event` union.
+//
+// `ExtractEvent` and `ClassifyEvent` are emitted only by V3-era function types
+// (`extract` and `classify`). The shared `Event` union in
+// `specs/events/models.tsp` predates these types and continues to describe V2 /
+// V1-alpha responses verbatim; V3 response payloads add the new variants via the
+// `EventV3` union below while keeping every shared variant intact for backward
+// compatibility.
+type CallOutputExtract struct {
+	// Unique ID generated by bem to identify the event.
+	EventID string `json:"eventID" api:"required"`
+	// Unique identifier of function that this event is associated with.
+	FunctionID string `json:"functionID" api:"required"`
+	// Unique name of function that this event is associated with.
+	FunctionName string `json:"functionName" api:"required"`
+	// The number of items that were transformed. Used for batch transformations to
+	// indicate how many items were transformed.
+	ItemCount int64 `json:"itemCount" api:"required"`
+	// The offset of the first item that was transformed. Used for batch
+	// transformations to indicate which item in the batch this event corresponds to.
+	ItemOffset int64 `json:"itemOffset" api:"required"`
+	// The unique ID you use internally to refer to this data point, propagated from
+	// the original function input.
+	ReferenceID string `json:"referenceID" api:"required"`
+	// The transformed content of the input. The structure of this object is defined by
+	// the function configuration.
+	TransformedContent any `json:"transformedContent" api:"required"`
+	// Average confidence score across all extracted fields, in the range [0, 1].
+	AvgConfidence float64 `json:"avgConfidence" api:"nullable"`
+	// Unique identifier of workflow call that this event is associated with.
+	CallID string `json:"callID"`
+	// Corrected feedback provided for fine-tuning purposes.
+	CorrectedContent CallOutputExtractCorrectedContentUnion `json:"correctedContent" api:"nullable"`
+	// Timestamp indicating when the event was created.
+	CreatedAt time.Time `json:"createdAt" format:"date-time"`
+	// Any of "extract".
+	EventType string `json:"eventType"`
+	// Per-field confidence scores. A JSON object mapping RFC 6901 JSON Pointer paths
+	// (e.g. `"/invoiceNumber"`) to float values in the range [0, 1] indicating the
+	// model's confidence in each extracted field value.
+	FieldConfidences any `json:"fieldConfidences"`
+	// Unique identifier of function call that this event is associated with.
+	FunctionCallID string `json:"functionCallID"`
+	// The attempt number of the function call that created this event. 1 indexed.
+	FunctionCallTryNumber int64 `json:"functionCallTryNumber"`
+	// Version number of function that this event is associated with.
+	FunctionVersionNum int64 `json:"functionVersionNum"`
+	// The inbound email that triggered this event.
+	InboundEmail InboundEmailEvent `json:"inboundEmail"`
+	// Array of transformation inputs with their types and S3 URLs.
+	Inputs []CallOutputExtractInput `json:"inputs" api:"nullable"`
+	// The input type of the content you're sending for transformation.
+	//
+	// Any of "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a",
+	// "mp3", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
+	InputType string `json:"inputType"`
+	// List of properties that were invalid in the input.
+	InvalidProperties []string                  `json:"invalidProperties"`
+	Metadata          CallOutputExtractMetadata `json:"metadata"`
+	// Presigned S3 URL for the input content uploaded to S3.
+	S3URL string `json:"s3URL" api:"nullable"`
+	// Unique ID for each transformation output generated by bem following Segment's
+	// KSUID conventions.
+	TransformationID string `json:"transformationID"`
+	// Unique identifier of workflow that this event is associated with.
+	WorkflowID string `json:"workflowID"`
+	// Name of workflow that this event is associated with.
+	WorkflowName string `json:"workflowName"`
+	// Version number of workflow that this event is associated with.
+	WorkflowVersionNum int64 `json:"workflowVersionNum"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		EventID               respjson.Field
+		FunctionID            respjson.Field
+		FunctionName          respjson.Field
+		ItemCount             respjson.Field
+		ItemOffset            respjson.Field
+		ReferenceID           respjson.Field
+		TransformedContent    respjson.Field
+		AvgConfidence         respjson.Field
+		CallID                respjson.Field
+		CorrectedContent      respjson.Field
+		CreatedAt             respjson.Field
+		EventType             respjson.Field
+		FieldConfidences      respjson.Field
+		FunctionCallID        respjson.Field
+		FunctionCallTryNumber respjson.Field
+		FunctionVersionNum    respjson.Field
+		InboundEmail          respjson.Field
+		Inputs                respjson.Field
+		InputType             respjson.Field
+		InvalidProperties     respjson.Field
+		Metadata              respjson.Field
+		S3URL                 respjson.Field
+		TransformationID      respjson.Field
+		WorkflowID            respjson.Field
+		WorkflowName          respjson.Field
+		WorkflowVersionNum    respjson.Field
+		ExtraFields           map[string]respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputExtract) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputExtract) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// CallOutputExtractCorrectedContentUnion contains all possible properties and
+// values from [CallOutputExtractCorrectedContentOutput], [[]any], [string],
+// [float64], [bool].
+//
+// Use the methods beginning with 'As' to cast the union to one of its variants.
+//
+// If the underlying value is not a json object, one of the following properties
+// will be valid: OfAnyArray OfString OfFloat OfBool]
+type CallOutputExtractCorrectedContentUnion struct {
+	// This field will be present if the value is a [[]any] instead of an object.
+	OfAnyArray []any `json:",inline"`
+	// This field will be present if the value is a [string] instead of an object.
+	OfString string `json:",inline"`
+	// This field will be present if the value is a [float64] instead of an object.
+	OfFloat float64 `json:",inline"`
+	// This field will be present if the value is a [bool] instead of an object.
+	OfBool bool `json:",inline"`
+	// This field is from variant [CallOutputExtractCorrectedContentOutput].
+	Output []AnyTypeUnion `json:"output"`
+	JSON   struct {
+		OfAnyArray respjson.Field
+		OfString   respjson.Field
+		OfFloat    respjson.Field
+		OfBool     respjson.Field
+		Output     respjson.Field
+		raw        string
+	} `json:"-"`
+}
+
+func (u CallOutputExtractCorrectedContentUnion) AsCallOutputExtractCorrectedContentOutput() (v CallOutputExtractCorrectedContentOutput) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u CallOutputExtractCorrectedContentUnion) AsAnyArray() (v []any) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u CallOutputExtractCorrectedContentUnion) AsString() (v string) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u CallOutputExtractCorrectedContentUnion) AsFloat() (v float64) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u CallOutputExtractCorrectedContentUnion) AsBool() (v bool) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+// Returns the unmodified JSON received from the API
+func (u CallOutputExtractCorrectedContentUnion) RawJSON() string { return u.JSON.raw }
+
+func (r *CallOutputExtractCorrectedContentUnion) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputExtractCorrectedContentOutput struct {
+	Output []AnyTypeUnion `json:"output"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Output      respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputExtractCorrectedContentOutput) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputExtractCorrectedContentOutput) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputExtractInput struct {
+	InputContent     string `json:"inputContent" api:"nullable"`
+	InputType        string `json:"inputType" api:"nullable"`
+	JsonInputContent any    `json:"jsonInputContent" api:"nullable"`
+	S3URL            string `json:"s3URL" api:"nullable"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		InputContent     respjson.Field
+		InputType        respjson.Field
+		JsonInputContent respjson.Field
+		S3URL            respjson.Field
+		ExtraFields      map[string]respjson.Field
+		raw              string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputExtractInput) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputExtractInput) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputExtractMetadata struct {
+	DurationFunctionToEventSeconds float64 `json:"durationFunctionToEventSeconds"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DurationFunctionToEventSeconds respjson.Field
+		ExtraFields                    map[string]respjson.Field
+		raw                            string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputExtractMetadata) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputExtractMetadata) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputRoute struct {
+	// The choice made by the router function.
+	Choice string `json:"choice" api:"required"`
+	// Unique ID generated by bem to identify the event.
+	EventID string `json:"eventID" api:"required"`
+	// Unique identifier of function that this event is associated with.
+	FunctionID string `json:"functionID" api:"required"`
+	// Unique name of function that this event is associated with.
+	FunctionName string `json:"functionName" api:"required"`
+	// The unique ID you use internally to refer to this data point, propagated from
+	// the original function input.
+	ReferenceID string `json:"referenceID" api:"required"`
+	// Unique identifier of workflow call that this event is associated with.
+	CallID string `json:"callID"`
+	// Timestamp indicating when the event was created.
+	CreatedAt time.Time `json:"createdAt" format:"date-time"`
+	// Any of "route".
+	EventType string `json:"eventType"`
+	// Unique identifier of function call that this event is associated with.
+	FunctionCallID string `json:"functionCallID"`
+	// The attempt number of the function call that created this event. 1 indexed.
+	FunctionCallTryNumber int64 `json:"functionCallTryNumber"`
+	// Version number of function that this event is associated with.
+	FunctionVersionNum int64 `json:"functionVersionNum"`
+	// The inbound email that triggered this event.
+	InboundEmail InboundEmailEvent       `json:"inboundEmail"`
+	Metadata     CallOutputRouteMetadata `json:"metadata"`
+	// The presigned S3 URL of the file that was routed.
+	S3URL string `json:"s3URL"`
+	// Unique identifier of workflow that this event is associated with.
+	WorkflowID string `json:"workflowID"`
+	// Name of workflow that this event is associated with.
+	WorkflowName string `json:"workflowName"`
+	// Version number of workflow that this event is associated with.
+	WorkflowVersionNum int64 `json:"workflowVersionNum"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Choice                respjson.Field
+		EventID               respjson.Field
+		FunctionID            respjson.Field
+		FunctionName          respjson.Field
+		ReferenceID           respjson.Field
+		CallID                respjson.Field
+		CreatedAt             respjson.Field
+		EventType             respjson.Field
+		FunctionCallID        respjson.Field
+		FunctionCallTryNumber respjson.Field
+		FunctionVersionNum    respjson.Field
+		InboundEmail          respjson.Field
+		Metadata              respjson.Field
+		S3URL                 respjson.Field
+		WorkflowID            respjson.Field
+		WorkflowName          respjson.Field
+		WorkflowVersionNum    respjson.Field
+		ExtraFields           map[string]respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputRoute) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputRoute) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputRouteMetadata struct {
+	DurationFunctionToEventSeconds float64 `json:"durationFunctionToEventSeconds"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DurationFunctionToEventSeconds respjson.Field
+		ExtraFields                    map[string]respjson.Field
+		raw                            string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputRouteMetadata) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputRouteMetadata) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputClassify struct {
+	// The classification chosen by the classify function.
+	Choice string `json:"choice" api:"required"`
+	// Unique ID generated by bem to identify the event.
+	EventID string `json:"eventID" api:"required"`
+	// Unique identifier of function that this event is associated with.
+	FunctionID string `json:"functionID" api:"required"`
+	// Unique name of function that this event is associated with.
+	FunctionName string `json:"functionName" api:"required"`
+	// The unique ID you use internally to refer to this data point, propagated from
+	// the original function input.
+	ReferenceID string `json:"referenceID" api:"required"`
+	// Unique identifier of workflow call that this event is associated with.
+	CallID string `json:"callID"`
+	// Timestamp indicating when the event was created.
+	CreatedAt time.Time `json:"createdAt" format:"date-time"`
+	// Any of "classify".
+	EventType string `json:"eventType"`
+	// Unique identifier of function call that this event is associated with.
+	FunctionCallID string `json:"functionCallID"`
+	// The attempt number of the function call that created this event. 1 indexed.
+	FunctionCallTryNumber int64 `json:"functionCallTryNumber"`
+	// Version number of function that this event is associated with.
+	FunctionVersionNum int64 `json:"functionVersionNum"`
+	// The inbound email that triggered this event.
+	InboundEmail InboundEmailEvent          `json:"inboundEmail"`
+	Metadata     CallOutputClassifyMetadata `json:"metadata"`
+	// The presigned S3 URL of the file that was classified.
+	S3URL string `json:"s3URL"`
+	// Unique identifier of workflow that this event is associated with.
+	WorkflowID string `json:"workflowID"`
+	// Name of workflow that this event is associated with.
+	WorkflowName string `json:"workflowName"`
+	// Version number of workflow that this event is associated with.
+	WorkflowVersionNum int64 `json:"workflowVersionNum"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Choice                respjson.Field
+		EventID               respjson.Field
+		FunctionID            respjson.Field
+		FunctionName          respjson.Field
+		ReferenceID           respjson.Field
+		CallID                respjson.Field
+		CreatedAt             respjson.Field
+		EventType             respjson.Field
+		FunctionCallID        respjson.Field
+		FunctionCallTryNumber respjson.Field
+		FunctionVersionNum    respjson.Field
+		InboundEmail          respjson.Field
+		Metadata              respjson.Field
+		S3URL                 respjson.Field
+		WorkflowID            respjson.Field
+		WorkflowName          respjson.Field
+		WorkflowVersionNum    respjson.Field
+		ExtraFields           map[string]respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputClassify) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputClassify) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputClassifyMetadata struct {
+	DurationFunctionToEventSeconds float64 `json:"durationFunctionToEventSeconds"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DurationFunctionToEventSeconds respjson.Field
+		ExtraFields                    map[string]respjson.Field
+		raw                            string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputClassifyMetadata) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputClassifyMetadata) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputSplitCollection struct {
+	// Unique ID generated by bem to identify the event.
+	EventID string `json:"eventID" api:"required"`
+	// Unique identifier of function that this event is associated with.
+	FunctionID string `json:"functionID" api:"required"`
+	// Unique name of function that this event is associated with.
+	FunctionName string `json:"functionName" api:"required"`
+	// Any of "print_page", "semantic_page".
+	OutputType      string                                   `json:"outputType" api:"required"`
+	PrintPageOutput CallOutputSplitCollectionPrintPageOutput `json:"printPageOutput" api:"required"`
+	// The unique ID you use internally to refer to this data point, propagated from
+	// the original function input.
+	ReferenceID        string                                      `json:"referenceID" api:"required"`
+	SemanticPageOutput CallOutputSplitCollectionSemanticPageOutput `json:"semanticPageOutput" api:"required"`
+	// Unique identifier of workflow call that this event is associated with.
+	CallID string `json:"callID"`
+	// Timestamp indicating when the event was created.
+	CreatedAt time.Time `json:"createdAt" format:"date-time"`
+	// Any of "split_collection".
+	EventType string `json:"eventType"`
+	// Unique identifier of function call that this event is associated with.
+	FunctionCallID string `json:"functionCallID"`
+	// The attempt number of the function call that created this event. 1 indexed.
+	FunctionCallTryNumber int64 `json:"functionCallTryNumber"`
+	// Version number of function that this event is associated with.
+	FunctionVersionNum int64 `json:"functionVersionNum"`
+	// The inbound email that triggered this event.
+	InboundEmail InboundEmailEvent                 `json:"inboundEmail"`
+	Metadata     CallOutputSplitCollectionMetadata `json:"metadata"`
+	// Unique identifier of workflow that this event is associated with.
+	WorkflowID string `json:"workflowID"`
+	// Name of workflow that this event is associated with.
+	WorkflowName string `json:"workflowName"`
+	// Version number of workflow that this event is associated with.
+	WorkflowVersionNum int64 `json:"workflowVersionNum"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		EventID               respjson.Field
+		FunctionID            respjson.Field
+		FunctionName          respjson.Field
+		OutputType            respjson.Field
+		PrintPageOutput       respjson.Field
+		ReferenceID           respjson.Field
+		SemanticPageOutput    respjson.Field
+		CallID                respjson.Field
+		CreatedAt             respjson.Field
+		EventType             respjson.Field
+		FunctionCallID        respjson.Field
+		FunctionCallTryNumber respjson.Field
+		FunctionVersionNum    respjson.Field
+		InboundEmail          respjson.Field
+		Metadata              respjson.Field
+		WorkflowID            respjson.Field
+		WorkflowName          respjson.Field
+		WorkflowVersionNum    respjson.Field
+		ExtraFields           map[string]respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputSplitCollection) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputSplitCollection) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputSplitCollectionPrintPageOutput struct {
+	ItemCount int64                                          `json:"itemCount"`
+	Items     []CallOutputSplitCollectionPrintPageOutputItem `json:"items"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		ItemCount   respjson.Field
+		Items       respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputSplitCollectionPrintPageOutput) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputSplitCollectionPrintPageOutput) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputSplitCollectionPrintPageOutputItem struct {
+	ItemOffset      int64  `json:"itemOffset"`
+	ItemReferenceID string `json:"itemReferenceID"`
+	S3URL           string `json:"s3URL"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		ItemOffset      respjson.Field
+		ItemReferenceID respjson.Field
+		S3URL           respjson.Field
+		ExtraFields     map[string]respjson.Field
+		raw             string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputSplitCollectionPrintPageOutputItem) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputSplitCollectionPrintPageOutputItem) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputSplitCollectionSemanticPageOutput struct {
+	ItemCount int64                                             `json:"itemCount"`
+	Items     []CallOutputSplitCollectionSemanticPageOutputItem `json:"items"`
+	PageCount int64                                             `json:"pageCount"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		ItemCount   respjson.Field
+		Items       respjson.Field
+		PageCount   respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputSplitCollectionSemanticPageOutput) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputSplitCollectionSemanticPageOutput) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputSplitCollectionSemanticPageOutputItem struct {
+	ItemClass       string `json:"itemClass"`
+	ItemClassCount  int64  `json:"itemClassCount"`
+	ItemClassOffset int64  `json:"itemClassOffset"`
+	ItemOffset      int64  `json:"itemOffset"`
+	ItemReferenceID string `json:"itemReferenceID"`
+	PageEnd         int64  `json:"pageEnd"`
+	PageStart       int64  `json:"pageStart"`
+	S3URL           string `json:"s3URL"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		ItemClass       respjson.Field
+		ItemClassCount  respjson.Field
+		ItemClassOffset respjson.Field
+		ItemOffset      respjson.Field
+		ItemReferenceID respjson.Field
+		PageEnd         respjson.Field
+		PageStart       respjson.Field
+		S3URL           respjson.Field
+		ExtraFields     map[string]respjson.Field
+		raw             string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputSplitCollectionSemanticPageOutputItem) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputSplitCollectionSemanticPageOutputItem) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputSplitCollectionMetadata struct {
+	DurationFunctionToEventSeconds float64 `json:"durationFunctionToEventSeconds"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DurationFunctionToEventSeconds respjson.Field
+		ExtraFields                    map[string]respjson.Field
+		raw                            string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputSplitCollectionMetadata) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputSplitCollectionMetadata) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputSplitItem struct {
+	// Unique ID generated by bem to identify the event.
+	EventID string `json:"eventID" api:"required"`
+	// Unique identifier of function that this event is associated with.
+	FunctionID string `json:"functionID" api:"required"`
+	// Unique name of function that this event is associated with.
+	FunctionName string `json:"functionName" api:"required"`
+	// Any of "print_page", "semantic_page".
+	OutputType string `json:"outputType" api:"required"`
+	// The unique ID you use internally to refer to this data point, propagated from
+	// the original function input.
+	ReferenceID string `json:"referenceID" api:"required"`
+	// Unique identifier of workflow call that this event is associated with.
+	CallID string `json:"callID"`
+	// Timestamp indicating when the event was created.
+	CreatedAt time.Time `json:"createdAt" format:"date-time"`
+	// Any of "split_item".
+	EventType string `json:"eventType"`
+	// Unique identifier of function call that this event is associated with.
+	FunctionCallID string `json:"functionCallID"`
+	// The attempt number of the function call that created this event. 1 indexed.
+	FunctionCallTryNumber int64 `json:"functionCallTryNumber"`
+	// Version number of function that this event is associated with.
+	FunctionVersionNum int64 `json:"functionVersionNum"`
+	// The inbound email that triggered this event.
+	InboundEmail       InboundEmailEvent                     `json:"inboundEmail"`
+	Metadata           CallOutputSplitItemMetadata           `json:"metadata"`
+	PrintPageOutput    CallOutputSplitItemPrintPageOutput    `json:"printPageOutput"`
+	SemanticPageOutput CallOutputSplitItemSemanticPageOutput `json:"semanticPageOutput"`
+	// Unique identifier of workflow that this event is associated with.
+	WorkflowID string `json:"workflowID"`
+	// Name of workflow that this event is associated with.
+	WorkflowName string `json:"workflowName"`
+	// Version number of workflow that this event is associated with.
+	WorkflowVersionNum int64 `json:"workflowVersionNum"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		EventID               respjson.Field
+		FunctionID            respjson.Field
+		FunctionName          respjson.Field
+		OutputType            respjson.Field
+		ReferenceID           respjson.Field
+		CallID                respjson.Field
+		CreatedAt             respjson.Field
+		EventType             respjson.Field
+		FunctionCallID        respjson.Field
+		FunctionCallTryNumber respjson.Field
+		FunctionVersionNum    respjson.Field
+		InboundEmail          respjson.Field
+		Metadata              respjson.Field
+		PrintPageOutput       respjson.Field
+		SemanticPageOutput    respjson.Field
+		WorkflowID            respjson.Field
+		WorkflowName          respjson.Field
+		WorkflowVersionNum    respjson.Field
+		ExtraFields           map[string]respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputSplitItem) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputSplitItem) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputSplitItemMetadata struct {
+	DurationFunctionToEventSeconds float64 `json:"durationFunctionToEventSeconds"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DurationFunctionToEventSeconds respjson.Field
+		ExtraFields                    map[string]respjson.Field
+		raw                            string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputSplitItemMetadata) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputSplitItemMetadata) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputSplitItemPrintPageOutput struct {
+	CollectionReferenceID string `json:"collectionReferenceID"`
+	ItemCount             int64  `json:"itemCount"`
+	ItemOffset            int64  `json:"itemOffset"`
+	S3URL                 string `json:"s3URL"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		CollectionReferenceID respjson.Field
+		ItemCount             respjson.Field
+		ItemOffset            respjson.Field
+		S3URL                 respjson.Field
+		ExtraFields           map[string]respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputSplitItemPrintPageOutput) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputSplitItemPrintPageOutput) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputSplitItemSemanticPageOutput struct {
+	CollectionReferenceID string `json:"collectionReferenceID"`
+	ItemClass             string `json:"itemClass"`
+	ItemClassCount        int64  `json:"itemClassCount"`
+	ItemClassOffset       int64  `json:"itemClassOffset"`
+	ItemCount             int64  `json:"itemCount"`
+	ItemOffset            int64  `json:"itemOffset"`
+	PageCount             int64  `json:"pageCount"`
+	PageEnd               int64  `json:"pageEnd"`
+	PageStart             int64  `json:"pageStart"`
+	S3URL                 string `json:"s3URL"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		CollectionReferenceID respjson.Field
+		ItemClass             respjson.Field
+		ItemClassCount        respjson.Field
+		ItemClassOffset       respjson.Field
+		ItemCount             respjson.Field
+		ItemOffset            respjson.Field
+		PageCount             respjson.Field
+		PageEnd               respjson.Field
+		PageStart             respjson.Field
+		S3URL                 respjson.Field
+		ExtraFields           map[string]respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputSplitItemSemanticPageOutput) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputSplitItemSemanticPageOutput) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputJoin struct {
+	// Unique ID generated by bem to identify the event.
+	EventID string `json:"eventID" api:"required"`
+	// Unique identifier of function that this event is associated with.
+	FunctionID string `json:"functionID" api:"required"`
+	// Unique name of function that this event is associated with.
+	FunctionName string `json:"functionName" api:"required"`
+	// List of properties that were invalid in the input.
+	InvalidProperties []string `json:"invalidProperties" api:"required"`
+	// The items that were joined.
+	Items []CallOutputJoinItem `json:"items" api:"required"`
+	// The type of join that was performed.
+	//
+	// Any of "standard".
+	JoinType string `json:"joinType" api:"required"`
+	// The unique ID you use internally to refer to this data point, propagated from
+	// the original function input.
+	ReferenceID string `json:"referenceID" api:"required"`
+	// The transformed content of the input. The structure of this object is defined by
+	// the function configuration.
+	TransformedContent any `json:"transformedContent" api:"required"`
+	// Average confidence score across all extracted fields, in the range [0, 1].
+	AvgConfidence float64 `json:"avgConfidence" api:"nullable"`
+	// Unique identifier of workflow call that this event is associated with.
+	CallID string `json:"callID"`
+	// Timestamp indicating when the event was created.
+	CreatedAt time.Time `json:"createdAt" format:"date-time"`
+	// Any of "join".
+	EventType string `json:"eventType"`
+	// Per-field confidence scores. A JSON object mapping RFC 6901 JSON Pointer paths
+	// (e.g. `"/invoiceNumber"`) to float values in the range [0, 1] indicating the
+	// model's confidence in each extracted field value.
+	FieldConfidences any `json:"fieldConfidences"`
+	// Unique identifier of function call that this event is associated with.
+	FunctionCallID string `json:"functionCallID"`
+	// The attempt number of the function call that created this event. 1 indexed.
+	FunctionCallTryNumber int64 `json:"functionCallTryNumber"`
+	// Version number of function that this event is associated with.
+	FunctionVersionNum int64 `json:"functionVersionNum"`
+	// The inbound email that triggered this event.
+	InboundEmail InboundEmailEvent      `json:"inboundEmail"`
+	Metadata     CallOutputJoinMetadata `json:"metadata"`
+	// Unique ID for each transformation output generated by bem following Segment's
+	// KSUID conventions.
+	TransformationID string `json:"transformationID"`
+	// Unique identifier of workflow that this event is associated with.
+	WorkflowID string `json:"workflowID"`
+	// Name of workflow that this event is associated with.
+	WorkflowName string `json:"workflowName"`
+	// Version number of workflow that this event is associated with.
+	WorkflowVersionNum int64 `json:"workflowVersionNum"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		EventID               respjson.Field
+		FunctionID            respjson.Field
+		FunctionName          respjson.Field
+		InvalidProperties     respjson.Field
+		Items                 respjson.Field
+		JoinType              respjson.Field
+		ReferenceID           respjson.Field
+		TransformedContent    respjson.Field
+		AvgConfidence         respjson.Field
+		CallID                respjson.Field
+		CreatedAt             respjson.Field
+		EventType             respjson.Field
+		FieldConfidences      respjson.Field
+		FunctionCallID        respjson.Field
+		FunctionCallTryNumber respjson.Field
+		FunctionVersionNum    respjson.Field
+		InboundEmail          respjson.Field
+		Metadata              respjson.Field
+		TransformationID      respjson.Field
+		WorkflowID            respjson.Field
+		WorkflowName          respjson.Field
+		WorkflowVersionNum    respjson.Field
+		ExtraFields           map[string]respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputJoin) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputJoin) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputJoinItem struct {
+	// The number of items that were transformed.
+	ItemCount int64 `json:"itemCount" api:"required"`
+	// The offset of the first item that was transformed. Used for batch
+	// transformations to indicate which item in the batch this event corresponds to.
+	ItemOffset int64 `json:"itemOffset" api:"required"`
+	// The unique ID you use internally to refer to this data point.
+	ItemReferenceID string `json:"itemReferenceID" api:"required"`
+	// The presigned S3 URL of the file that was joined.
+	S3URL string `json:"s3URL"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		ItemCount       respjson.Field
+		ItemOffset      respjson.Field
+		ItemReferenceID respjson.Field
+		S3URL           respjson.Field
+		ExtraFields     map[string]respjson.Field
+		raw             string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputJoinItem) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputJoinItem) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputJoinMetadata struct {
+	DurationFunctionToEventSeconds float64 `json:"durationFunctionToEventSeconds"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DurationFunctionToEventSeconds respjson.Field
+		ExtraFields                    map[string]respjson.Field
+		raw                            string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputJoinMetadata) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputJoinMetadata) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputEnrich struct {
+	// The enriched content produced by the enrich function. Contains the input data
+	// augmented with results from semantic search against collections.
+	EnrichedContent any `json:"enrichedContent" api:"required"`
+	// Unique ID generated by bem to identify the event.
+	EventID string `json:"eventID" api:"required"`
+	// Unique identifier of function that this event is associated with.
+	FunctionID string `json:"functionID" api:"required"`
+	// Unique name of function that this event is associated with.
+	FunctionName string `json:"functionName" api:"required"`
+	// The unique ID you use internally to refer to this data point, propagated from
+	// the original function input.
+	ReferenceID string `json:"referenceID" api:"required"`
+	// Unique identifier of workflow call that this event is associated with.
+	CallID string `json:"callID"`
+	// Timestamp indicating when the event was created.
+	CreatedAt time.Time `json:"createdAt" format:"date-time"`
+	// Any of "enrich".
+	EventType string `json:"eventType"`
+	// Unique identifier of function call that this event is associated with.
+	FunctionCallID string `json:"functionCallID"`
+	// The attempt number of the function call that created this event. 1 indexed.
+	FunctionCallTryNumber int64 `json:"functionCallTryNumber"`
+	// Version number of function that this event is associated with.
+	FunctionVersionNum int64 `json:"functionVersionNum"`
+	// The inbound email that triggered this event.
+	InboundEmail InboundEmailEvent        `json:"inboundEmail"`
+	Metadata     CallOutputEnrichMetadata `json:"metadata"`
+	// Unique identifier of workflow that this event is associated with.
+	WorkflowID string `json:"workflowID"`
+	// Name of workflow that this event is associated with.
+	WorkflowName string `json:"workflowName"`
+	// Version number of workflow that this event is associated with.
+	WorkflowVersionNum int64 `json:"workflowVersionNum"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		EnrichedContent       respjson.Field
+		EventID               respjson.Field
+		FunctionID            respjson.Field
+		FunctionName          respjson.Field
+		ReferenceID           respjson.Field
+		CallID                respjson.Field
+		CreatedAt             respjson.Field
+		EventType             respjson.Field
+		FunctionCallID        respjson.Field
+		FunctionCallTryNumber respjson.Field
+		FunctionVersionNum    respjson.Field
+		InboundEmail          respjson.Field
+		Metadata              respjson.Field
+		WorkflowID            respjson.Field
+		WorkflowName          respjson.Field
+		WorkflowVersionNum    respjson.Field
+		ExtraFields           map[string]respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputEnrich) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputEnrich) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputEnrichMetadata struct {
+	DurationFunctionToEventSeconds float64 `json:"durationFunctionToEventSeconds"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DurationFunctionToEventSeconds respjson.Field
+		ExtraFields                    map[string]respjson.Field
+		raw                            string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputEnrichMetadata) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputEnrichMetadata) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputCollectionProcessing struct {
+	// Unique identifier of the collection.
+	CollectionID string `json:"collectionID" api:"required"`
+	// Name/path of the collection.
+	CollectionName string `json:"collectionName" api:"required"`
+	// Unique ID generated by bem to identify the event.
+	EventID string `json:"eventID" api:"required"`
+	// The operation performed (add or update).
+	//
+	// Any of "add", "update".
+	Operation string `json:"operation" api:"required"`
+	// Number of items successfully processed.
+	ProcessedCount int64 `json:"processedCount" api:"required"`
+	// The unique ID you use internally to refer to this data point, propagated from
+	// the original function input.
+	ReferenceID string `json:"referenceID" api:"required"`
+	// Processing status (success or failed).
+	//
+	// Any of "success", "failed".
+	Status string `json:"status" api:"required"`
+	// Array of collection item KSUIDs that were added or updated.
+	CollectionItemIDs []string `json:"collectionItemIDs"`
+	// Timestamp indicating when the event was created.
+	CreatedAt time.Time `json:"createdAt" format:"date-time"`
+	// Error message if processing failed.
+	ErrorMessage string `json:"errorMessage"`
+	// Any of "collection_processing".
+	EventType string `json:"eventType"`
+	// The attempt number of the function call that created this event. 1 indexed.
+	FunctionCallTryNumber int64 `json:"functionCallTryNumber"`
+	// The inbound email that triggered this event.
+	InboundEmail InboundEmailEvent                      `json:"inboundEmail"`
+	Metadata     CallOutputCollectionProcessingMetadata `json:"metadata"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		CollectionID          respjson.Field
+		CollectionName        respjson.Field
+		EventID               respjson.Field
+		Operation             respjson.Field
+		ProcessedCount        respjson.Field
+		ReferenceID           respjson.Field
+		Status                respjson.Field
+		CollectionItemIDs     respjson.Field
+		CreatedAt             respjson.Field
+		ErrorMessage          respjson.Field
+		EventType             respjson.Field
+		FunctionCallTryNumber respjson.Field
+		InboundEmail          respjson.Field
+		Metadata              respjson.Field
+		ExtraFields           map[string]respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputCollectionProcessing) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputCollectionProcessing) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputCollectionProcessingMetadata struct {
+	DurationFunctionToEventSeconds float64 `json:"durationFunctionToEventSeconds"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DurationFunctionToEventSeconds respjson.Field
+		ExtraFields                    map[string]respjson.Field
+		raw                            string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputCollectionProcessingMetadata) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputCollectionProcessingMetadata) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputSend struct {
+	// Outcome of a Send function's delivery attempt.
+	//
+	// Any of "success", "skip".
+	DeliveryStatus string `json:"deliveryStatus" api:"required"`
+	// Destination type for a Send function.
+	//
+	// Any of "webhook", "s3", "google_drive".
+	DestinationType string `json:"destinationType" api:"required"`
+	// Unique ID generated by bem to identify the event.
+	EventID string `json:"eventID" api:"required"`
+	// Unique identifier of function that this event is associated with.
+	FunctionID string `json:"functionID" api:"required"`
+	// Unique name of function that this event is associated with.
+	FunctionName string `json:"functionName" api:"required"`
+	// The unique ID you use internally to refer to this data point, propagated from
+	// the original function input.
+	ReferenceID string `json:"referenceID" api:"required"`
+	// Unique identifier of workflow call that this event is associated with.
+	CallID string `json:"callID"`
+	// Timestamp indicating when the event was created.
+	CreatedAt time.Time `json:"createdAt" format:"date-time"`
+	// The full protocol event JSON that was delivered — identical to what subscription
+	// publish would deliver for the same event. For ad-hoc calls with a JSON file
+	// input, contains the raw input JSON. For ad-hoc calls with a binary file input,
+	// contains {"s3URL": "<presigned-url>"}.
+	DeliveredContent any `json:"deliveredContent"`
+	// Any of "send".
+	EventType string `json:"eventType"`
+	// Unique identifier of function call that this event is associated with.
+	FunctionCallID string `json:"functionCallID"`
+	// The attempt number of the function call that created this event. 1 indexed.
+	FunctionCallTryNumber int64 `json:"functionCallTryNumber"`
+	// Version number of function that this event is associated with.
+	FunctionVersionNum int64 `json:"functionVersionNum"`
+	// Metadata returned when a Send function delivers to Google Drive.
+	GoogleDriveOutput CallOutputSendGoogleDriveOutput `json:"googleDriveOutput"`
+	// The inbound email that triggered this event.
+	InboundEmail InboundEmailEvent      `json:"inboundEmail"`
+	Metadata     CallOutputSendMetadata `json:"metadata"`
+	// Metadata returned when a Send function delivers to an S3 bucket.
+	S3Output CallOutputSendS3Output `json:"s3Output"`
+	// Metadata returned when a Send function delivers to a webhook.
+	WebhookOutput CallOutputSendWebhookOutput `json:"webhookOutput"`
+	// Unique identifier of workflow that this event is associated with.
+	WorkflowID string `json:"workflowID"`
+	// Name of workflow that this event is associated with.
+	WorkflowName string `json:"workflowName"`
+	// Version number of workflow that this event is associated with.
+	WorkflowVersionNum int64 `json:"workflowVersionNum"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DeliveryStatus        respjson.Field
+		DestinationType       respjson.Field
+		EventID               respjson.Field
+		FunctionID            respjson.Field
+		FunctionName          respjson.Field
+		ReferenceID           respjson.Field
+		CallID                respjson.Field
+		CreatedAt             respjson.Field
+		DeliveredContent      respjson.Field
+		EventType             respjson.Field
+		FunctionCallID        respjson.Field
+		FunctionCallTryNumber respjson.Field
+		FunctionVersionNum    respjson.Field
+		GoogleDriveOutput     respjson.Field
+		InboundEmail          respjson.Field
+		Metadata              respjson.Field
+		S3Output              respjson.Field
+		WebhookOutput         respjson.Field
+		WorkflowID            respjson.Field
+		WorkflowName          respjson.Field
+		WorkflowVersionNum    respjson.Field
+		ExtraFields           map[string]respjson.Field
+		raw                   string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputSend) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputSend) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Metadata returned when a Send function delivers to Google Drive.
+type CallOutputSendGoogleDriveOutput struct {
+	// Name of the file created in Google Drive.
+	FileName string `json:"fileName" api:"required"`
+	// ID of the Google Drive folder the file was placed in.
+	FolderID string `json:"folderID" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		FileName    respjson.Field
+		FolderID    respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputSendGoogleDriveOutput) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputSendGoogleDriveOutput) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type CallOutputSendMetadata struct {
+	DurationFunctionToEventSeconds float64 `json:"durationFunctionToEventSeconds"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DurationFunctionToEventSeconds respjson.Field
+		ExtraFields                    map[string]respjson.Field
+		raw                            string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputSendMetadata) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputSendMetadata) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Metadata returned when a Send function delivers to an S3 bucket.
+type CallOutputSendS3Output struct {
+	// Name of the S3 bucket the payload was written to.
+	BucketName string `json:"bucketName" api:"required"`
+	// Object key under which the payload was stored.
+	Key string `json:"key" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		BucketName  respjson.Field
+		Key         respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputSendS3Output) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputSendS3Output) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Metadata returned when a Send function delivers to a webhook.
+type CallOutputSendWebhookOutput struct {
+	// Raw HTTP response body returned by the webhook endpoint.
+	HTTPResponseBody string `json:"httpResponseBody" api:"required"`
+	// HTTP status code returned by the webhook endpoint.
+	HTTPStatusCode int64 `json:"httpStatusCode" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		HTTPResponseBody respjson.Field
+		HTTPStatusCode   respjson.Field
+		ExtraFields      map[string]respjson.Field
+		raw              string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r CallOutputSendWebhookOutput) RawJSON() string { return r.JSON.raw }
+func (r *CallOutputSendWebhookOutput) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -423,8 +2307,8 @@ type CallGetTraceResponseTraceFunctionCall struct {
 	Status string `json:"status" api:"required"`
 	// The type of the function.
 	//
-	// Any of "transform", "extract", "route", "send", "split", "join", "analyze",
-	// "payload_shaping", "enrich".
+	// Any of "transform", "extract", "route", "classify", "send", "split", "join",
+	// "analyze", "payload_shaping", "enrich", "parse".
 	Type FunctionType `json:"type" api:"required"`
 	// Array of activity steps for this function call
 	Activity []CallGetTraceResponseTraceFunctionCallActivity `json:"activity"`

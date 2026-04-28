@@ -56,7 +56,11 @@ func NewWorkflowVersionService(opts ...option.RequestOption) (r WorkflowVersionS
 	return
 }
 
-// Get a Workflow Version
+// **Retrieve a specific historical version of a workflow.**
+//
+// Versions are immutable. Use this endpoint to see what a workflow looked like at
+// the moment a particular call was made — every call record carries the workflow
+// `versionNum` it ran against.
 func (r *WorkflowVersionService) Get(ctx context.Context, versionNum int64, query WorkflowVersionGetParams, opts ...option.RequestOption) (res *WorkflowVersionGetResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if query.WorkflowName == "" {
@@ -68,7 +72,12 @@ func (r *WorkflowVersionService) Get(ctx context.Context, versionNum int64, quer
 	return res, err
 }
 
-// List Workflow Versions
+// **List every version of a workflow.**
+//
+// Versions are immutable. Each row captures what the workflow looked like between
+// updates: graph topology, metadata, and timestamps. Returns newest-first by
+// default. Cursor pagination via `startingAfter` / `endingBefore` over
+// `versionNum`.
 func (r *WorkflowVersionService) List(ctx context.Context, workflowName string, query WorkflowVersionListParams, opts ...option.RequestOption) (res *pagination.WorkflowVersionsPage[Workflow], err error) {
 	var raw *http.Response
 	opts = slices.Concat(r.options, opts)
@@ -90,7 +99,12 @@ func (r *WorkflowVersionService) List(ctx context.Context, workflowName string, 
 	return res, nil
 }
 
-// List Workflow Versions
+// **List every version of a workflow.**
+//
+// Versions are immutable. Each row captures what the workflow looked like between
+// updates: graph topology, metadata, and timestamps. Returns newest-first by
+// default. Cursor pagination via `startingAfter` / `endingBefore` over
+// `versionNum`.
 func (r *WorkflowVersionService) ListAutoPaging(ctx context.Context, workflowName string, query WorkflowVersionListParams, opts ...option.RequestOption) *pagination.WorkflowVersionsPageAutoPager[Workflow] {
 	return pagination.NewWorkflowVersionsPageAutoPager(r.List(ctx, workflowName, query, opts...))
 }

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.11.0 (2026-04-28)
+
+Full Changelog: [v0.10.0...v0.11.0](https://github.com/bem-team/bem-go-sdk/compare/v0.10.0...v0.11.0)
+
+### Features
+
+* **go:** add default http client with timeout ([5d38925](https://github.com/bem-team/bem-go-sdk/commit/5d38925fa18337c229a52cb0f79e0d02cea521e5))
+* support setting headers via env ([7401d38](https://github.com/bem-team/bem-go-sdk/commit/7401d38d6cdae3d5af9509d48e910993068cf7a5))
+
 ## 0.10.0 (2026-04-28)
 
 Full Changelog: [v0.9.0...v0.10.0](https://github.com/bem-team/bem-go-sdk/compare/v0.9.0...v0.10.0)

@@ -231,8 +231,10 @@ type EventUnion struct {
 	WorkflowID         string    `json:"workflowID"`
 	WorkflowName       string    `json:"workflowName"`
 	WorkflowVersionNum int64     `json:"workflowVersionNum"`
-	Choice             string    `json:"choice"`
-	OutputType         string    `json:"outputType"`
+	// This field is from variant [EventExtract].
+	FieldBoundingBoxes any    `json:"fieldBoundingBoxes"`
+	Choice             string `json:"choice"`
+	OutputType         string `json:"outputType"`
 	// This field is a union of [EventSplitCollectionPrintPageOutput],
 	// [EventSplitItemPrintPageOutput]
 	PrintPageOutput EventUnionPrintPageOutput `json:"printPageOutput"`
@@ -306,6 +308,7 @@ type EventUnion struct {
 		WorkflowID            respjson.Field
 		WorkflowName          respjson.Field
 		WorkflowVersionNum    respjson.Field
+		FieldBoundingBoxes    respjson.Field
 		Choice                respjson.Field
 		OutputType            respjson.Field
 		PrintPageOutput       respjson.Field
@@ -942,6 +945,10 @@ type EventExtract struct {
 	CreatedAt time.Time `json:"createdAt" format:"date-time"`
 	// Any of "extract".
 	EventType string `json:"eventType"`
+	// Per-field bounding boxes. A JSON object mapping RFC 6901 JSON Pointer paths
+	// (e.g. `"/invoiceNumber"`, `"/items/0/price"`) to the document regions from which
+	// each extracted value was sourced.
+	FieldBoundingBoxes any `json:"fieldBoundingBoxes"`
 	// Per-field confidence scores. A JSON object mapping RFC 6901 JSON Pointer paths
 	// (e.g. `"/invoiceNumber"`) to float values in the range [0, 1] indicating the
 	// model's confidence in each extracted field value.
@@ -989,6 +996,7 @@ type EventExtract struct {
 		CorrectedContent      respjson.Field
 		CreatedAt             respjson.Field
 		EventType             respjson.Field
+		FieldBoundingBoxes    respjson.Field
 		FieldConfidences      respjson.Field
 		FunctionCallID        respjson.Field
 		FunctionCallTryNumber respjson.Field

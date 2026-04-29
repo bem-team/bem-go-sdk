@@ -33,6 +33,13 @@ import (
 //   - **Split**: Break multi-page documents into individual pages for parallel
 //     processing
 //   - **Join**: Combine outputs from multiple function calls into a single result
+//   - **Parse**: Render documents into a navigable structure of page-aware sections,
+//     named entities, and relationships — designed to be walked by an LLM agent via
+//     the [File System API](/api/v3/file-system) (`POST /v3/fs`). Two toggles, both
+//     `true` by default: `extractEntities` controls per-document entity and
+//     relationship extraction; `linkAcrossDocuments` merges entities into one
+//     canonical record per real-world thing across the environment, populating
+//     cross-document memory.
 //   - **Payload Shaping**: Transform and restructure data using JMESPath expressions
 //   - **Enrich**: Enhance data with semantic search against collections
 //   - **Send**: Deliver workflow outputs to downstream destinations
@@ -57,6 +64,13 @@ type FunctionService struct {
 	//   - **Split**: Break multi-page documents into individual pages for parallel
 	//     processing
 	//   - **Join**: Combine outputs from multiple function calls into a single result
+	//   - **Parse**: Render documents into a navigable structure of page-aware sections,
+	//     named entities, and relationships — designed to be walked by an LLM agent via
+	//     the [File System API](/api/v3/file-system) (`POST /v3/fs`). Two toggles, both
+	//     `true` by default: `extractEntities` controls per-document entity and
+	//     relationship extraction; `linkAcrossDocuments` merges entities into one
+	//     canonical record per real-world thing across the environment, populating
+	//     cross-document memory.
 	//   - **Payload Shaping**: Transform and restructure data using JMESPath expressions
 	//   - **Enrich**: Enhance data with semantic search against collections
 	//   - **Send**: Deliver workflow outputs to downstream destinations
@@ -73,6 +87,13 @@ type FunctionService struct {
 	//   - **Split**: Break multi-page documents into individual pages for parallel
 	//     processing
 	//   - **Join**: Combine outputs from multiple function calls into a single result
+	//   - **Parse**: Render documents into a navigable structure of page-aware sections,
+	//     named entities, and relationships — designed to be walked by an LLM agent via
+	//     the [File System API](/api/v3/file-system) (`POST /v3/fs`). Two toggles, both
+	//     `true` by default: `extractEntities` controls per-document entity and
+	//     relationship extraction; `linkAcrossDocuments` merges entities into one
+	//     canonical record per real-world thing across the environment, populating
+	//     cross-document memory.
 	//   - **Payload Shaping**: Transform and restructure data using JMESPath expressions
 	//   - **Enrich**: Enhance data with semantic search against collections
 	//   - **Send**: Deliver workflow outputs to downstream destinations
@@ -966,8 +987,9 @@ type EnrichStep struct {
 	// from 0.0 (perfect match) to 2.0 (completely dissimilar). Lower scores indicate
 	// better semantic similarity.
 	//
-	// When enabled, each result includes a `cosineDistance` field.
-	IncludeCosineDistance bool `json:"includeCosineDistance"`
+	// When enabled, each result includes a `cosine_distance` field (semantic mode) or
+	// a `hybrid_score` field (hybrid mode).
+	IncludeScore bool `json:"includeScore"`
 	// When true, searches all collections under the hierarchical path. For example,
 	// "customers" will match "customers", "customers.premium", etc.
 	IncludeSubcollections bool `json:"includeSubcollections"`
@@ -1021,7 +1043,7 @@ type EnrichStep struct {
 		CollectionName        respjson.Field
 		SourceField           respjson.Field
 		TargetField           respjson.Field
-		IncludeCosineDistance respjson.Field
+		IncludeScore          respjson.Field
 		IncludeSubcollections respjson.Field
 		ScoreThreshold        respjson.Field
 		SearchMode            respjson.Field
@@ -1116,8 +1138,9 @@ type EnrichStepParam struct {
 	// from 0.0 (perfect match) to 2.0 (completely dissimilar). Lower scores indicate
 	// better semantic similarity.
 	//
-	// When enabled, each result includes a `cosineDistance` field.
-	IncludeCosineDistance param.Opt[bool] `json:"includeCosineDistance,omitzero"`
+	// When enabled, each result includes a `cosine_distance` field (semantic mode) or
+	// a `hybrid_score` field (hybrid mode).
+	IncludeScore param.Opt[bool] `json:"includeScore,omitzero"`
 	// When true, searches all collections under the hierarchical path. For example,
 	// "customers" will match "customers", "customers.premium", etc.
 	IncludeSubcollections param.Opt[bool] `json:"includeSubcollections,omitzero"`

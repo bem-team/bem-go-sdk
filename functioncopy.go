@@ -24,6 +24,13 @@ import (
 //   - **Split**: Break multi-page documents into individual pages for parallel
 //     processing
 //   - **Join**: Combine outputs from multiple function calls into a single result
+//   - **Parse**: Render documents into a navigable structure of page-aware sections,
+//     named entities, and relationships — designed to be walked by an LLM agent via
+//     the [File System API](/api/v3/file-system) (`POST /v3/fs`). Two toggles, both
+//     `true` by default: `extractEntities` controls per-document entity and
+//     relationship extraction; `linkAcrossDocuments` merges entities into one
+//     canonical record per real-world thing across the environment, populating
+//     cross-document memory.
 //   - **Payload Shaping**: Transform and restructure data using JMESPath expressions
 //   - **Enrich**: Enhance data with semantic search against collections
 //   - **Send**: Deliver workflow outputs to downstream destinations

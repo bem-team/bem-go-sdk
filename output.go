@@ -2094,7 +2094,9 @@ type OutputListParams struct {
 	// Filter to outputs from specific calls.
 	CallIDs []string `query:"callIDs,omitzero" json:"-"`
 	// Filter to specific output events by their event IDs (KSUIDs).
-	EventIDs      []string `query:"eventIDs,omitzero" json:"-"`
+	EventIDs []string `query:"eventIDs,omitzero" json:"-"`
+	// Filter to specific non-error output event types, e.g. `classify` or `extract`.
+	EventTypes    []string `query:"eventTypes,omitzero" json:"-"`
 	FunctionIDs   []string `query:"functionIDs,omitzero" json:"-"`
 	FunctionNames []string `query:"functionNames,omitzero" json:"-"`
 	// Filter to specific function version numbers.

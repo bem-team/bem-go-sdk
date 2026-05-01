@@ -53,6 +53,7 @@ func TestOutputListWithOptionalParams(t *testing.T) {
 		CallIDs:              []string{"string"},
 		EndingBefore:         bem.String("endingBefore"),
 		EventIDs:             []string{"string"},
+		EventTypes:           []string{"string"},
 		FunctionIDs:          []string{"string"},
 		FunctionNames:        []string{"string"},
 		FunctionVersionNums:  []int64{0},

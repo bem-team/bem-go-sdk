@@ -74,26 +74,61 @@ func NewFService(opts ...option.RequestOption) (r FService) {
 // The body always carries an `op` field; other fields apply per op. The response
 // envelope is uniform: `{op, data, hasMore?, nextCursor?, count?, hint?}`.
 //
-// ## Doc-level ops (work on every parsed document)
+// ## Quick reference
 //
-//   - `ls`: list parsed documents with `pageCount`, `sectionCount`, `entityCount`,
-//     and a short `previewEntities` array.
-//   - `cat`: read one doc's full parse JSON, optionally sliced by `range` (page /
-//     pageRange / sectionTypes) or projected by `select` (dotted paths like
-//     `["sections.label", "sections.page"]`).
-//   - `head`: first N sections of one doc.
-//   - `grep`: substring or regex search across recent parse outputs. `scope`
-//     restricts to `sections` / `entities` / `relationships`. `path` scopes to one
-//     doc. `countOnly: true` returns only the hit count.
-//   - `stat`: metadata only — page/section/entity counts, timestamps.
+// | Op     | `path`                    | Other fields                    | What it does                              |
+// | ------ | ------------------------- | ------------------------------- | ----------------------------------------- |
+// | `ls`   | —                         | `filter`, `limit`, `cursor`     | List parsed documents                     |
+// | `grep` | referenceID _(optional)_  | `pattern`, `scope`, `countOnly` | Search across documents                   |
+// | `cat`  | referenceID               | `range`, `select`               | Read a document's parsed content          |
+// | `head` | referenceID               | `n`                             | First N sections (default 10)             |
+// | `stat` | referenceID _or_ entityID | —                               | Metadata only                             |
+// | `find` | —                         | `filter`, `limit`, `cursor`     | List canonical entities                   |
+// | `open` | entityID                  | —                               | Entity detail + all mentions              |
+// | `xref` | entityID                  | `limit`, `cursor`               | Sections across docs mentioning an entity |
 //
-// ## Memory-level ops (require `linkAcrossDocuments: true` on the parse function)
+// **`path`** is the positional identifier. For doc ops (`cat`, `head`, `stat`),
+// pass a `referenceID` from `ls`. For entity ops (`open`, `xref`), pass an
+// `entityID` from `find`. `grep` optionally takes a `path` to scope search to one
+// document.
 //
-//   - `find`: list canonical entities, filterable by `type`, `search`, `since`.
-//     Returns an empty list with a `hint` when no docs have been memory-linked.
-//   - `open`: fetch one entity plus its mentions across docs.
-//   - `xref`: for one entity, return the actual sections (with content) across docs
-//     that mention it. The "where exactly is X discussed" loop in one round trip.
+// ## Examples
+//
+// **List documents:** `{"op": "ls"}`
+//
+// **Search one document:**
+// `{"op": "grep", "path": "my-doc-001", "pattern": "holiday", "scope": "sections"}`
+//
+// **Read one page:** `{"op": "cat", "path": "my-doc-001", "range": {"page": 7}}`
+//
+// **Read a page range:**
+// `{"op": "cat", "path": "my-doc-001", "range": {"pageRange": [5, 10]}}`
+//
+// **Project section labels and pages only:**
+// `{"op": "cat", "path": "my-doc-001", "select": ["sections.label", "sections.page", "sections.type"]}`
+//
+// **Preview first 5 sections:** `{"op": "head", "path": "my-doc-001", "n": 5}`
+//
+// **Document metadata:** `{"op": "stat", "path": "my-doc-001"}`
+//
+// **List entities:** `{"op": "find"}`
+//
+// **Entity detail + mentions:** `{"op": "open", "path": "ent_abc123"}`
+//
+// **Cross-document sections for an entity:**
+// `{"op": "xref", "path": "ent_abc123"}`
+//
+// ## Key details
+//
+// `range` is an **object** with optional keys: `page` (integer), `pageRange`
+// (two-element array `[from, to]`), `sectionTypes` (array of strings like
+// `["table", "heading"]`).
+//
+// `select` is an **array of strings** — dotted paths like
+// `["sections.label", "sections.page"]`.
+//
+// `scope` (grep) is one of `"sections"`, `"entities"`, `"relationships"`, or
+// `"all"` (default).
 //
 // ## Pagination
 //

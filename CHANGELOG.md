@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.13.0 (2026-05-04)
+
+Full Changelog: [v0.12.0...v0.13.0](https://github.com/bem-team/bem-go-sdk/compare/v0.12.0...v0.13.0)
+
+### Features
+
+* **api:** api update ([b9370d4](https://github.com/bem-team/bem-go-sdk/commit/b9370d4041135cf09d93c23e2e90498fe7858298))
+* **api:** api update ([65a27c9](https://github.com/bem-team/bem-go-sdk/commit/65a27c903e81163fe006d7ffadb14bebaed1fc7e))
+
+
+### Chores
+
+* avoid embedding reflect.Type for dead code elimination ([ae4264b](https://github.com/bem-team/bem-go-sdk/commit/ae4264bbf5ab50b9b09966d33afbbeb36ac1350b))
+
 ## 0.12.0 (2026-04-29)
 
 Full Changelog: [v0.11.0...v0.12.0](https://github.com/bem-team/bem-go-sdk/compare/v0.11.0...v0.12.0)

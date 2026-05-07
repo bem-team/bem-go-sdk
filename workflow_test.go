@@ -29,7 +29,7 @@ func TestWorkflowNewWithOptionalParams(t *testing.T) {
 	_, err := client.Workflows.New(context.TODO(), bem.WorkflowNewParams{
 		MainNodeName: "mainNodeName",
 		Name:         "name",
-		Nodes: []bem.WorkflowNewParamsNode{{
+		Nodes: []bem.WorkflowNodeParam{{
 			Function: bem.FunctionVersionIdentifierParam{
 				ID:         bem.String("id"),
 				Name:       bem.String("name"),
@@ -38,17 +38,17 @@ func TestWorkflowNewWithOptionalParams(t *testing.T) {
 			Metadata: map[string]any{},
 			Name:     bem.String("name"),
 		}},
-		Connectors: []bem.WorkflowNewParamsConnector{{
+		Connectors: []bem.WorkflowConnectorParam{{
 			Name:        "name",
-			Type:        "paragon",
+			Type:        bem.WorkflowConnectorTypeParagon,
 			ConnectorID: bem.String("connectorID"),
-			Paragon: bem.WorkflowNewParamsConnectorParagon{
+			Paragon: bem.WorkflowConnectorParagonParam{
 				Configuration: map[string]any{},
 				Integration:   bem.String("integration"),
 			},
 		}},
 		DisplayName: bem.String("displayName"),
-		Edges: []bem.WorkflowNewParamsEdge{{
+		Edges: []bem.WorkflowEdgeParam{{
 			DestinationNodeName: "destinationNodeName",
 			SourceNodeName:      "sourceNodeName",
 			DestinationName:     bem.String("destinationName"),
@@ -105,17 +105,17 @@ func TestWorkflowUpdateWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"workflowName",
 		bem.WorkflowUpdateParams{
-			Connectors: []bem.WorkflowUpdateParamsConnector{{
+			Connectors: []bem.WorkflowConnectorParam{{
 				Name:        "name",
-				Type:        "paragon",
+				Type:        bem.WorkflowConnectorTypeParagon,
 				ConnectorID: bem.String("connectorID"),
-				Paragon: bem.WorkflowUpdateParamsConnectorParagon{
+				Paragon: bem.WorkflowConnectorParagonParam{
 					Configuration: map[string]any{},
 					Integration:   bem.String("integration"),
 				},
 			}},
 			DisplayName: bem.String("displayName"),
-			Edges: []bem.WorkflowUpdateParamsEdge{{
+			Edges: []bem.WorkflowEdgeParam{{
 				DestinationNodeName: "destinationNodeName",
 				SourceNodeName:      "sourceNodeName",
 				DestinationName:     bem.String("destinationName"),
@@ -123,7 +123,7 @@ func TestWorkflowUpdateWithOptionalParams(t *testing.T) {
 			}},
 			MainNodeName: bem.String("mainNodeName"),
 			Name:         bem.String("name"),
-			Nodes: []bem.WorkflowUpdateParamsNode{{
+			Nodes: []bem.WorkflowNodeParam{{
 				Function: bem.FunctionVersionIdentifierParam{
 					ID:         bem.String("id"),
 					Name:       bem.String("name"),
@@ -222,13 +222,13 @@ func TestWorkflowCallWithOptionalParams(t *testing.T) {
 				BatchFiles: bem.WorkflowCallParamsInputBatchFiles{
 					Inputs: []bem.WorkflowCallParamsInputBatchFilesInput{{
 						InputContent:    "inputContent",
-						InputType:       "csv",
+						InputType:       bem.InputTypeCsv,
 						ItemReferenceID: bem.String("itemReferenceID"),
 					}},
 				},
 				SingleFile: bem.WorkflowCallParamsInputSingleFile{
 					InputContent: "inputContent",
-					InputType:    "csv",
+					InputType:    bem.InputTypeCsv,
 				},
 			},
 			Wait:            bem.Bool(true),

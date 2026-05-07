@@ -603,7 +603,7 @@ type CreateFunctionSendParam struct {
 	// Destination type for a Send function.
 	//
 	// Any of "webhook", "s3", "google_drive".
-	DestinationType string `json:"destinationType,omitzero"`
+	DestinationType SendDestinationType `json:"destinationType,omitzero"`
 	// Array of tags to categorize and organize functions.
 	Tags []string `json:"tags,omitzero"`
 	// This field can be elided, and will marshal its zero value as "send".
@@ -617,12 +617,6 @@ func (r CreateFunctionSendParam) MarshalJSON() (data []byte, err error) {
 }
 func (r *CreateFunctionSendParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
-}
-
-func init() {
-	apijson.RegisterFieldValidator[CreateFunctionSendParam](
-		"destinationType", "webhook", "s3", "google_drive",
-	)
 }
 
 // The properties FunctionName, Type are required.
@@ -805,7 +799,7 @@ type CreateFunctionParseParam struct {
 	// Parse renders document pages (PDF, image) via vision LLM and emits structured
 	// JSON. The two toggles below independently control entity extraction (a per-call
 	// output concern) and cross-document memory linking (an environment-wide concern).
-	ParseConfig CreateFunctionParseParseConfigParam `json:"parseConfig,omitzero"`
+	ParseConfig ParseConfigParam `json:"parseConfig,omitzero"`
 	// Array of tags to categorize and organize functions.
 	Tags []string `json:"tags,omitzero"`
 	// This field can be elided, and will marshal its zero value as "parse".
@@ -818,39 +812,6 @@ func (r CreateFunctionParseParam) MarshalJSON() (data []byte, err error) {
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *CreateFunctionParseParam) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Per-version configuration for a Parse function.
-//
-// Parse renders document pages (PDF, image) via vision LLM and emits structured
-// JSON. The two toggles below independently control entity extraction (a per-call
-// output concern) and cross-document memory linking (an environment-wide concern).
-type CreateFunctionParseParseConfigParam struct {
-	// When true, extract named entities (people, organizations, products, studies,
-	// identifiers, etc.) and the relationships between them, and dedupe by canonical
-	// name within the document. When false, only `sections[]` is extracted;
-	// `entities[]` and `relationships[]` come back empty in the parse output. Defaults
-	// to true.
-	ExtractEntities param.Opt[bool] `json:"extractEntities,omitzero"`
-	// When true, link this document's entities to entities seen in earlier documents
-	// in this environment, building one canonical record per real-world thing across
-	// the corpus. Visible in the Memory tab and queryable via `POST /v3/fs` (op=find /
-	// open / xref). Doesn't change this call's parse output. Requires
-	// `extractEntities=true`. Defaults to true.
-	LinkAcrossDocuments param.Opt[bool] `json:"linkAcrossDocuments,omitzero"`
-	// Optional JSONSchema. When provided, each chunk performs schema-guided
-	// extraction. When absent, chunks perform open-ended discovery and return
-	// sections, entities, and relationships per the discovery schema.
-	Schema any `json:"schema,omitzero"`
-	paramObj
-}
-
-func (r CreateFunctionParseParseConfigParam) MarshalJSON() (data []byte, err error) {
-	type shadow CreateFunctionParseParseConfigParam
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *CreateFunctionParseParseConfigParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -1231,7 +1192,7 @@ type FunctionUnion struct {
 	Classifications []ClassificationListItem `json:"classifications"`
 	Description     string                   `json:"description"`
 	// This field is from variant [FunctionSend].
-	DestinationType string `json:"destinationType"`
+	DestinationType SendDestinationType `json:"destinationType"`
 	// This field is from variant [FunctionSend].
 	GoogleDriveFolderID string `json:"googleDriveFolderId"`
 	// This field is from variant [FunctionSend].
@@ -1255,7 +1216,7 @@ type FunctionUnion struct {
 	// This field is from variant [FunctionEnrich].
 	Config EnrichConfig `json:"config"`
 	// This field is from variant [FunctionParse].
-	ParseConfig FunctionParseParseConfig `json:"parseConfig"`
+	ParseConfig ParseConfig `json:"parseConfig"`
 	JSON        struct {
 		EmailAddress            respjson.Field
 		FunctionID              respjson.Field
@@ -1621,7 +1582,7 @@ type FunctionSend struct {
 	// Destination type for a Send function.
 	//
 	// Any of "webhook", "s3", "google_drive".
-	DestinationType string `json:"destinationType" api:"required"`
+	DestinationType SendDestinationType `json:"destinationType" api:"required"`
 	// Unique identifier of function.
 	FunctionID string `json:"functionID" api:"required"`
 	// Name of function. Must be UNIQUE on a per-environment basis.
@@ -1937,7 +1898,7 @@ type FunctionParse struct {
 	// Parse renders document pages (PDF, image) via vision LLM and emits structured
 	// JSON. The two toggles below independently control entity extraction (a per-call
 	// output concern) and cross-document memory linking (an environment-wide concern).
-	ParseConfig FunctionParseParseConfig `json:"parseConfig"`
+	ParseConfig ParseConfig `json:"parseConfig"`
 	// Array of tags to categorize and organize functions.
 	Tags []string `json:"tags"`
 	// List of workflows that use this function.
@@ -1961,44 +1922,6 @@ type FunctionParse struct {
 // Returns the unmodified JSON received from the API
 func (r FunctionParse) RawJSON() string { return r.JSON.raw }
 func (r *FunctionParse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Per-version configuration for a Parse function.
-//
-// Parse renders document pages (PDF, image) via vision LLM and emits structured
-// JSON. The two toggles below independently control entity extraction (a per-call
-// output concern) and cross-document memory linking (an environment-wide concern).
-type FunctionParseParseConfig struct {
-	// When true, extract named entities (people, organizations, products, studies,
-	// identifiers, etc.) and the relationships between them, and dedupe by canonical
-	// name within the document. When false, only `sections[]` is extracted;
-	// `entities[]` and `relationships[]` come back empty in the parse output. Defaults
-	// to true.
-	ExtractEntities bool `json:"extractEntities"`
-	// When true, link this document's entities to entities seen in earlier documents
-	// in this environment, building one canonical record per real-world thing across
-	// the corpus. Visible in the Memory tab and queryable via `POST /v3/fs` (op=find /
-	// open / xref). Doesn't change this call's parse output. Requires
-	// `extractEntities=true`. Defaults to true.
-	LinkAcrossDocuments bool `json:"linkAcrossDocuments"`
-	// Optional JSONSchema. When provided, each chunk performs schema-guided
-	// extraction. When absent, chunks perform open-ended discovery and return
-	// sections, entities, and relationships per the discovery schema.
-	Schema any `json:"schema"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		ExtractEntities     respjson.Field
-		LinkAcrossDocuments respjson.Field
-		Schema              respjson.Field
-		ExtraFields         map[string]respjson.Field
-		raw                 string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionParseParseConfig) RawJSON() string { return r.JSON.raw }
-func (r *FunctionParseParseConfig) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -2082,6 +2005,95 @@ func (r ListFunctionsResponse) RawJSON() string { return r.JSON.raw }
 func (r *ListFunctionsResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
+
+// Per-version configuration for a Parse function.
+//
+// Parse renders document pages (PDF, image) via vision LLM and emits structured
+// JSON. The two toggles below independently control entity extraction (a per-call
+// output concern) and cross-document memory linking (an environment-wide concern).
+type ParseConfig struct {
+	// When true, extract named entities (people, organizations, products, studies,
+	// identifiers, etc.) and the relationships between them, and dedupe by canonical
+	// name within the document. When false, only `sections[]` is extracted;
+	// `entities[]` and `relationships[]` come back empty in the parse output. Defaults
+	// to true.
+	ExtractEntities bool `json:"extractEntities"`
+	// When true, link this document's entities to entities seen in earlier documents
+	// in this environment, building one canonical record per real-world thing across
+	// the corpus. Visible in the Memory tab and queryable via `POST /v3/fs` (op=find /
+	// open / xref). Doesn't change this call's parse output. Requires
+	// `extractEntities=true`. Defaults to true.
+	LinkAcrossDocuments bool `json:"linkAcrossDocuments"`
+	// Optional JSONSchema. When provided, each chunk performs schema-guided
+	// extraction. When absent, chunks perform open-ended discovery and return
+	// sections, entities, and relationships per the discovery schema.
+	Schema any `json:"schema"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		ExtractEntities     respjson.Field
+		LinkAcrossDocuments respjson.Field
+		Schema              respjson.Field
+		ExtraFields         map[string]respjson.Field
+		raw                 string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r ParseConfig) RawJSON() string { return r.JSON.raw }
+func (r *ParseConfig) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// ToParam converts this ParseConfig to a ParseConfigParam.
+//
+// Warning: the fields of the param type will not be present. ToParam should only
+// be used at the last possible moment before sending a request. Test for this with
+// ParseConfigParam.Overrides()
+func (r ParseConfig) ToParam() ParseConfigParam {
+	return param.Override[ParseConfigParam](json.RawMessage(r.RawJSON()))
+}
+
+// Per-version configuration for a Parse function.
+//
+// Parse renders document pages (PDF, image) via vision LLM and emits structured
+// JSON. The two toggles below independently control entity extraction (a per-call
+// output concern) and cross-document memory linking (an environment-wide concern).
+type ParseConfigParam struct {
+	// When true, extract named entities (people, organizations, products, studies,
+	// identifiers, etc.) and the relationships between them, and dedupe by canonical
+	// name within the document. When false, only `sections[]` is extracted;
+	// `entities[]` and `relationships[]` come back empty in the parse output. Defaults
+	// to true.
+	ExtractEntities param.Opt[bool] `json:"extractEntities,omitzero"`
+	// When true, link this document's entities to entities seen in earlier documents
+	// in this environment, building one canonical record per real-world thing across
+	// the corpus. Visible in the Memory tab and queryable via `POST /v3/fs` (op=find /
+	// open / xref). Doesn't change this call's parse output. Requires
+	// `extractEntities=true`. Defaults to true.
+	LinkAcrossDocuments param.Opt[bool] `json:"linkAcrossDocuments,omitzero"`
+	// Optional JSONSchema. When provided, each chunk performs schema-guided
+	// extraction. When absent, chunks perform open-ended discovery and return
+	// sections, entities, and relationships per the discovery schema.
+	Schema any `json:"schema,omitzero"`
+	paramObj
+}
+
+func (r ParseConfigParam) MarshalJSON() (data []byte, err error) {
+	type shadow ParseConfigParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *ParseConfigParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Destination type for a Send function.
+type SendDestinationType string
+
+const (
+	SendDestinationTypeWebhook     SendDestinationType = "webhook"
+	SendDestinationTypeS3          SendDestinationType = "s3"
+	SendDestinationTypeGoogleDrive SendDestinationType = "google_drive"
+)
 
 type SplitFunctionSemanticPageItemClass struct {
 	Name        string `json:"name" api:"required"`
@@ -2280,7 +2292,7 @@ type UpdateFunctionSendParam struct {
 	// Destination type for a Send function.
 	//
 	// Any of "webhook", "s3", "google_drive".
-	DestinationType string `json:"destinationType,omitzero"`
+	DestinationType SendDestinationType `json:"destinationType,omitzero"`
 	// Array of tags to categorize and organize functions.
 	Tags []string `json:"tags,omitzero"`
 	// This field can be elided, and will marshal its zero value as "send".
@@ -2294,12 +2306,6 @@ func (r UpdateFunctionSendParam) MarshalJSON() (data []byte, err error) {
 }
 func (r *UpdateFunctionSendParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
-}
-
-func init() {
-	apijson.RegisterFieldValidator[UpdateFunctionSendParam](
-		"destinationType", "webhook", "s3", "google_drive",
-	)
 }
 
 // The property Type is required.
@@ -2481,7 +2487,7 @@ type UpdateFunctionParseParam struct {
 	// Parse renders document pages (PDF, image) via vision LLM and emits structured
 	// JSON. The two toggles below independently control entity extraction (a per-call
 	// output concern) and cross-document memory linking (an environment-wide concern).
-	ParseConfig UpdateFunctionParseParseConfigParam `json:"parseConfig,omitzero"`
+	ParseConfig ParseConfigParam `json:"parseConfig,omitzero"`
 	// Array of tags to categorize and organize functions.
 	Tags []string `json:"tags,omitzero"`
 	// This field can be elided, and will marshal its zero value as "parse".
@@ -2494,39 +2500,6 @@ func (r UpdateFunctionParseParam) MarshalJSON() (data []byte, err error) {
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *UpdateFunctionParseParam) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Per-version configuration for a Parse function.
-//
-// Parse renders document pages (PDF, image) via vision LLM and emits structured
-// JSON. The two toggles below independently control entity extraction (a per-call
-// output concern) and cross-document memory linking (an environment-wide concern).
-type UpdateFunctionParseParseConfigParam struct {
-	// When true, extract named entities (people, organizations, products, studies,
-	// identifiers, etc.) and the relationships between them, and dedupe by canonical
-	// name within the document. When false, only `sections[]` is extracted;
-	// `entities[]` and `relationships[]` come back empty in the parse output. Defaults
-	// to true.
-	ExtractEntities param.Opt[bool] `json:"extractEntities,omitzero"`
-	// When true, link this document's entities to entities seen in earlier documents
-	// in this environment, building one canonical record per real-world thing across
-	// the corpus. Visible in the Memory tab and queryable via `POST /v3/fs` (op=find /
-	// open / xref). Doesn't change this call's parse output. Requires
-	// `extractEntities=true`. Defaults to true.
-	LinkAcrossDocuments param.Opt[bool] `json:"linkAcrossDocuments,omitzero"`
-	// Optional JSONSchema. When provided, each chunk performs schema-guided
-	// extraction. When absent, chunks perform open-ended discovery and return
-	// sections, entities, and relationships per the discovery schema.
-	Schema any `json:"schema,omitzero"`
-	paramObj
-}
-
-func (r UpdateFunctionParseParseConfigParam) MarshalJSON() (data []byte, err error) {
-	type shadow UpdateFunctionParseParseConfigParam
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *UpdateFunctionParseParseConfigParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

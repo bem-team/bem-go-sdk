@@ -150,7 +150,8 @@ type Client struct {
 	// transformations or classify route events) from the event's function type.
 	//
 	// Split and enrich function types do not support feedback.
-	Events EventService
+	Events   EventService
+	Webhooks WebhookService
 	// bem POSTs a JSON event to your configured webhook URL each time a subscribed
 	// function call, workflow output, or collection-processing job fires. This section
 	// is the reference for those deliveries: the payload shape per event type, plus
@@ -261,6 +262,38 @@ type Client struct {
 	// `cursor`; `hasMore: false` signals the last page. Same idiom as `/v3/calls` and
 	// `/v3/outputs`.
 	Fs FService
+	// Connectors are integrations that trigger a Bem workflow from an external system.
+	//
+	// A connector binds an inbound source — currently Box or a Paragon-managed
+	// integration such as Google Drive — to a specific workflow (by `workflowName` or
+	// `workflowID`). When the source observes a new file, Bem invokes the bound
+	// workflow against that file.
+	//
+	// Use these endpoints to create, list, and remove connectors. The fields used at
+	// create time depend on the connector `type`: Box connectors require Box
+	// credentials and a folder to watch, while Paragon connectors carry a
+	// `paragonIntegration` identifier and an integration-specific
+	// `paragonConfiguration` object (for example, `{ "folderId": "..." }` for Google
+	// Drive).
+	Connectors ConnectorService
+	// Subscriptions wire up notifications for the events your functions and
+	// collections produce.
+	//
+	// Each subscription targets a single function (by `functionName` or `functionID`)
+	// or a single collection (by `collectionName` or `collectionID`) and selects a
+	// `type` corresponding to the event you want to receive — for example `transform`,
+	// `route`, `join`, `evaluation`, `error`, `enrich`, or `collection_processing`.
+	//
+	// Deliveries can be sent to any combination of:
+	//
+	// - `webhookURL` — HTTPS endpoint that receives a JSON POST per event.
+	// - `s3Bucket` + `s3FilePath` — sync output JSON into an AWS S3 prefix you own.
+	// - `googleDriveFolderID` — drop output JSON into a Google Drive folder.
+	//
+	// Use `disabled: true` to pause delivery without deleting the subscription.
+	// Updates follow conventional PATCH semantics — only the fields you include are
+	// changed.
+	Subscriptions SubscriptionService
 }
 
 // DefaultClientOptions read from the environment (BEM_API_KEY, BEM_BASE_URL). This
@@ -301,9 +334,12 @@ func NewClient(opts ...option.RequestOption) (r Client) {
 	r.InferSchema = NewInferSchemaService(opts...)
 	r.Collections = NewCollectionService(opts...)
 	r.Events = NewEventService(opts...)
+	r.Webhooks = NewWebhookService(opts...)
 	r.WebhookSecret = NewWebhookSecretService(opts...)
 	r.Eval = NewEvalService(opts...)
 	r.Fs = NewFService(opts...)
+	r.Connectors = NewConnectorService(opts...)
+	r.Subscriptions = NewSubscriptionService(opts...)
 
 	return
 }

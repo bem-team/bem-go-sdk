@@ -142,6 +142,40 @@ func (r *FService) Navigate(ctx context.Context, body FNavigateParams, opts ...o
 	return res, err
 }
 
+// Operations exposed by `POST /v3/fs`.
+//
+// The verbs and their flag names mirror Unix tools so an LLM agent's existing
+// vocabulary maps directly:
+//
+// - `ls` — list parsed documents
+// - `cat` — read one parsed doc (optionally sliced by range / projected by select)
+// - `grep` — substring or regex search across parse outputs
+// - `head` — first N sections of one doc
+// - `stat` — metadata only (page count, section count, parsed at, ...)
+// - `find` — list canonical entities (cross-doc memory)
+// - `open` — entity + mentions
+// - `xref` — entity → sections across docs that mention it
+//
+// Doc-level ops (ls, cat, grep, head, stat) work on every parsed document,
+// regardless of how the parse function was configured.
+//
+// Memory-level ops (find, open, xref) operate on the global entities table which
+// is only populated when the parse function had `linkAcrossDocuments: true`. On
+// environments with no memory-linked docs they return empty data with a hint
+// pointing at the toggle.
+type FsOp string
+
+const (
+	FsOpLs   FsOp = "ls"
+	FsOpFind FsOp = "find"
+	FsOpOpen FsOp = "open"
+	FsOpCat  FsOp = "cat"
+	FsOpGrep FsOp = "grep"
+	FsOpXref FsOp = "xref"
+	FsOpStat FsOp = "stat"
+	FsOpHead FsOp = "head"
+)
+
 // Uniform response shape returned for every `op`. `data` is op-specific JSON (a
 // list, an object, or a string), but the wrapper is constant so a client only
 // learns one parse path.
@@ -171,7 +205,7 @@ type FNavigateResponse struct {
 	// pointing at the toggle.
 	//
 	// Any of "ls", "find", "open", "cat", "grep", "xref", "stat", "head".
-	Op FNavigateResponseOp `json:"op" api:"required"`
+	Op FsOp `json:"op" api:"required"`
 	// Set for ops that return a count rather than a list (`grep` with
 	// `countOnly=true`) or as a sanity check on lists.
 	Count int64 `json:"count"`
@@ -203,40 +237,6 @@ func (r *FNavigateResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Operations exposed by `POST /v3/fs`.
-//
-// The verbs and their flag names mirror Unix tools so an LLM agent's existing
-// vocabulary maps directly:
-//
-// - `ls` — list parsed documents
-// - `cat` — read one parsed doc (optionally sliced by range / projected by select)
-// - `grep` — substring or regex search across parse outputs
-// - `head` — first N sections of one doc
-// - `stat` — metadata only (page count, section count, parsed at, ...)
-// - `find` — list canonical entities (cross-doc memory)
-// - `open` — entity + mentions
-// - `xref` — entity → sections across docs that mention it
-//
-// Doc-level ops (ls, cat, grep, head, stat) work on every parsed document,
-// regardless of how the parse function was configured.
-//
-// Memory-level ops (find, open, xref) operate on the global entities table which
-// is only populated when the parse function had `linkAcrossDocuments: true`. On
-// environments with no memory-linked docs they return empty data with a hint
-// pointing at the toggle.
-type FNavigateResponseOp string
-
-const (
-	FNavigateResponseOpLs   FNavigateResponseOp = "ls"
-	FNavigateResponseOpFind FNavigateResponseOp = "find"
-	FNavigateResponseOpOpen FNavigateResponseOp = "open"
-	FNavigateResponseOpCat  FNavigateResponseOp = "cat"
-	FNavigateResponseOpGrep FNavigateResponseOp = "grep"
-	FNavigateResponseOpXref FNavigateResponseOp = "xref"
-	FNavigateResponseOpStat FNavigateResponseOp = "stat"
-	FNavigateResponseOpHead FNavigateResponseOp = "head"
-)
-
 type FNavigateParams struct {
 	// Operations exposed by `POST /v3/fs`.
 	//
@@ -261,7 +261,7 @@ type FNavigateParams struct {
 	// pointing at the toggle.
 	//
 	// Any of "ls", "find", "open", "cat", "grep", "xref", "stat", "head".
-	Op FNavigateParamsOp `json:"op,omitzero" api:"required"`
+	Op FsOp `json:"op,omitzero" api:"required"`
 	// When true, return only the hit count without snippet payload. Cheaper than
 	// fetching matches when the agent only wants a yes/no.
 	CountOnly param.Opt[bool] `json:"countOnly,omitzero"`
@@ -304,40 +304,6 @@ func (r FNavigateParams) MarshalJSON() (data []byte, err error) {
 func (r *FNavigateParams) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
-
-// Operations exposed by `POST /v3/fs`.
-//
-// The verbs and their flag names mirror Unix tools so an LLM agent's existing
-// vocabulary maps directly:
-//
-// - `ls` — list parsed documents
-// - `cat` — read one parsed doc (optionally sliced by range / projected by select)
-// - `grep` — substring or regex search across parse outputs
-// - `head` — first N sections of one doc
-// - `stat` — metadata only (page count, section count, parsed at, ...)
-// - `find` — list canonical entities (cross-doc memory)
-// - `open` — entity + mentions
-// - `xref` — entity → sections across docs that mention it
-//
-// Doc-level ops (ls, cat, grep, head, stat) work on every parsed document,
-// regardless of how the parse function was configured.
-//
-// Memory-level ops (find, open, xref) operate on the global entities table which
-// is only populated when the parse function had `linkAcrossDocuments: true`. On
-// environments with no memory-linked docs they return empty data with a hint
-// pointing at the toggle.
-type FNavigateParamsOp string
-
-const (
-	FNavigateParamsOpLs   FNavigateParamsOp = "ls"
-	FNavigateParamsOpFind FNavigateParamsOp = "find"
-	FNavigateParamsOpOpen FNavigateParamsOp = "open"
-	FNavigateParamsOpCat  FNavigateParamsOp = "cat"
-	FNavigateParamsOpGrep FNavigateParamsOp = "grep"
-	FNavigateParamsOpXref FNavigateParamsOp = "xref"
-	FNavigateParamsOpStat FNavigateParamsOp = "stat"
-	FNavigateParamsOpHead FNavigateParamsOp = "head"
-)
 
 // Filter options for `op=ls` and `op=find`.
 type FNavigateParamsFilter struct {

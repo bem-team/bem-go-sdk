@@ -103,7 +103,7 @@ func NewWebhookSecretService(opts ...option.RequestOption) (r WebhookSecretServi
 // After rotation all newly delivered webhooks will be signed with the new secret.
 // Update your verification logic before calling this endpoint if you need
 // zero-downtime rotation.
-func (r *WebhookSecretService) New(ctx context.Context, opts ...option.RequestOption) (res *WebhookSecretNewResponse, err error) {
+func (r *WebhookSecretService) New(ctx context.Context, opts ...option.RequestOption) (res *WebhookSecret, err error) {
 	opts = slices.Concat(r.options, opts)
 	path := "v3/webhook-secret"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, nil, &res, opts...)
@@ -123,7 +123,7 @@ func (r *WebhookSecretService) New(ctx context.Context, opts ...option.RequestOp
 // 3. Compute HMAC-SHA256 of that string using the secret.
 // 4. Compare the hex digest against `v1`.
 // 5. Reject requests where the timestamp is more than a few minutes old.
-func (r *WebhookSecretService) Get(ctx context.Context, opts ...option.RequestOption) (res *WebhookSecretGetResponse, err error) {
+func (r *WebhookSecretService) Get(ctx context.Context, opts ...option.RequestOption) (res *WebhookSecret, err error) {
 	opts = slices.Concat(r.options, opts)
 	path := "v3/webhook-secret"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
@@ -144,7 +144,7 @@ func (r *WebhookSecretService) Revoke(ctx context.Context, opts ...option.Reques
 
 // Webhook signing secret used to verify `bem-signature` headers on delivered
 // webhooks.
-type WebhookSecretNewResponse struct {
+type WebhookSecret struct {
 	// The signing secret value. Store this securely — it is shown in full only on
 	// generation.
 	Secret string `json:"secret" api:"required"`
@@ -157,27 +157,7 @@ type WebhookSecretNewResponse struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r WebhookSecretNewResponse) RawJSON() string { return r.JSON.raw }
-func (r *WebhookSecretNewResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Webhook signing secret used to verify `bem-signature` headers on delivered
-// webhooks.
-type WebhookSecretGetResponse struct {
-	// The signing secret value. Store this securely — it is shown in full only on
-	// generation.
-	Secret string `json:"secret" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Secret      respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r WebhookSecretGetResponse) RawJSON() string { return r.JSON.raw }
-func (r *WebhookSecretGetResponse) UnmarshalJSON(data []byte) error {
+func (r WebhookSecret) RawJSON() string { return r.JSON.raw }
+func (r *WebhookSecret) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }

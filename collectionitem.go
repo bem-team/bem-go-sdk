@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
-	"time"
 
 	"github.com/bem-team/bem-go-sdk/internal/apijson"
 	"github.com/bem-team/bem-go-sdk/internal/apiquery"
@@ -66,7 +65,7 @@ func NewCollectionItemService(opts ...option.RequestOption) (r CollectionItemSer
 }
 
 // Get a Collection
-func (r *CollectionItemService) Get(ctx context.Context, query CollectionItemGetParams, opts ...option.RequestOption) (res *CollectionItemGetResponse, err error) {
+func (r *CollectionItemService) Get(ctx context.Context, query CollectionItemGetParams, opts ...option.RequestOption) (res *Collection, err error) {
 	opts = slices.Concat(r.options, opts)
 	path := "v3/collections/items"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
@@ -98,76 +97,6 @@ func (r *CollectionItemService) Add(ctx context.Context, body CollectionItemAddP
 	return res, err
 }
 
-// Collection details
-type CollectionItemGetResponse struct {
-	// Unique identifier for the collection
-	CollectionID string `json:"collectionID" api:"required"`
-	// The collection name/path. Only letters, digits, underscores, and dots are
-	// allowed.
-	CollectionName string `json:"collectionName" api:"required"`
-	// When the collection was created
-	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
-	// Number of items in the collection
-	ItemCount int64 `json:"itemCount" api:"required"`
-	// List of items in the collection (when fetching collection details)
-	Items []CollectionItemGetResponseItem `json:"items"`
-	// Number of items per page
-	Limit int64 `json:"limit"`
-	// Current page number
-	Page int64 `json:"page"`
-	// Total number of pages
-	TotalPages int64 `json:"totalPages"`
-	// When the collection was last updated
-	UpdatedAt time.Time `json:"updatedAt" format:"date-time"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		CollectionID   respjson.Field
-		CollectionName respjson.Field
-		CreatedAt      respjson.Field
-		ItemCount      respjson.Field
-		Items          respjson.Field
-		Limit          respjson.Field
-		Page           respjson.Field
-		TotalPages     respjson.Field
-		UpdatedAt      respjson.Field
-		ExtraFields    map[string]respjson.Field
-		raw            string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r CollectionItemGetResponse) RawJSON() string { return r.JSON.raw }
-func (r *CollectionItemGetResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// A single item in a collection
-type CollectionItemGetResponseItem struct {
-	// Unique identifier for the item
-	CollectionItemID string `json:"collectionItemID" api:"required"`
-	// When the item was created
-	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
-	// The data stored in this item
-	Data any `json:"data" api:"required"`
-	// When the item was last updated
-	UpdatedAt time.Time `json:"updatedAt" api:"required" format:"date-time"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		CollectionItemID respjson.Field
-		CreatedAt        respjson.Field
-		Data             respjson.Field
-		UpdatedAt        respjson.Field
-		ExtraFields      map[string]respjson.Field
-		raw              string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r CollectionItemGetResponseItem) RawJSON() string { return r.JSON.raw }
-func (r *CollectionItemGetResponseItem) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 // Response after queuing items for async update
 type CollectionItemUpdateResponse struct {
 	// Event ID for tracking this operation. Use this to correlate with webhook
@@ -180,7 +109,7 @@ type CollectionItemUpdateResponse struct {
 	// Any of "pending".
 	Status CollectionItemUpdateResponseStatus `json:"status" api:"required"`
 	// Array of items that were updated (only present in synchronous mode, deprecated)
-	Items []CollectionItemUpdateResponseItem `json:"items"`
+	Items []CollectionItem `json:"items"`
 	// Number of items updated (only present in synchronous mode, deprecated)
 	UpdatedCount int64 `json:"updatedCount"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
@@ -208,33 +137,6 @@ const (
 	CollectionItemUpdateResponseStatusPending CollectionItemUpdateResponseStatus = "pending"
 )
 
-// A single item in a collection
-type CollectionItemUpdateResponseItem struct {
-	// Unique identifier for the item
-	CollectionItemID string `json:"collectionItemID" api:"required"`
-	// When the item was created
-	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
-	// The data stored in this item
-	Data any `json:"data" api:"required"`
-	// When the item was last updated
-	UpdatedAt time.Time `json:"updatedAt" api:"required" format:"date-time"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		CollectionItemID respjson.Field
-		CreatedAt        respjson.Field
-		Data             respjson.Field
-		UpdatedAt        respjson.Field
-		ExtraFields      map[string]respjson.Field
-		raw              string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r CollectionItemUpdateResponseItem) RawJSON() string { return r.JSON.raw }
-func (r *CollectionItemUpdateResponseItem) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 // Response after queuing items for async processing
 type CollectionItemAddResponse struct {
 	// Event ID for tracking this operation. Use this to correlate with webhook
@@ -249,7 +151,7 @@ type CollectionItemAddResponse struct {
 	// Number of new items added (only present in synchronous mode, deprecated)
 	AddedCount int64 `json:"addedCount"`
 	// Array of items that were added (only present in synchronous mode, deprecated)
-	Items []CollectionItemAddResponseItem `json:"items"`
+	Items []CollectionItem `json:"items"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		EventID     respjson.Field
@@ -274,33 +176,6 @@ type CollectionItemAddResponseStatus string
 const (
 	CollectionItemAddResponseStatusPending CollectionItemAddResponseStatus = "pending"
 )
-
-// A single item in a collection
-type CollectionItemAddResponseItem struct {
-	// Unique identifier for the item
-	CollectionItemID string `json:"collectionItemID" api:"required"`
-	// When the item was created
-	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
-	// The data stored in this item
-	Data any `json:"data" api:"required"`
-	// When the item was last updated
-	UpdatedAt time.Time `json:"updatedAt" api:"required" format:"date-time"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		CollectionItemID respjson.Field
-		CreatedAt        respjson.Field
-		Data             respjson.Field
-		UpdatedAt        respjson.Field
-		ExtraFields      map[string]respjson.Field
-		raw              string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r CollectionItemAddResponseItem) RawJSON() string { return r.JSON.raw }
-func (r *CollectionItemAddResponseItem) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
 
 type CollectionItemGetParams struct {
 	// The name/path of the collection. Must use only letters, digits, underscores, and

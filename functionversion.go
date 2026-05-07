@@ -126,7 +126,7 @@ type FunctionVersionUnion struct {
 	Classifications []ClassificationListItem `json:"classifications"`
 	Description     string                   `json:"description"`
 	// This field is from variant [FunctionVersionSend].
-	DestinationType string `json:"destinationType"`
+	DestinationType SendDestinationType `json:"destinationType"`
 	// This field is from variant [FunctionVersionSend].
 	GoogleDriveFolderID string `json:"googleDriveFolderId"`
 	// This field is from variant [FunctionVersionSend].
@@ -150,7 +150,7 @@ type FunctionVersionUnion struct {
 	// This field is from variant [FunctionVersionPayloadShaping].
 	ShapingSchema string `json:"shapingSchema"`
 	// This field is from variant [FunctionVersionParse].
-	ParseConfig FunctionVersionParseParseConfig `json:"parseConfig"`
+	ParseConfig ParseConfig `json:"parseConfig"`
 	JSON        struct {
 		EmailAddress            respjson.Field
 		FunctionID              respjson.Field
@@ -527,7 +527,7 @@ type FunctionVersionSend struct {
 	// Destination type for a Send function.
 	//
 	// Any of "webhook", "s3", "google_drive".
-	DestinationType string `json:"destinationType" api:"required"`
+	DestinationType SendDestinationType `json:"destinationType" api:"required"`
 	// Unique identifier of function.
 	FunctionID string `json:"functionID" api:"required"`
 	// Name of function. Must be UNIQUE on a per-environment basis.
@@ -851,7 +851,7 @@ type FunctionVersionParse struct {
 	// Parse renders document pages (PDF, image) via vision LLM and emits structured
 	// JSON. The two toggles below independently control entity extraction (a per-call
 	// output concern) and cross-document memory linking (an environment-wide concern).
-	ParseConfig FunctionVersionParseParseConfig `json:"parseConfig"`
+	ParseConfig ParseConfig `json:"parseConfig"`
 	// Array of tags to categorize and organize functions.
 	Tags []string `json:"tags"`
 	// List of workflows that use this function.
@@ -876,44 +876,6 @@ type FunctionVersionParse struct {
 // Returns the unmodified JSON received from the API
 func (r FunctionVersionParse) RawJSON() string { return r.JSON.raw }
 func (r *FunctionVersionParse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Per-version configuration for a Parse function.
-//
-// Parse renders document pages (PDF, image) via vision LLM and emits structured
-// JSON. The two toggles below independently control entity extraction (a per-call
-// output concern) and cross-document memory linking (an environment-wide concern).
-type FunctionVersionParseParseConfig struct {
-	// When true, extract named entities (people, organizations, products, studies,
-	// identifiers, etc.) and the relationships between them, and dedupe by canonical
-	// name within the document. When false, only `sections[]` is extracted;
-	// `entities[]` and `relationships[]` come back empty in the parse output. Defaults
-	// to true.
-	ExtractEntities bool `json:"extractEntities"`
-	// When true, link this document's entities to entities seen in earlier documents
-	// in this environment, building one canonical record per real-world thing across
-	// the corpus. Visible in the Memory tab and queryable via `POST /v3/fs` (op=find /
-	// open / xref). Doesn't change this call's parse output. Requires
-	// `extractEntities=true`. Defaults to true.
-	LinkAcrossDocuments bool `json:"linkAcrossDocuments"`
-	// Optional JSONSchema. When provided, each chunk performs schema-guided
-	// extraction. When absent, chunks perform open-ended discovery and return
-	// sections, entities, and relationships per the discovery schema.
-	Schema any `json:"schema"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		ExtractEntities     respjson.Field
-		LinkAcrossDocuments respjson.Field
-		Schema              respjson.Field
-		ExtraFields         map[string]respjson.Field
-		raw                 string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionVersionParseParseConfig) RawJSON() string { return r.JSON.raw }
-func (r *FunctionVersionParseParseConfig) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

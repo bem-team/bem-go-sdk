@@ -60,7 +60,7 @@ func NewEvalResultService(opts ...option.RequestOption) (r EvalResultService) {
 // completed `result`, still-`pending`, or `failed`. The POST variant accepts the
 // ID list in the request body; use the `GET` variant with query parameters for
 // simpler clients.
-func (r *EvalResultService) FetchResults(ctx context.Context, body EvalResultFetchResultsParams, opts ...option.RequestOption) (res *EvalResultFetchResultsResponse, err error) {
+func (r *EvalResultService) FetchResults(ctx context.Context, body EvalResultFetchResultsParams, opts ...option.RequestOption) (res *EvaluationResults, err error) {
 	opts = slices.Concat(r.options, opts)
 	path := "v3/eval/results"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
@@ -72,7 +72,7 @@ func (r *EvalResultService) FetchResults(ctx context.Context, body EvalResultFet
 // Identical behavior to the POST variant; accepts transformation IDs as a
 // comma-separated `transformationIDs` query parameter. Limited to 100 IDs per
 // request.
-func (r *EvalResultService) GetResults(ctx context.Context, query EvalResultGetResultsParams, opts ...option.RequestOption) (res *EvalResultGetResultsResponse, err error) {
+func (r *EvalResultService) GetResults(ctx context.Context, query EvalResultGetResultsParams, opts ...option.RequestOption) (res *EvaluationResults, err error) {
 	opts = slices.Concat(r.options, opts)
 	path := "v3/eval/results"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
@@ -82,7 +82,7 @@ func (r *EvalResultService) GetResults(ctx context.Context, query EvalResultGetR
 // Batched response containing the evaluation state for every requested
 // transformation ID, partitioned into completed `results`, still-running
 // `pending`, and terminal `failed` groups.
-type EvalResultFetchResultsResponse struct {
+type EvaluationResults struct {
 	// Completed evaluation results, keyed by transformation ID.
 	//
 	// A transformation appears here only if its evaluation completed successfully.
@@ -93,9 +93,9 @@ type EvalResultFetchResultsResponse struct {
 	// the request itself. Populated only in edge cases.
 	Errors any `json:"errors"`
 	// Transformations whose evaluation failed or was not found.
-	Failed []EvalResultFetchResultsResponseFailed `json:"failed"`
+	Failed []EvaluationResultsFailed `json:"failed"`
 	// Transformations whose evaluation is still running.
-	Pending []EvalResultFetchResultsResponsePending `json:"pending"`
+	Pending []EvaluationResultsPending `json:"pending"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Results     respjson.Field
@@ -108,13 +108,13 @@ type EvalResultFetchResultsResponse struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r EvalResultFetchResultsResponse) RawJSON() string { return r.JSON.raw }
-func (r *EvalResultFetchResultsResponse) UnmarshalJSON(data []byte) error {
+func (r EvaluationResults) RawJSON() string { return r.JSON.raw }
+func (r *EvaluationResults) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
 // A transformation whose evaluation failed or was not found.
-type EvalResultFetchResultsResponseFailed struct {
+type EvaluationResultsFailed struct {
 	// Server timestamp associated with the failure.
 	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
 	// Human-readable failure reason.
@@ -131,13 +131,13 @@ type EvalResultFetchResultsResponseFailed struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r EvalResultFetchResultsResponseFailed) RawJSON() string { return r.JSON.raw }
-func (r *EvalResultFetchResultsResponseFailed) UnmarshalJSON(data []byte) error {
+func (r EvaluationResultsFailed) RawJSON() string { return r.JSON.raw }
+func (r *EvaluationResultsFailed) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
 // A transformation whose evaluation is still running.
-type EvalResultFetchResultsResponsePending struct {
+type EvaluationResultsPending struct {
 	// Server timestamp when the evaluation was queued.
 	CreatedAt        time.Time `json:"createdAt" api:"required" format:"date-time"`
 	TransformationID string    `json:"transformationId" api:"required"`
@@ -151,85 +151,8 @@ type EvalResultFetchResultsResponsePending struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r EvalResultFetchResultsResponsePending) RawJSON() string { return r.JSON.raw }
-func (r *EvalResultFetchResultsResponsePending) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Batched response containing the evaluation state for every requested
-// transformation ID, partitioned into completed `results`, still-running
-// `pending`, and terminal `failed` groups.
-type EvalResultGetResultsResponse struct {
-	// Completed evaluation results, keyed by transformation ID.
-	//
-	// A transformation appears here only if its evaluation completed successfully.
-	// Still-running evaluations appear in `pending`; failed evaluations appear in
-	// `failed`.
-	Results any `json:"results" api:"required"`
-	// Reserved map of transformation ID to error message for validation failures on
-	// the request itself. Populated only in edge cases.
-	Errors any `json:"errors"`
-	// Transformations whose evaluation failed or was not found.
-	Failed []EvalResultGetResultsResponseFailed `json:"failed"`
-	// Transformations whose evaluation is still running.
-	Pending []EvalResultGetResultsResponsePending `json:"pending"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Results     respjson.Field
-		Errors      respjson.Field
-		Failed      respjson.Field
-		Pending     respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EvalResultGetResultsResponse) RawJSON() string { return r.JSON.raw }
-func (r *EvalResultGetResultsResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// A transformation whose evaluation failed or was not found.
-type EvalResultGetResultsResponseFailed struct {
-	// Server timestamp associated with the failure.
-	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
-	// Human-readable failure reason.
-	ErrorMessage     string `json:"errorMessage" api:"required"`
-	TransformationID string `json:"transformationId" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		CreatedAt        respjson.Field
-		ErrorMessage     respjson.Field
-		TransformationID respjson.Field
-		ExtraFields      map[string]respjson.Field
-		raw              string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EvalResultGetResultsResponseFailed) RawJSON() string { return r.JSON.raw }
-func (r *EvalResultGetResultsResponseFailed) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// A transformation whose evaluation is still running.
-type EvalResultGetResultsResponsePending struct {
-	// Server timestamp when the evaluation was queued.
-	CreatedAt        time.Time `json:"createdAt" api:"required" format:"date-time"`
-	TransformationID string    `json:"transformationId" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		CreatedAt        respjson.Field
-		TransformationID respjson.Field
-		ExtraFields      map[string]respjson.Field
-		raw              string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EvalResultGetResultsResponsePending) RawJSON() string { return r.JSON.raw }
-func (r *EvalResultGetResultsResponsePending) UnmarshalJSON(data []byte) error {
+func (r EvaluationResultsPending) RawJSON() string { return r.JSON.raw }
+func (r *EvaluationResultsPending) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

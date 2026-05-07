@@ -96,7 +96,7 @@ func NewCollectionService(opts ...option.RequestOption) (r CollectionService) {
 }
 
 // Create a Collection
-func (r *CollectionService) New(ctx context.Context, body CollectionNewParams, opts ...option.RequestOption) (res *CollectionNewResponse, err error) {
+func (r *CollectionService) New(ctx context.Context, body CollectionNewParams, opts ...option.RequestOption) (res *Collection, err error) {
 	opts = slices.Concat(r.options, opts)
 	path := "v3/collections"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
@@ -131,7 +131,7 @@ func (r *CollectionService) CountTokens(ctx context.Context, body CollectionCoun
 }
 
 // Collection details
-type CollectionNewResponse struct {
+type Collection struct {
 	// Unique identifier for the collection
 	CollectionID string `json:"collectionID" api:"required"`
 	// The collection name/path. Only letters, digits, underscores, and dots are
@@ -142,7 +142,7 @@ type CollectionNewResponse struct {
 	// Number of items in the collection
 	ItemCount int64 `json:"itemCount" api:"required"`
 	// List of items in the collection (when fetching collection details)
-	Items []CollectionNewResponseItem `json:"items"`
+	Items []CollectionItem `json:"items"`
 	// Number of items per page
 	Limit int64 `json:"limit"`
 	// Current page number
@@ -168,13 +168,13 @@ type CollectionNewResponse struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r CollectionNewResponse) RawJSON() string { return r.JSON.raw }
-func (r *CollectionNewResponse) UnmarshalJSON(data []byte) error {
+func (r Collection) RawJSON() string { return r.JSON.raw }
+func (r *Collection) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
 // A single item in a collection
-type CollectionNewResponseItem struct {
+type CollectionItem struct {
 	// Unique identifier for the item
 	CollectionItemID string `json:"collectionItemID" api:"required"`
 	// When the item was created
@@ -195,8 +195,8 @@ type CollectionNewResponseItem struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r CollectionNewResponseItem) RawJSON() string { return r.JSON.raw }
-func (r *CollectionNewResponseItem) UnmarshalJSON(data []byte) error {
+func (r CollectionItem) RawJSON() string { return r.JSON.raw }
+func (r *CollectionItem) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

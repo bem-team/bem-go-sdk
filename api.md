@@ -7,6 +7,8 @@ Params Types:
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EnrichConfigParam">EnrichConfigParam</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EnrichStepParam">EnrichStepParam</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#FunctionType">FunctionType</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#ParseConfigParam">ParseConfigParam</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SendDestinationType">SendDestinationType</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SplitFunctionSemanticPageItemClassParam">SplitFunctionSemanticPageItemClassParam</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#UpdateFunctionUnionParam">UpdateFunctionUnionParam</a>
 
@@ -20,6 +22,8 @@ Response Types:
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#FunctionResponse">FunctionResponse</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#FunctionType">FunctionType</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#ListFunctionsResponse">ListFunctionsResponse</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#ParseConfig">ParseConfig</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SendDestinationType">SendDestinationType</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SplitFunctionSemanticPageItemClass">SplitFunctionSemanticPageItemClass</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#UserActionSummary">UserActionSummary</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WorkflowUsageInfo">WorkflowUsageInfo</a>
@@ -84,10 +88,15 @@ Methods:
 
 # Outputs
 
+Params Types:
+
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#InputType">InputType</a>
+
 Response Types:
 
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#AnyTypeUnion">AnyTypeUnion</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EventUnion">EventUnion</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#InputType">InputType</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#OutputGetResponse">OutputGetResponse</a>
 
 Methods:
@@ -100,12 +109,18 @@ Methods:
 Params Types:
 
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#FunctionVersionIdentifierParam">FunctionVersionIdentifierParam</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WorkflowConnectorParam">WorkflowConnectorParam</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WorkflowConnectorType">WorkflowConnectorType</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WorkflowEdgeParam">WorkflowEdgeParam</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WorkflowNodeParam">WorkflowNodeParam</a>
 
 Response Types:
 
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#FunctionVersionIdentifier">FunctionVersionIdentifier</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#Workflow">Workflow</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WorkflowAudit">WorkflowAudit</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WorkflowConnectorError">WorkflowConnectorError</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WorkflowConnectorType">WorkflowConnectorType</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WorkflowEdgeResponse">WorkflowEdgeResponse</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WorkflowNodeResponse">WorkflowNodeResponse</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WorkflowGetResponse">WorkflowGetResponse</a>
@@ -147,13 +162,14 @@ Methods:
 
 Response Types:
 
-- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionNewResponse">CollectionNewResponse</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#Collection">Collection</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionItem">CollectionItem</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionListResponse">CollectionListResponse</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionCountTokensResponse">CollectionCountTokensResponse</a>
 
 Methods:
 
-- <code title="post /v3/collections">client.Collections.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionNewParams">CollectionNewParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionNewResponse">CollectionNewResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="post /v3/collections">client.Collections.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionNewParams">CollectionNewParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#Collection">Collection</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="get /v3/collections">client.Collections.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionListParams">CollectionListParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionListResponse">CollectionListResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="delete /v3/collections">client.Collections.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionService.Delete">Delete</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionDeleteParams">CollectionDeleteParams</a>) <a href="https://pkg.go.dev/builtin#error">error</a></code>
 - <code title="post /v3/collections/token-count">client.Collections.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionService.CountTokens">CountTokens</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionCountTokensParams">CollectionCountTokensParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionCountTokensResponse">CollectionCountTokensResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
@@ -162,13 +178,12 @@ Methods:
 
 Response Types:
 
-- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionItemGetResponse">CollectionItemGetResponse</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionItemUpdateResponse">CollectionItemUpdateResponse</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionItemAddResponse">CollectionItemAddResponse</a>
 
 Methods:
 
-- <code title="get /v3/collections/items">client.Collections.Items.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionItemService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionItemGetParams">CollectionItemGetParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionItemGetResponse">CollectionItemGetResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="get /v3/collections/items">client.Collections.Items.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionItemService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionItemGetParams">CollectionItemGetParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#Collection">Collection</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="put /v3/collections/items">client.Collections.Items.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionItemService.Update">Update</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionItemUpdateParams">CollectionItemUpdateParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionItemUpdateResponse">CollectionItemUpdateResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="delete /v3/collections/items">client.Collections.Items.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionItemService.Delete">Delete</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionItemDeleteParams">CollectionItemDeleteParams</a>) <a href="https://pkg.go.dev/builtin#error">error</a></code>
 - <code title="post /v3/collections/items">client.Collections.Items.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionItemService.Add">Add</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionItemAddParams">CollectionItemAddParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionItemAddResponse">CollectionItemAddResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
@@ -183,17 +198,33 @@ Methods:
 
 - <code title="post /v3/events/{eventID}/feedback">client.Events.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EventService.SubmitFeedback">SubmitFeedback</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, eventID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EventSubmitFeedbackParams">EventSubmitFeedbackParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EventSubmitFeedbackResponse">EventSubmitFeedbackResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
+# Webhooks
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#ExtractWebhookEvent">ExtractWebhookEvent</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#ClassifyWebhookEvent">ClassifyWebhookEvent</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#ParseWebhookEvent">ParseWebhookEvent</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SplitCollectionWebhookEvent">SplitCollectionWebhookEvent</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SplitItemWebhookEvent">SplitItemWebhookEvent</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#JoinWebhookEvent">JoinWebhookEvent</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EnrichWebhookEvent">EnrichWebhookEvent</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#PayloadShapingWebhookEvent">PayloadShapingWebhookEvent</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SendWebhookEvent">SendWebhookEvent</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvaluationWebhookEvent">EvaluationWebhookEvent</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#CollectionProcessingWebhookEvent">CollectionProcessingWebhookEvent</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#UnwrapWebhookEventUnion">UnwrapWebhookEventUnion</a>
+
 # WebhookSecret
 
 Response Types:
 
-- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WebhookSecretNewResponse">WebhookSecretNewResponse</a>
-- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WebhookSecretGetResponse">WebhookSecretGetResponse</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WebhookSecret">WebhookSecret</a>
 
 Methods:
 
-- <code title="post /v3/webhook-secret">client.WebhookSecret.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WebhookSecretService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WebhookSecretNewResponse">WebhookSecretNewResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
-- <code title="get /v3/webhook-secret">client.WebhookSecret.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WebhookSecretService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WebhookSecretGetResponse">WebhookSecretGetResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="post /v3/webhook-secret">client.WebhookSecret.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WebhookSecretService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WebhookSecret">WebhookSecret</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="get /v3/webhook-secret">client.WebhookSecret.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WebhookSecretService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WebhookSecret">WebhookSecret</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="delete /v3/webhook-secret">client.WebhookSecret.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#WebhookSecretService.Revoke">Revoke</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>) <a href="https://pkg.go.dev/builtin#error">error</a></code>
 
 # Eval
@@ -210,20 +241,56 @@ Methods:
 
 Response Types:
 
-- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalResultFetchResultsResponse">EvalResultFetchResultsResponse</a>
-- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalResultGetResultsResponse">EvalResultGetResultsResponse</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvaluationResults">EvaluationResults</a>
 
 Methods:
 
-- <code title="post /v3/eval/results">client.Eval.Results.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalResultService.FetchResults">FetchResults</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalResultFetchResultsParams">EvalResultFetchResultsParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalResultFetchResultsResponse">EvalResultFetchResultsResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
-- <code title="get /v3/eval/results">client.Eval.Results.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalResultService.GetResults">GetResults</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalResultGetResultsParams">EvalResultGetResultsParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalResultGetResultsResponse">EvalResultGetResultsResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="post /v3/eval/results">client.Eval.Results.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalResultService.FetchResults">FetchResults</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalResultFetchResultsParams">EvalResultFetchResultsParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvaluationResults">EvaluationResults</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="get /v3/eval/results">client.Eval.Results.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalResultService.GetResults">GetResults</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalResultGetResultsParams">EvalResultGetResultsParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvaluationResults">EvaluationResults</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
 # Fs
 
+Params Types:
+
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#FsOp">FsOp</a>
+
 Response Types:
 
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#FsOp">FsOp</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#FNavigateResponse">FNavigateResponse</a>
 
 Methods:
 
 - <code title="post /v3/fs">client.Fs.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#FService.Navigate">Navigate</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#FNavigateParams">FNavigateParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#FNavigateResponse">FNavigateResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+
+# Connectors
+
+Params Types:
+
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#ConnectorType">ConnectorType</a>
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#Connector">Connector</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#ConnectorType">ConnectorType</a>
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#ConnectorListResponse">ConnectorListResponse</a>
+
+Methods:
+
+- <code title="post /v3/connectors">client.Connectors.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#ConnectorService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#ConnectorNewParams">ConnectorNewParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#Connector">Connector</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="get /v3/connectors">client.Connectors.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#ConnectorService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#ConnectorListParams">ConnectorListParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#ConnectorListResponse">ConnectorListResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="delete /v3/connectors/{connectorID}">client.Connectors.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#ConnectorService.Delete">Delete</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, connectorID <a href="https://pkg.go.dev/builtin#string">string</a>) (\*<a href="https://pkg.go.dev/builtin#string">string</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+
+# Subscriptions
+
+Response Types:
+
+- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SubscriptionV3">SubscriptionV3</a>
+
+Methods:
+
+- <code title="post /v3/subscriptions">client.Subscriptions.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SubscriptionService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SubscriptionNewParams">SubscriptionNewParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SubscriptionV3">SubscriptionV3</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="get /v3/subscriptions/{subscriptionID}">client.Subscriptions.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SubscriptionService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, subscriptionID <a href="https://pkg.go.dev/builtin#string">string</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SubscriptionV3">SubscriptionV3</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="patch /v3/subscriptions/{subscriptionID}">client.Subscriptions.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SubscriptionService.Update">Update</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, subscriptionID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SubscriptionUpdateParams">SubscriptionUpdateParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SubscriptionV3">SubscriptionV3</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="get /v3/subscriptions">client.Subscriptions.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SubscriptionService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SubscriptionListParams">SubscriptionListParams</a>) (\*[]<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SubscriptionV3">SubscriptionV3</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
+- <code title="delete /v3/subscriptions/{subscriptionID}">client.Subscriptions.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#SubscriptionService.Delete">Delete</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, subscriptionID <a href="https://pkg.go.dev/builtin#string">string</a>) <a href="https://pkg.go.dev/builtin#error">error</a></code>

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.14.0 (2026-05-07)
+
+Full Changelog: [v0.13.0...v0.14.0](https://github.com/bem-team/bem-go-sdk/compare/v0.13.0...v0.14.0)
+
+### Features
+
+* **api:** add new resources and webhook support ([a4ee21d](https://github.com/bem-team/bem-go-sdk/commit/a4ee21d3697e87dc596a164c87be7a9e09845e37))
+* **api:** api update ([552d2b6](https://github.com/bem-team/bem-go-sdk/commit/552d2b63929140a3246c3a04157db8c50527ed67))
+
 ## 0.13.0 (2026-05-04)
 
 Full Changelog: [v0.12.0...v0.13.0](https://github.com/bem-team/bem-go-sdk/compare/v0.12.0...v0.13.0)

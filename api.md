@@ -245,7 +245,6 @@ Response Types:
 
 Methods:
 
-- <code title="post /v3/eval/results">client.Eval.Results.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalResultService.FetchResults">FetchResults</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalResultFetchResultsParams">EvalResultFetchResultsParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvaluationResults">EvaluationResults</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="get /v3/eval/results">client.Eval.Results.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalResultService.GetResults">GetResults</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalResultGetResultsParams">EvalResultGetResultsParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvaluationResults">EvaluationResults</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 
 # Fs

@@ -17,23 +17,43 @@ import (
 	"github.com/bem-team/bem-go-sdk/packages/respjson"
 )
 
-// Trigger and retrieve evaluations for completed transformations.
+// Monitor, evaluate, and iterate on the quality of every function in your
+// environment. Function Accuracy bundles two complementary loops:
 //
-// Evaluations run asynchronously and score each transformation's output against
-// the function's schema for confidence, per-field hallucination detection, and
-// relevance. Evaluations are supported for `extract`, `transform`, `analyze`, and
-// `join` events.
+// ## Evaluations (`/v3/eval`)
 //
-// ## Lifecycle
+// Trigger and retrieve per-transformation evaluations. Evaluations run
+// asynchronously and score each transformation's output against the function's
+// schema for confidence, per-field hallucination detection, and relevance.
+// Supported for `extract`, `transform`, `analyze`, and `join` events.
 //
-//  1. **Trigger** — `POST /v3/eval` queues jobs for a batch of transformation IDs
-//     and returns immediately with `queued` / `skipped` counts plus per-ID errors.
-//  2. **Poll** — `POST /v3/eval/results` (body) or `GET /v3/eval/results` (query)
-//     returns the current state of each requested transformation, partitioned into
-//     `results` (completed), `pending` (still running), and `failed` (terminal
-//     failures or unknown transformation IDs).
+//  1. **Trigger** — `POST /v3/eval` queues jobs for a batch of transformation IDs.
+//  2. **Poll** — `GET /v3/eval/results` returns the current state of each requested
+//     ID, partitioned into `results`, `pending`, and `failed`. Accepts either
+//     `eventIDs` (preferred) or `transformationIDs` as a comma-separated query
+//     parameter, and always keys the response by event KSUID.
 //
-// Up to 100 transformation IDs may be submitted per request.
+// Up to 100 IDs may be submitted per request.
+//
+// ## Metrics, review, regression (`/v3/functions/{metrics,review,regression,compare}`)
+//
+// Roll evaluation results and user corrections up into actionable function-level
+// signal:
+//
+//   - **`GET /v3/functions/metrics`** — aggregate accuracy, precision, recall, F1,
+//     and confusion-matrix counts per function.
+//   - **`POST /v3/functions/review`** — sample-size estimation, confidence-bucketed
+//     distribution, PR-AUC, and per-threshold confidence intervals (Wald or Wilson)
+//     for picking review cutoffs.
+//   - **`POST /v3/functions/regression`** — replay corrected historical inputs
+//     against a new function version, producing a labeled regression dataset.
+//   - **`POST /v3/functions/regression/corrections`** — propagate baseline
+//     corrections onto the regression dataset so it can be scored.
+//   - **`POST /v3/functions/compare`** — compute aggregate and field-level lift
+//     between any two versions, optionally scoped to the regression dataset.
+//
+// All five endpoints support `extract` end-to-end on both the vision and OCR
+// paths, alongside the legacy `transform` / `analyze` / `join` types.
 //
 // EvalResultService contains methods and other services that help with interacting
 // with the bem API.
@@ -54,24 +74,15 @@ func NewEvalResultService(opts ...option.RequestOption) (r EvalResultService) {
 	return
 }
 
-// **Fetch evaluation results for a batch of transformations (POST).**
+// **Fetch evaluation results for a batch of events.**
 //
-// For each requested transformation ID the response reports one of three states: a
-// completed `result`, still-`pending`, or `failed`. The POST variant accepts the
-// ID list in the request body; use the `GET` variant with query parameters for
-// simpler clients.
-func (r *EvalResultService) FetchResults(ctx context.Context, body EvalResultFetchResultsParams, opts ...option.RequestOption) (res *EvaluationResults, err error) {
-	opts = slices.Concat(r.options, opts)
-	path := "v3/eval/results"
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
-	return res, err
-}
-
-// **Fetch evaluation results for a batch of transformations.**
+// Pass either `eventIDs` (preferred — the externally-stable V3 identifier) or
+// `transformationIDs` as a comma-separated query parameter. Exactly one of the two
+// must be provided. Up to 100 IDs per request.
 //
-// Identical behavior to the POST variant; accepts transformation IDs as a
-// comma-separated `transformationIDs` query parameter. Limited to 100 IDs per
-// request.
+// For each requested ID the response reports one of three states: a completed
+// `result`, still-`pending`, or `failed`. Results, pending, and failed entries are
+// all keyed by event KSUID regardless of which input form was used.
 func (r *EvalResultService) GetResults(ctx context.Context, query EvalResultGetResultsParams, opts ...option.RequestOption) (res *EvaluationResults, err error) {
 	opts = slices.Concat(r.options, opts)
 	path := "v3/eval/results"
@@ -79,22 +90,23 @@ func (r *EvalResultService) GetResults(ctx context.Context, query EvalResultGetR
 	return res, err
 }
 
-// Batched response containing the evaluation state for every requested
-// transformation ID, partitioned into completed `results`, still-running
-// `pending`, and terminal `failed` groups.
+// Batched response containing the evaluation state for every requested ID,
+// partitioned into completed `results`, still-running `pending`, and terminal
+// `failed` groups. All identifiers in the response are event KSUIDs regardless of
+// whether the request used `eventIDs` or `transformationIDs`.
 type EvaluationResults struct {
-	// Completed evaluation results, keyed by transformation ID.
+	// Completed evaluation results, keyed by event KSUID.
 	//
-	// A transformation appears here only if its evaluation completed successfully.
+	// An event appears here only if its evaluation completed successfully.
 	// Still-running evaluations appear in `pending`; failed evaluations appear in
 	// `failed`.
 	Results any `json:"results" api:"required"`
-	// Reserved map of transformation ID to error message for validation failures on
-	// the request itself. Populated only in edge cases.
+	// Reserved map of event KSUID to error message for validation failures on the
+	// request itself. Populated only in edge cases.
 	Errors any `json:"errors"`
-	// Transformations whose evaluation failed or was not found.
+	// Events whose evaluation failed or was not found.
 	Failed []EvaluationResultsFailed `json:"failed"`
-	// Transformations whose evaluation is still running.
+	// Events whose evaluation is still running.
 	Pending []EvaluationResultsPending `json:"pending"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -113,20 +125,21 @@ func (r *EvaluationResults) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// A transformation whose evaluation failed or was not found.
+// An event whose evaluation failed or was not found.
 type EvaluationResultsFailed struct {
 	// Server timestamp associated with the failure.
 	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
 	// Human-readable failure reason.
-	ErrorMessage     string `json:"errorMessage" api:"required"`
-	TransformationID string `json:"transformationId" api:"required"`
+	ErrorMessage string `json:"errorMessage" api:"required"`
+	// Event KSUID.
+	EventID string `json:"eventID" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		CreatedAt        respjson.Field
-		ErrorMessage     respjson.Field
-		TransformationID respjson.Field
-		ExtraFields      map[string]respjson.Field
-		raw              string
+		CreatedAt    respjson.Field
+		ErrorMessage respjson.Field
+		EventID      respjson.Field
+		ExtraFields  map[string]respjson.Field
+		raw          string
 	} `json:"-"`
 }
 
@@ -136,17 +149,18 @@ func (r *EvaluationResultsFailed) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// A transformation whose evaluation is still running.
+// An event whose evaluation is still running.
 type EvaluationResultsPending struct {
 	// Server timestamp when the evaluation was queued.
-	CreatedAt        time.Time `json:"createdAt" api:"required" format:"date-time"`
-	TransformationID string    `json:"transformationId" api:"required"`
+	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
+	// Event KSUID.
+	EventID string `json:"eventID" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		CreatedAt        respjson.Field
-		TransformationID respjson.Field
-		ExtraFields      map[string]respjson.Field
-		raw              string
+		CreatedAt   respjson.Field
+		EventID     respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
 	} `json:"-"`
 }
 
@@ -156,28 +170,16 @@ func (r *EvaluationResultsPending) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-type EvalResultFetchResultsParams struct {
-	// Transformation IDs to fetch results for. Up to 100 per request.
-	TransformationIDs []string `json:"transformationIDs,omitzero" api:"required"`
-	// Optional evaluation version filter.
-	EvaluationVersion param.Opt[string] `json:"evaluationVersion,omitzero"`
-	paramObj
-}
-
-func (r EvalResultFetchResultsParams) MarshalJSON() (data []byte, err error) {
-	type shadow EvalResultFetchResultsParams
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *EvalResultFetchResultsParams) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 type EvalResultGetResultsParams struct {
-	// Comma-separated list of transformation IDs to fetch results for. Between 1 and
-	// 100 IDs per request.
-	TransformationIDs string `query:"transformationIDs" api:"required" json:"-"`
 	// Optional evaluation version filter.
 	EvaluationVersion param.Opt[string] `query:"evaluationVersion,omitzero" json:"-"`
+	// Comma-separated list of event KSUIDs to fetch results for. Between 1 and 100 IDs
+	// per request. Mutually exclusive with `transformationIDs`.
+	EventIDs param.Opt[string] `query:"eventIDs,omitzero" json:"-"`
+	// Comma-separated list of transformation IDs to fetch results for. Between 1 and
+	// 100 IDs per request. Mutually exclusive with `eventIDs`. Prefer `eventIDs` for
+	// new integrations.
+	TransformationIDs param.Opt[string] `query:"transformationIDs,omitzero" json:"-"`
 	paramObj
 }
 

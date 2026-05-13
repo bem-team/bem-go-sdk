@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.14.1 (2026-05-13)
+
+Full Changelog: [v0.14.0...v0.14.1](https://github.com/bem-team/bem-go-sdk/compare/v0.14.0...v0.14.1)
+
+### Bug Fixes
+
+* **go:** avoid panic when http.DefaultTransport is wrapped ([b483087](https://github.com/bem-team/bem-go-sdk/commit/b483087c67a641621c46e4815a2d7564915ec93f))
+
+
+### Chores
+
+* redact api-key headers in debug logs ([8fb198e](https://github.com/bem-team/bem-go-sdk/commit/8fb198ed1038b1abbb65dcd39f67ae2316e71076))
+
 ## 0.14.0 (2026-05-07)
 
 Full Changelog: [v0.13.0...v0.14.0](https://github.com/bem-team/bem-go-sdk/compare/v0.13.0...v0.14.0)

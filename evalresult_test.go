@@ -13,32 +13,6 @@ import (
 	"github.com/bem-team/bem-go-sdk/option"
 )
 
-func TestEvalResultFetchResultsWithOptionalParams(t *testing.T) {
-	t.Skip("Mock server tests are disabled")
-	baseURL := "http://localhost:4010"
-	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
-		baseURL = envURL
-	}
-	if !testutil.CheckTestServer(t, baseURL) {
-		return
-	}
-	client := bem.NewClient(
-		option.WithBaseURL(baseURL),
-		option.WithAPIKey("My API Key"),
-	)
-	_, err := client.Eval.Results.FetchResults(context.TODO(), bem.EvalResultFetchResultsParams{
-		TransformationIDs: []string{"tr_01HXAB...", "tr_01HXCD..."},
-		EvaluationVersion: bem.String("0.1.0-gemini"),
-	})
-	if err != nil {
-		var apierr *bem.Error
-		if errors.As(err, &apierr) {
-			t.Log(string(apierr.DumpRequest(true)))
-		}
-		t.Fatalf("err should be nil: %s", err.Error())
-	}
-}
-
 func TestEvalResultGetResultsWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
@@ -53,8 +27,9 @@ func TestEvalResultGetResultsWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.Eval.Results.GetResults(context.TODO(), bem.EvalResultGetResultsParams{
-		TransformationIDs: "transformationIDs",
 		EvaluationVersion: bem.String("evaluationVersion"),
+		EventIDs:          bem.String("eventIDs"),
+		TransformationIDs: bem.String("transformationIDs"),
 	})
 	if err != nil {
 		var apierr *bem.Error

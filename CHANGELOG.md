@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.15.0 (2026-05-14)
+
+Full Changelog: [v0.14.1...v0.15.0](https://github.com/bem-team/bem-go-sdk/compare/v0.14.1...v0.15.0)
+
+### Features
+
+* **api:** api update ([4570c9a](https://github.com/bem-team/bem-go-sdk/commit/4570c9a6bc39fa5b3e646e431042d5875956203b))
+* **client:** optimize json encoder for internal types ([a244039](https://github.com/bem-team/bem-go-sdk/commit/a244039f9d0753cf4e02ac3ca36d2c6b369c75af))
+
 ## 0.14.1 (2026-05-13)
 
 Full Changelog: [v0.14.0...v0.14.1](https://github.com/bem-team/bem-go-sdk/compare/v0.14.0...v0.14.1)

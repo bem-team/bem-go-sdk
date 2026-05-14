@@ -17,29 +17,7 @@ import (
 // interacting with the bem API. You should not instantiate this client directly,
 // and instead use the [NewClient] method instead.
 type Client struct {
-	options []option.RequestOption
-	// Functions are the core building blocks of data transformation in Bem. Each
-	// function type serves a specific purpose:
-	//
-	//   - **Extract**: Extract structured JSON data from unstructured documents (PDFs,
-	//     emails, images, spreadsheets), with optional layout-aware bounding-box
-	//     extraction
-	//   - **Route**: Direct data to different processing paths based on conditions
-	//   - **Split**: Break multi-page documents into individual pages for parallel
-	//     processing
-	//   - **Join**: Combine outputs from multiple function calls into a single result
-	//   - **Parse**: Render documents into a navigable structure of page-aware sections,
-	//     named entities, and relationships — designed to be walked by an LLM agent via
-	//     the [File System API](/api/v3/file-system) (`POST /v3/fs`). Two toggles, both
-	//     `true` by default: `extractEntities` controls per-document entity and
-	//     relationship extraction; `linkAcrossDocuments` merges entities into one
-	//     canonical record per real-world thing across the environment, populating
-	//     cross-document memory.
-	//   - **Payload Shaping**: Transform and restructure data using JMESPath expressions
-	//   - **Enrich**: Enhance data with semantic search against collections
-	//   - **Send**: Deliver workflow outputs to downstream destinations
-	//
-	// Use these endpoints to create, update, list, and manage your functions.
+	options   []option.RequestOption
 	Functions FunctionService
 	// The Calls API provides a unified interface for invoking both **Workflows** and
 	// **Functions**.
@@ -314,6 +292,37 @@ type Client struct {
 	// Updates follow conventional PATCH semantics — only the fields you include are
 	// changed.
 	Subscriptions SubscriptionService
+	// Views are tabular projections over the `transformations` your functions produce
+	// — a saved query that turns raw extracted JSON into a filterable, paginatable,
+	// aggregatable table.
+	//
+	// ## Anatomy
+	//
+	// A view declares:
+	//
+	//   - One or more **functions** to read from (by `functionID` or `functionName`).
+	//   - A list of **columns**, each pinned to a `valueSchemaPath` (a JSON Pointer into
+	//     the function's output schema).
+	//   - Optional **filters** (string equality, numeric comparators, null-checks) and
+	//     **aggregations** (`count`, `count_distinct`, `sum`, `average`, `min`, `max`).
+	//
+	// Views are versioned: every update produces a new version, and the previous
+	// version remains immutable and addressable. Function types that produce
+	// transformations with an output schema — `extract`, `transform`, `analyze`,
+	// `join` — are all queryable through views; `extract` works uniformly across
+	// vision and OCR inputs.
+	//
+	// ## Reading data
+	//
+	//   - **`POST /v3/views/table-data`** — paginated rows of column values. Each row
+	//     reports the underlying event's `eventID` (the externally-stable KSUID used
+	//     everywhere else in V3) plus the projected column values.
+	//   - **`POST /v3/views/aggregation-data`** — group-by-able aggregate values across
+	//     the same query surface.
+	//
+	// Both endpoints take a `timeWindow` to bound the transformation set and require
+	// at least one `function` to read from.
+	Views ViewService
 }
 
 // DefaultClientOptions read from the environment (BEM_API_KEY, BEM_BASE_URL). This
@@ -360,6 +369,7 @@ func NewClient(opts ...option.RequestOption) (r Client) {
 	r.Fs = NewFService(opts...)
 	r.Connectors = NewConnectorService(opts...)
 	r.Subscriptions = NewSubscriptionService(opts...)
+	r.Views = NewViewService(opts...)
 
 	return
 }

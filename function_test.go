@@ -169,3 +169,96 @@ func TestFunctionDelete(t *testing.T) {
 		t.Fatalf("err should be nil: %s", err.Error())
 	}
 }
+
+func TestFunctionCompareMetricsWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := bem.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+	)
+	_, err := client.Functions.CompareMetrics(context.TODO(), bem.FunctionCompareMetricsParams{
+		FunctionName:         "invoice-extractor",
+		BaselineVersionNum:   bem.Int(2),
+		ComparisonVersionNum: bem.Int(3),
+		IsRegression:         bem.Bool(true),
+	})
+	if err != nil {
+		var apierr *bem.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestFunctionEstimateReviewRequirementsWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := bem.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+	)
+	_, err := client.Functions.EstimateReviewRequirements(context.TODO(), bem.FunctionEstimateReviewRequirementsParams{
+		FunctionName:       "invoice-extractor",
+		ConfidenceLevels:   []int64{0},
+		ConfidenceMethod:   bem.FunctionEstimateReviewRequirementsParamsConfidenceMethodWald,
+		EvaluationVersion:  bem.FunctionEstimateReviewRequirementsParamsEvaluationVersion0_1_0Gemini,
+		FunctionVersionNum: bem.Int(2),
+		IsRegression:       bem.Bool(true),
+		MarginOfError:      bem.Float(0.05),
+		ThresholdMax:       bem.Float(0),
+		ThresholdMin:       bem.Float(0),
+		ThresholdStep:      bem.Float(0.001),
+	})
+	if err != nil {
+		var apierr *bem.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}
+
+func TestFunctionGetMetricsWithOptionalParams(t *testing.T) {
+	t.Skip("Mock server tests are disabled")
+	baseURL := "http://localhost:4010"
+	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
+		baseURL = envURL
+	}
+	if !testutil.CheckTestServer(t, baseURL) {
+		return
+	}
+	client := bem.NewClient(
+		option.WithBaseURL(baseURL),
+		option.WithAPIKey("My API Key"),
+	)
+	_, err := client.Functions.GetMetrics(context.TODO(), bem.FunctionGetMetricsParams{
+		EndingBefore:  bem.String("endingBefore"),
+		FunctionIDs:   []string{"string"},
+		FunctionNames: []string{"string"},
+		Limit:         bem.Int(1),
+		SortOrder:     bem.FunctionGetMetricsParamsSortOrderAsc,
+		StartingAfter: bem.String("startingAfter"),
+		Types:         []bem.FunctionType{bem.FunctionTypeTransform},
+	})
+	if err != nil {
+		var apierr *bem.Error
+		if errors.As(err, &apierr) {
+			t.Log(string(apierr.DumpRequest(true)))
+		}
+		t.Fatalf("err should be nil: %s", err.Error())
+	}
+}

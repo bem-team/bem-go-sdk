@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.16.0 (2026-05-14)
+
+Full Changelog: [v0.15.0...v0.16.0](https://github.com/bem-team/bem-go-sdk/compare/v0.15.0...v0.16.0)
+
+### Features
+
+* **api:** function regression and view endpoint support ([66726c8](https://github.com/bem-team/bem-go-sdk/commit/66726c863335433a095510caed335ca06c8f34f1))
+
 ## 0.15.0 (2026-05-14)
 
 Full Changelog: [v0.14.1...v0.15.0](https://github.com/bem-team/bem-go-sdk/compare/v0.14.1...v0.15.0)

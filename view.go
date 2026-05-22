@@ -211,10 +211,6 @@ type ViewNewResponse struct {
 	ViewID string `json:"viewID" api:"required"`
 	// Description of the view
 	Description string `json:"description" api:"nullable"`
-	// Display type of the view
-	//
-	// Any of "table", "bar_chart", "pie_chart".
-	DisplayType ViewNewResponseDisplayType `json:"displayType"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Aggregations      respjson.Field
@@ -225,7 +221,6 @@ type ViewNewResponse struct {
 		Name              respjson.Field
 		ViewID            respjson.Field
 		Description       respjson.Field
-		DisplayType       respjson.Field
 		ExtraFields       map[string]respjson.Field
 		raw               string
 	} `json:"-"`
@@ -248,6 +243,10 @@ type ViewNewResponseAggregation struct {
 	// Name of the column to aggregate (required for count_distinct, sum, average, min,
 	// max functions)
 	AggregateColumnName string `json:"aggregateColumnName" api:"nullable"`
+	// How to display the aggregation results
+	//
+	// Any of "table", "bar_chart", "pie_chart".
+	DisplayType string `json:"displayType"`
 	// Name of the column to group by (optional, for grouped aggregations)
 	GroupByColumnName string `json:"groupByColumnName" api:"nullable"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
@@ -255,6 +254,7 @@ type ViewNewResponseAggregation struct {
 		Function            respjson.Field
 		Name                respjson.Field
 		AggregateColumnName respjson.Field
+		DisplayType         respjson.Field
 		GroupByColumnName   respjson.Field
 		ExtraFields         map[string]respjson.Field
 		raw                 string
@@ -344,15 +344,6 @@ func (r *ViewNewResponseFunction) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Display type of the view
-type ViewNewResponseDisplayType string
-
-const (
-	ViewNewResponseDisplayTypeTable    ViewNewResponseDisplayType = "table"
-	ViewNewResponseDisplayTypeBarChart ViewNewResponseDisplayType = "bar_chart"
-	ViewNewResponseDisplayTypePieChart ViewNewResponseDisplayType = "pie_chart"
-)
-
 // A view is a table visualization of transformations that allows customers to have
 // insight into their transformations
 type ViewGetResponse struct {
@@ -372,10 +363,6 @@ type ViewGetResponse struct {
 	ViewID string `json:"viewID" api:"required"`
 	// Description of the view
 	Description string `json:"description" api:"nullable"`
-	// Display type of the view
-	//
-	// Any of "table", "bar_chart", "pie_chart".
-	DisplayType ViewGetResponseDisplayType `json:"displayType"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Aggregations      respjson.Field
@@ -386,7 +373,6 @@ type ViewGetResponse struct {
 		Name              respjson.Field
 		ViewID            respjson.Field
 		Description       respjson.Field
-		DisplayType       respjson.Field
 		ExtraFields       map[string]respjson.Field
 		raw               string
 	} `json:"-"`
@@ -409,6 +395,10 @@ type ViewGetResponseAggregation struct {
 	// Name of the column to aggregate (required for count_distinct, sum, average, min,
 	// max functions)
 	AggregateColumnName string `json:"aggregateColumnName" api:"nullable"`
+	// How to display the aggregation results
+	//
+	// Any of "table", "bar_chart", "pie_chart".
+	DisplayType string `json:"displayType"`
 	// Name of the column to group by (optional, for grouped aggregations)
 	GroupByColumnName string `json:"groupByColumnName" api:"nullable"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
@@ -416,6 +406,7 @@ type ViewGetResponseAggregation struct {
 		Function            respjson.Field
 		Name                respjson.Field
 		AggregateColumnName respjson.Field
+		DisplayType         respjson.Field
 		GroupByColumnName   respjson.Field
 		ExtraFields         map[string]respjson.Field
 		raw                 string
@@ -505,15 +496,6 @@ func (r *ViewGetResponseFunction) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Display type of the view
-type ViewGetResponseDisplayType string
-
-const (
-	ViewGetResponseDisplayTypeTable    ViewGetResponseDisplayType = "table"
-	ViewGetResponseDisplayTypeBarChart ViewGetResponseDisplayType = "bar_chart"
-	ViewGetResponseDisplayTypePieChart ViewGetResponseDisplayType = "pie_chart"
-)
-
 // A view is a table visualization of transformations that allows customers to have
 // insight into their transformations
 type ViewUpdateResponse struct {
@@ -533,10 +515,6 @@ type ViewUpdateResponse struct {
 	ViewID string `json:"viewID" api:"required"`
 	// Description of the view
 	Description string `json:"description" api:"nullable"`
-	// Display type of the view
-	//
-	// Any of "table", "bar_chart", "pie_chart".
-	DisplayType ViewUpdateResponseDisplayType `json:"displayType"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Aggregations      respjson.Field
@@ -547,7 +525,6 @@ type ViewUpdateResponse struct {
 		Name              respjson.Field
 		ViewID            respjson.Field
 		Description       respjson.Field
-		DisplayType       respjson.Field
 		ExtraFields       map[string]respjson.Field
 		raw               string
 	} `json:"-"`
@@ -570,6 +547,10 @@ type ViewUpdateResponseAggregation struct {
 	// Name of the column to aggregate (required for count_distinct, sum, average, min,
 	// max functions)
 	AggregateColumnName string `json:"aggregateColumnName" api:"nullable"`
+	// How to display the aggregation results
+	//
+	// Any of "table", "bar_chart", "pie_chart".
+	DisplayType string `json:"displayType"`
 	// Name of the column to group by (optional, for grouped aggregations)
 	GroupByColumnName string `json:"groupByColumnName" api:"nullable"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
@@ -577,6 +558,7 @@ type ViewUpdateResponseAggregation struct {
 		Function            respjson.Field
 		Name                respjson.Field
 		AggregateColumnName respjson.Field
+		DisplayType         respjson.Field
 		GroupByColumnName   respjson.Field
 		ExtraFields         map[string]respjson.Field
 		raw                 string
@@ -666,15 +648,6 @@ func (r *ViewUpdateResponseFunction) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Display type of the view
-type ViewUpdateResponseDisplayType string
-
-const (
-	ViewUpdateResponseDisplayTypeTable    ViewUpdateResponseDisplayType = "table"
-	ViewUpdateResponseDisplayTypeBarChart ViewUpdateResponseDisplayType = "bar_chart"
-	ViewUpdateResponseDisplayTypePieChart ViewUpdateResponseDisplayType = "pie_chart"
-)
-
 // Response containing a list of views
 type ViewListResponse struct {
 	// Total number of views matching the query
@@ -715,10 +688,6 @@ type ViewListResponseView struct {
 	ViewID string `json:"viewID" api:"required"`
 	// Description of the view
 	Description string `json:"description" api:"nullable"`
-	// Display type of the view
-	//
-	// Any of "table", "bar_chart", "pie_chart".
-	DisplayType string `json:"displayType"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Aggregations      respjson.Field
@@ -729,7 +698,6 @@ type ViewListResponseView struct {
 		Name              respjson.Field
 		ViewID            respjson.Field
 		Description       respjson.Field
-		DisplayType       respjson.Field
 		ExtraFields       map[string]respjson.Field
 		raw               string
 	} `json:"-"`
@@ -752,6 +720,10 @@ type ViewListResponseViewAggregation struct {
 	// Name of the column to aggregate (required for count_distinct, sum, average, min,
 	// max functions)
 	AggregateColumnName string `json:"aggregateColumnName" api:"nullable"`
+	// How to display the aggregation results
+	//
+	// Any of "table", "bar_chart", "pie_chart".
+	DisplayType string `json:"displayType"`
 	// Name of the column to group by (optional, for grouped aggregations)
 	GroupByColumnName string `json:"groupByColumnName" api:"nullable"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
@@ -759,6 +731,7 @@ type ViewListResponseViewAggregation struct {
 		Function            respjson.Field
 		Name                respjson.Field
 		AggregateColumnName respjson.Field
+		DisplayType         respjson.Field
 		GroupByColumnName   respjson.Field
 		ExtraFields         map[string]respjson.Field
 		raw                 string
@@ -1035,6 +1008,8 @@ type ViewNewParams struct {
 	Functions []ViewNewParamsFunction `json:"functions,omitzero" api:"required"`
 	// Name of the view
 	Name string `json:"name" api:"required"`
+	// Description of the view
+	Description param.Opt[string] `json:"description,omitzero"`
 	paramObj
 }
 
@@ -1061,6 +1036,10 @@ type ViewNewParamsAggregation struct {
 	AggregateColumnName param.Opt[string] `json:"aggregateColumnName,omitzero"`
 	// Name of the column to group by (optional, for grouped aggregations)
 	GroupByColumnName param.Opt[string] `json:"groupByColumnName,omitzero"`
+	// How to display the aggregation results
+	//
+	// Any of "table", "bar_chart", "pie_chart".
+	DisplayType string `json:"displayType,omitzero"`
 	paramObj
 }
 
@@ -1075,6 +1054,9 @@ func (r *ViewNewParamsAggregation) UnmarshalJSON(data []byte) error {
 func init() {
 	apijson.RegisterFieldValidator[ViewNewParamsAggregation](
 		"function", "count", "count_distinct", "sum", "average", "min", "max",
+	)
+	apijson.RegisterFieldValidator[ViewNewParamsAggregation](
+		"displayType", "table", "bar_chart", "pie_chart",
 	)
 }
 
@@ -1161,6 +1143,8 @@ type ViewUpdateParams struct {
 	Functions []ViewUpdateParamsFunction `json:"functions,omitzero" api:"required"`
 	// Name of the view
 	Name string `json:"name" api:"required"`
+	// Description of the view
+	Description param.Opt[string] `json:"description,omitzero"`
 	paramObj
 }
 
@@ -1187,6 +1171,10 @@ type ViewUpdateParamsAggregation struct {
 	AggregateColumnName param.Opt[string] `json:"aggregateColumnName,omitzero"`
 	// Name of the column to group by (optional, for grouped aggregations)
 	GroupByColumnName param.Opt[string] `json:"groupByColumnName,omitzero"`
+	// How to display the aggregation results
+	//
+	// Any of "table", "bar_chart", "pie_chart".
+	DisplayType string `json:"displayType,omitzero"`
 	paramObj
 }
 
@@ -1201,6 +1189,9 @@ func (r *ViewUpdateParamsAggregation) UnmarshalJSON(data []byte) error {
 func init() {
 	apijson.RegisterFieldValidator[ViewUpdateParamsAggregation](
 		"function", "count", "count_distinct", "sum", "average", "min", "max",
+	)
+	apijson.RegisterFieldValidator[ViewUpdateParamsAggregation](
+		"displayType", "table", "bar_chart", "pie_chart",
 	)
 }
 
@@ -1326,6 +1317,8 @@ type ViewGenerateAggregationDataParams struct {
 	Name string `json:"name" api:"required"`
 	// Time window for filtering transformations in a view
 	TimeWindow ViewGenerateAggregationDataParamsTimeWindow `json:"timeWindow,omitzero" api:"required"`
+	// Description of the view
+	Description param.Opt[string] `json:"description,omitzero"`
 	paramObj
 }
 
@@ -1352,6 +1345,10 @@ type ViewGenerateAggregationDataParamsAggregation struct {
 	AggregateColumnName param.Opt[string] `json:"aggregateColumnName,omitzero"`
 	// Name of the column to group by (optional, for grouped aggregations)
 	GroupByColumnName param.Opt[string] `json:"groupByColumnName,omitzero"`
+	// How to display the aggregation results
+	//
+	// Any of "table", "bar_chart", "pie_chart".
+	DisplayType string `json:"displayType,omitzero"`
 	paramObj
 }
 
@@ -1366,6 +1363,9 @@ func (r *ViewGenerateAggregationDataParamsAggregation) UnmarshalJSON(data []byte
 func init() {
 	apijson.RegisterFieldValidator[ViewGenerateAggregationDataParamsAggregation](
 		"function", "count", "count_distinct", "sum", "average", "min", "max",
+	)
+	apijson.RegisterFieldValidator[ViewGenerateAggregationDataParamsAggregation](
+		"displayType", "table", "bar_chart", "pie_chart",
 	)
 }
 
@@ -1477,6 +1477,8 @@ type ViewGenerateTableDataParams struct {
 	Limit param.Opt[int64] `json:"limit,omitzero"`
 	// Number of rows to skip for pagination
 	Offset param.Opt[int64] `json:"offset,omitzero"`
+	// Description of the view
+	Description param.Opt[string] `json:"description,omitzero"`
 	paramObj
 }
 
@@ -1503,6 +1505,10 @@ type ViewGenerateTableDataParamsAggregation struct {
 	AggregateColumnName param.Opt[string] `json:"aggregateColumnName,omitzero"`
 	// Name of the column to group by (optional, for grouped aggregations)
 	GroupByColumnName param.Opt[string] `json:"groupByColumnName,omitzero"`
+	// How to display the aggregation results
+	//
+	// Any of "table", "bar_chart", "pie_chart".
+	DisplayType string `json:"displayType,omitzero"`
 	paramObj
 }
 
@@ -1517,6 +1523,9 @@ func (r *ViewGenerateTableDataParamsAggregation) UnmarshalJSON(data []byte) erro
 func init() {
 	apijson.RegisterFieldValidator[ViewGenerateTableDataParamsAggregation](
 		"function", "count", "count_distinct", "sum", "average", "min", "max",
+	)
+	apijson.RegisterFieldValidator[ViewGenerateTableDataParamsAggregation](
+		"displayType", "table", "bar_chart", "pie_chart",
 	)
 }
 

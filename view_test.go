@@ -14,7 +14,7 @@ import (
 	"github.com/bem-team/bem-go-sdk/option"
 )
 
-func TestViewNew(t *testing.T) {
+func TestViewNewWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -32,6 +32,7 @@ func TestViewNew(t *testing.T) {
 			Function:            "count",
 			Name:                "name",
 			AggregateColumnName: bem.String("aggregateColumnName"),
+			DisplayType:         "table",
 			GroupByColumnName:   bem.String("groupByColumnName"),
 		}},
 		Columns: []bem.ViewNewParamsColumn{{
@@ -49,7 +50,8 @@ func TestViewNew(t *testing.T) {
 			ID:   bem.String("id"),
 			Name: bem.String("name"),
 		}},
-		Name: "name",
+		Name:        "name",
+		Description: bem.String("description"),
 	})
 	if err != nil {
 		var apierr *bem.Error
@@ -83,7 +85,7 @@ func TestViewGet(t *testing.T) {
 	}
 }
 
-func TestViewUpdate(t *testing.T) {
+func TestViewUpdateWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -104,6 +106,7 @@ func TestViewUpdate(t *testing.T) {
 				Function:            "count",
 				Name:                "name",
 				AggregateColumnName: bem.String("aggregateColumnName"),
+				DisplayType:         "table",
 				GroupByColumnName:   bem.String("groupByColumnName"),
 			}},
 			Columns: []bem.ViewUpdateParamsColumn{{
@@ -121,7 +124,8 @@ func TestViewUpdate(t *testing.T) {
 				ID:   bem.String("id"),
 				Name: bem.String("name"),
 			}},
-			Name: "name",
+			Name:        "name",
+			Description: bem.String("description"),
 		},
 	)
 	if err != nil {
@@ -188,7 +192,7 @@ func TestViewDelete(t *testing.T) {
 	}
 }
 
-func TestViewGenerateAggregationData(t *testing.T) {
+func TestViewGenerateAggregationDataWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -206,6 +210,7 @@ func TestViewGenerateAggregationData(t *testing.T) {
 			Function:            "count",
 			Name:                "name",
 			AggregateColumnName: bem.String("aggregateColumnName"),
+			DisplayType:         "table",
 			GroupByColumnName:   bem.String("groupByColumnName"),
 		}},
 		Columns: []bem.ViewGenerateAggregationDataParamsColumn{{
@@ -228,6 +233,7 @@ func TestViewGenerateAggregationData(t *testing.T) {
 			End:   time.Now(),
 			Start: time.Now(),
 		},
+		Description: bem.String("description"),
 	})
 	if err != nil {
 		var apierr *bem.Error
@@ -256,6 +262,7 @@ func TestViewGenerateTableDataWithOptionalParams(t *testing.T) {
 			Function:            "count",
 			Name:                "name",
 			AggregateColumnName: bem.String("aggregateColumnName"),
+			DisplayType:         "table",
 			GroupByColumnName:   bem.String("groupByColumnName"),
 		}},
 		Columns: []bem.ViewGenerateTableDataParamsColumn{{
@@ -278,8 +285,9 @@ func TestViewGenerateTableDataWithOptionalParams(t *testing.T) {
 			End:   time.Now(),
 			Start: time.Now(),
 		},
-		Limit:  bem.Int(1),
-		Offset: bem.Int(0),
+		Description: bem.String("description"),
+		Limit:       bem.Int(1),
+		Offset:      bem.Int(0),
 	})
 	if err != nil {
 		var apierr *bem.Error

@@ -882,6 +882,10 @@ type CreateFunctionParseParam struct {
 	FunctionName string `json:"functionName" api:"required"`
 	// Display name of function. Human-readable name to help you identify the function.
 	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Cross-cutting toggles for Parse functions. Mirrors the `extraConfig` surface on
+	// Extract / Join — separated from `parseConfig` so the per-call Parse output shape
+	// stays distinct from operator-level execution flags.
+	ExtraConfig CreateFunctionParseExtraConfigParam `json:"extraConfig,omitzero"`
 	// Per-version configuration for a Parse function.
 	//
 	// Parse renders document pages (PDF, image) via vision LLM and emits structured
@@ -900,6 +904,29 @@ func (r CreateFunctionParseParam) MarshalJSON() (data []byte, err error) {
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *CreateFunctionParseParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Cross-cutting toggles for Parse functions. Mirrors the `extraConfig` surface on
+// Extract / Join — separated from `parseConfig` so the per-call Parse output shape
+// stays distinct from operator-level execution flags.
+type CreateFunctionParseExtraConfigParam struct {
+	// When true, return per-section and per-entity-mention coordinates in the parse
+	// event's `fieldBoundingBoxes` map (same shape as Extract: JSON Pointer key →
+	// array of `{page, left, top, width, height}` with coordinates normalized to [0,
+	// 1]). Keys are `/sections/{N}` and `/entities/{N}/occurrences/{M}` into the parse
+	// output. Only applies to the open-ended discovery path (no `schema`) and to
+	// vision input types. Bedrock-backed parse functions silently return an empty map
+	// (no native bbox support). Defaults to false.
+	EnableBoundingBoxes param.Opt[bool] `json:"enableBoundingBoxes,omitzero"`
+	paramObj
+}
+
+func (r CreateFunctionParseExtraConfigParam) MarshalJSON() (data []byte, err error) {
+	type shadow CreateFunctionParseExtraConfigParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *CreateFunctionParseExtraConfigParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -1304,6 +1331,8 @@ type FunctionUnion struct {
 	// This field is from variant [FunctionEnrich].
 	Config EnrichConfig `json:"config"`
 	// This field is from variant [FunctionParse].
+	ExtraConfig FunctionParseExtraConfig `json:"extraConfig"`
+	// This field is from variant [FunctionParse].
 	ParseConfig ParseConfig `json:"parseConfig"`
 	JSON        struct {
 		EmailAddress            respjson.Field
@@ -1334,6 +1363,7 @@ type FunctionUnion struct {
 		JoinType                respjson.Field
 		ShapingSchema           respjson.Field
 		Config                  respjson.Field
+		ExtraConfig             respjson.Field
 		ParseConfig             respjson.Field
 		raw                     string
 	} `json:"-"`
@@ -1981,6 +2011,10 @@ type FunctionParse struct {
 	Audit FunctionAudit `json:"audit"`
 	// Display name of function. Human-readable name to help you identify the function.
 	DisplayName string `json:"displayName"`
+	// Cross-cutting toggles for Parse functions. Mirrors the `extraConfig` surface on
+	// Extract / Join — separated from `parseConfig` so the per-call Parse output shape
+	// stays distinct from operator-level execution flags.
+	ExtraConfig FunctionParseExtraConfig `json:"extraConfig"`
 	// Per-version configuration for a Parse function.
 	//
 	// Parse renders document pages (PDF, image) via vision LLM and emits structured
@@ -1999,6 +2033,7 @@ type FunctionParse struct {
 		VersionNum      respjson.Field
 		Audit           respjson.Field
 		DisplayName     respjson.Field
+		ExtraConfig     respjson.Field
 		ParseConfig     respjson.Field
 		Tags            respjson.Field
 		UsedInWorkflows respjson.Field
@@ -2010,6 +2045,32 @@ type FunctionParse struct {
 // Returns the unmodified JSON received from the API
 func (r FunctionParse) RawJSON() string { return r.JSON.raw }
 func (r *FunctionParse) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Cross-cutting toggles for Parse functions. Mirrors the `extraConfig` surface on
+// Extract / Join — separated from `parseConfig` so the per-call Parse output shape
+// stays distinct from operator-level execution flags.
+type FunctionParseExtraConfig struct {
+	// When true, return per-section and per-entity-mention coordinates in the parse
+	// event's `fieldBoundingBoxes` map (same shape as Extract: JSON Pointer key →
+	// array of `{page, left, top, width, height}` with coordinates normalized to [0,
+	// 1]). Keys are `/sections/{N}` and `/entities/{N}/occurrences/{M}` into the parse
+	// output. Only applies to the open-ended discovery path (no `schema`) and to
+	// vision input types. Bedrock-backed parse functions silently return an empty map
+	// (no native bbox support). Defaults to false.
+	EnableBoundingBoxes bool `json:"enableBoundingBoxes"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		EnableBoundingBoxes respjson.Field
+		ExtraFields         map[string]respjson.Field
+		raw                 string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r FunctionParseExtraConfig) RawJSON() string { return r.JSON.raw }
+func (r *FunctionParseExtraConfig) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -2100,14 +2161,6 @@ func (r *ListFunctionsResponse) UnmarshalJSON(data []byte) error {
 // JSON. The two toggles below independently control entity extraction (a per-call
 // output concern) and cross-document memory linking (an environment-wide concern).
 type ParseConfig struct {
-	// When true, return per-section and per-entity-mention coordinates in the parse
-	// event's `fieldBoundingBoxes` map (same shape as Extract: JSON Pointer key →
-	// array of `{page, left, top, width, height}` with coordinates normalized to [0,
-	// 1]). Keys are `/sections/{N}` and `/entities/{N}/occurrences/{M}` into the parse
-	// output. Only applies to the open-ended discovery path (no `schema`) and to
-	// vision input types. Bedrock-backed parse functions silently return an empty map
-	// (no native bbox support). Defaults to false.
-	EnableBoundingBoxes bool `json:"enableBoundingBoxes"`
 	// When true, extract named entities (people, organizations, products, studies,
 	// identifiers, etc.) and the relationships between them, and dedupe by canonical
 	// name within the document. When false, only `sections[]` is extracted;
@@ -2126,7 +2179,6 @@ type ParseConfig struct {
 	Schema any `json:"schema"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		EnableBoundingBoxes respjson.Field
 		ExtractEntities     respjson.Field
 		LinkAcrossDocuments respjson.Field
 		Schema              respjson.Field
@@ -2156,14 +2208,6 @@ func (r ParseConfig) ToParam() ParseConfigParam {
 // JSON. The two toggles below independently control entity extraction (a per-call
 // output concern) and cross-document memory linking (an environment-wide concern).
 type ParseConfigParam struct {
-	// When true, return per-section and per-entity-mention coordinates in the parse
-	// event's `fieldBoundingBoxes` map (same shape as Extract: JSON Pointer key →
-	// array of `{page, left, top, width, height}` with coordinates normalized to [0,
-	// 1]). Keys are `/sections/{N}` and `/entities/{N}/occurrences/{M}` into the parse
-	// output. Only applies to the open-ended discovery path (no `schema`) and to
-	// vision input types. Bedrock-backed parse functions silently return an empty map
-	// (no native bbox support). Defaults to false.
-	EnableBoundingBoxes param.Opt[bool] `json:"enableBoundingBoxes,omitzero"`
 	// When true, extract named entities (people, organizations, products, studies,
 	// identifiers, etc.) and the relationships between them, and dedupe by canonical
 	// name within the document. When false, only `sections[]` is extracted;
@@ -2587,6 +2631,10 @@ type UpdateFunctionParseParam struct {
 	DisplayName param.Opt[string] `json:"displayName,omitzero"`
 	// Name of function. Must be UNIQUE on a per-environment basis.
 	FunctionName param.Opt[string] `json:"functionName,omitzero"`
+	// Cross-cutting toggles for Parse functions. Mirrors the `extraConfig` surface on
+	// Extract / Join — separated from `parseConfig` so the per-call Parse output shape
+	// stays distinct from operator-level execution flags.
+	ExtraConfig UpdateFunctionParseExtraConfigParam `json:"extraConfig,omitzero"`
 	// Per-version configuration for a Parse function.
 	//
 	// Parse renders document pages (PDF, image) via vision LLM and emits structured
@@ -2605,6 +2653,29 @@ func (r UpdateFunctionParseParam) MarshalJSON() (data []byte, err error) {
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *UpdateFunctionParseParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Cross-cutting toggles for Parse functions. Mirrors the `extraConfig` surface on
+// Extract / Join — separated from `parseConfig` so the per-call Parse output shape
+// stays distinct from operator-level execution flags.
+type UpdateFunctionParseExtraConfigParam struct {
+	// When true, return per-section and per-entity-mention coordinates in the parse
+	// event's `fieldBoundingBoxes` map (same shape as Extract: JSON Pointer key →
+	// array of `{page, left, top, width, height}` with coordinates normalized to [0,
+	// 1]). Keys are `/sections/{N}` and `/entities/{N}/occurrences/{M}` into the parse
+	// output. Only applies to the open-ended discovery path (no `schema`) and to
+	// vision input types. Bedrock-backed parse functions silently return an empty map
+	// (no native bbox support). Defaults to false.
+	EnableBoundingBoxes param.Opt[bool] `json:"enableBoundingBoxes,omitzero"`
+	paramObj
+}
+
+func (r UpdateFunctionParseExtraConfigParam) MarshalJSON() (data []byte, err error) {
+	type shadow UpdateFunctionParseExtraConfigParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *UpdateFunctionParseExtraConfigParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

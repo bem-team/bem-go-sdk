@@ -150,6 +150,8 @@ type FunctionVersionUnion struct {
 	// This field is from variant [FunctionVersionPayloadShaping].
 	ShapingSchema string `json:"shapingSchema"`
 	// This field is from variant [FunctionVersionParse].
+	ExtraConfig FunctionVersionParseExtraConfig `json:"extraConfig"`
+	// This field is from variant [FunctionVersionParse].
 	ParseConfig ParseConfig `json:"parseConfig"`
 	JSON        struct {
 		EmailAddress            respjson.Field
@@ -181,6 +183,7 @@ type FunctionVersionUnion struct {
 		JoinType                respjson.Field
 		Config                  respjson.Field
 		ShapingSchema           respjson.Field
+		ExtraConfig             respjson.Field
 		ParseConfig             respjson.Field
 		raw                     string
 	} `json:"-"`
@@ -846,6 +849,10 @@ type FunctionVersionParse struct {
 	CreatedAt time.Time `json:"createdAt" format:"date-time"`
 	// Display name of function. Human-readable name to help you identify the function.
 	DisplayName string `json:"displayName"`
+	// Cross-cutting toggles for Parse functions. Mirrors the `extraConfig` surface on
+	// Extract / Join — separated from `parseConfig` so the per-call Parse output shape
+	// stays distinct from operator-level execution flags.
+	ExtraConfig FunctionVersionParseExtraConfig `json:"extraConfig"`
 	// Per-version configuration for a Parse function.
 	//
 	// Parse renders document pages (PDF, image) via vision LLM and emits structured
@@ -865,6 +872,7 @@ type FunctionVersionParse struct {
 		Audit           respjson.Field
 		CreatedAt       respjson.Field
 		DisplayName     respjson.Field
+		ExtraConfig     respjson.Field
 		ParseConfig     respjson.Field
 		Tags            respjson.Field
 		UsedInWorkflows respjson.Field
@@ -876,6 +884,32 @@ type FunctionVersionParse struct {
 // Returns the unmodified JSON received from the API
 func (r FunctionVersionParse) RawJSON() string { return r.JSON.raw }
 func (r *FunctionVersionParse) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Cross-cutting toggles for Parse functions. Mirrors the `extraConfig` surface on
+// Extract / Join — separated from `parseConfig` so the per-call Parse output shape
+// stays distinct from operator-level execution flags.
+type FunctionVersionParseExtraConfig struct {
+	// When true, return per-section and per-entity-mention coordinates in the parse
+	// event's `fieldBoundingBoxes` map (same shape as Extract: JSON Pointer key →
+	// array of `{page, left, top, width, height}` with coordinates normalized to [0,
+	// 1]). Keys are `/sections/{N}` and `/entities/{N}/occurrences/{M}` into the parse
+	// output. Only applies to the open-ended discovery path (no `schema`) and to
+	// vision input types. Bedrock-backed parse functions silently return an empty map
+	// (no native bbox support). Defaults to false.
+	EnableBoundingBoxes bool `json:"enableBoundingBoxes"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		EnableBoundingBoxes respjson.Field
+		ExtraFields         map[string]respjson.Field
+		raw                 string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r FunctionVersionParseExtraConfig) RawJSON() string { return r.JSON.raw }
+func (r *FunctionVersionParseExtraConfig) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

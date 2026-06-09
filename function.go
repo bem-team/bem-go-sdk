@@ -835,31 +835,38 @@ type CreateFunctionEnrichParam struct {
 	FunctionName string `json:"functionName" api:"required"`
 	// Display name of function. Human-readable name to help you identify the function.
 	DisplayName param.Opt[string] `json:"displayName,omitzero"`
-	// Configuration for enrich function with semantic search steps.
+	// Configuration for an enrich function.
 	//
 	// **How Enrich Functions Work:**
 	//
-	// Enrich functions use semantic search to augment JSON data with relevant
-	// information from collections. They take JSON input (typically from a transform
-	// function), extract specified fields, perform vector-based semantic search
-	// against collections, and inject the results back into the data.
+	// Enrich functions augment JSON input with data from external sources. They take
+	// JSON input (typically from a previous function), extract specified fields, fetch
+	// or search for matching data, and inject the results back into the JSON.
+	//
+	// **Data Sources:**
+	//
+	//   - **Collections** (`source: "collection"`): Vector/keyword search against a BEM
+	//     collection. Best for semantic matching against pre-indexed documents.
+	//   - **Endpoints** (`source: "endpoint"`): HTTP call to any user-provided REST API.
+	//     Best for looking up live data from CRMs, ERPs, or other external systems.
+	//     Optionally uses LLM agent reasoning to rank candidates returned by the
+	//     endpoint.
 	//
 	// **Input Requirements:**
 	//
-	// - Must receive JSON input (typically uploaded to S3 from a previous function)
-	// - Can be chained after transform or other functions that produce JSON output
+	// - Must receive JSON input (typically from a previous function's output)
 	//
 	// **Example Use Cases:**
 	//
-	// - Match product descriptions to SKU codes from a product catalog
-	// - Enrich customer data with account information
-	// - Link order line items to inventory records
+	//   - Match product descriptions to SKU codes from a product catalog collection
+	//   - Enrich customer data with account details from a CRM endpoint
+	//   - Use LLM agent reasoning to fuzzy-match line item descriptions to catalog
+	//     products
 	//
 	// **Configuration:**
 	//
-	// - Define one or more enrichment steps
-	// - Each step extracts values, searches a collection, and injects results
-	// - Steps are executed sequentially
+	// - Define named endpoints (for endpoint-source steps)
+	// - Define one or more enrichment steps; steps are executed sequentially
 	Config EnrichConfigParam `json:"config,omitzero"`
 	// Array of tags to categorize and organize functions.
 	Tags []string `json:"tags,omitzero"`
@@ -930,37 +937,49 @@ func (r *CreateFunctionParseExtraConfigParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Configuration for enrich function with semantic search steps.
+// Configuration for an enrich function.
 //
 // **How Enrich Functions Work:**
 //
-// Enrich functions use semantic search to augment JSON data with relevant
-// information from collections. They take JSON input (typically from a transform
-// function), extract specified fields, perform vector-based semantic search
-// against collections, and inject the results back into the data.
+// Enrich functions augment JSON input with data from external sources. They take
+// JSON input (typically from a previous function), extract specified fields, fetch
+// or search for matching data, and inject the results back into the JSON.
+//
+// **Data Sources:**
+//
+//   - **Collections** (`source: "collection"`): Vector/keyword search against a BEM
+//     collection. Best for semantic matching against pre-indexed documents.
+//   - **Endpoints** (`source: "endpoint"`): HTTP call to any user-provided REST API.
+//     Best for looking up live data from CRMs, ERPs, or other external systems.
+//     Optionally uses LLM agent reasoning to rank candidates returned by the
+//     endpoint.
 //
 // **Input Requirements:**
 //
-// - Must receive JSON input (typically uploaded to S3 from a previous function)
-// - Can be chained after transform or other functions that produce JSON output
+// - Must receive JSON input (typically from a previous function's output)
 //
 // **Example Use Cases:**
 //
-// - Match product descriptions to SKU codes from a product catalog
-// - Enrich customer data with account information
-// - Link order line items to inventory records
+//   - Match product descriptions to SKU codes from a product catalog collection
+//   - Enrich customer data with account details from a CRM endpoint
+//   - Use LLM agent reasoning to fuzzy-match line item descriptions to catalog
+//     products
 //
 // **Configuration:**
 //
-// - Define one or more enrichment steps
-// - Each step extracts values, searches a collection, and injects results
-// - Steps are executed sequentially
+// - Define named endpoints (for endpoint-source steps)
+// - Define one or more enrichment steps; steps are executed sequentially
 type EnrichConfig struct {
-	// Array of enrichment steps to execute sequentially
+	// Array of enrichment steps to execute sequentially.
 	Steps []EnrichStep `json:"steps" api:"required"`
+	// Named HTTP endpoints available to endpoint-source steps. Each endpoint must have
+	// a unique `name` referenced by the step's `endpointName`. Required when any step
+	// uses `source: "endpoint"`.
+	Endpoints []EnrichConfigEndpoint `json:"endpoints"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Steps       respjson.Field
+		Endpoints   respjson.Field
 		ExtraFields map[string]respjson.Field
 		raw         string
 	} `json:"-"`
@@ -981,36 +1000,176 @@ func (r EnrichConfig) ToParam() EnrichConfigParam {
 	return param.Override[EnrichConfigParam](json.RawMessage(r.RawJSON()))
 }
 
-// Configuration for enrich function with semantic search steps.
+// A named HTTP endpoint that an enrich step can call to fetch enrichment data.
+//
+// The platform makes one request per extracted source value, substituting the
+// value as a query parameter or body template placeholder. The raw response (or
+// the sub-value selected by `responsePath`) is injected into the output, or passed
+// to LLM agent reasoning when `matchInstructions` is set.
+//
+// **Request formats:**
+//
+//   - `GET`: Appends `?{queryParam}={value}` to the URL.
+//   - `POST`: Sends `bodyTemplate` as the request body, replacing `{value}` with the
+//     extracted value.
+type EnrichConfigEndpoint struct {
+	// HTTP method to use.
+	//
+	// Any of "GET", "POST".
+	Method string `json:"method" api:"required"`
+	// Unique name for this endpoint, referenced by enrichStep.endpointName.
+	Name string `json:"name" api:"required"`
+	// Full URL of the endpoint (must be http:// or https://).
+	URL string `json:"url" api:"required"`
+	// JSON body template for POST requests. **Required for POST endpoints.** Must
+	// contain the `{value}` placeholder, which is replaced with the extracted source
+	// value at runtime.
+	//
+	// Example: `bodyTemplate: "{\"query\": \"{value}\", \"limit\": 10}"`
+	BodyTemplate string `json:"bodyTemplate"`
+	// Additional HTTP headers to include in every request (e.g.
+	// `Authorization: Bearer <token>`).
+	Headers any `json:"headers"`
+	// Natural-language instructions for LLM agent reasoning.
+	//
+	// When set, the candidates fetched from the endpoint are passed to an LLM with
+	// these instructions, which selects the best match(es) and returns them with
+	// confidence scores. Each injected result has the shape
+	// `{ data, confidence, reasoning? }`.
+	//
+	// When omitted, the raw fetched value is injected without any LLM involvement.
+	MatchInstructions string `json:"matchInstructions"`
+	// Maximum number of ranked matches to return per source value when
+	// `matchInstructions` is set (default: 1). Ignored when `matchInstructions` is
+	// empty.
+	MatchTopK int64 `json:"matchTopK"`
+	// LLM batch size during agent reasoning (default: 50). All candidates — across all
+	// fetched pages — are scored in batches of this size. Smaller values reduce
+	// per-call token usage; larger values mean fewer LLM calls. Ignored when
+	// `matchInstructions` is empty.
+	MaxCandidates int64 `json:"maxCandidates"`
+	// Maximum number of pages to fetch (default: 10). Acts as a safety cap against
+	// infinite pagination loops when the server never returns an empty cursor.
+	MaxPages int64 `json:"maxPages"`
+	// Query parameter name used to pass the cursor on subsequent GET requests, or the
+	// `{placeholder}` name used in the POST `bodyTemplate` (e.g. `"cursor"`,
+	// `"pageToken"`, `"offset"`).
+	//
+	// Must be set together with `nextPagePath`.
+	NextPageParam string `json:"nextPageParam"`
+	// JMESPath expression applied to each raw response to extract the cursor or token
+	// for the next page (e.g. `"nextCursor"`, `"pagination.nextToken"`). An absent,
+	// null, or empty-string result stops pagination. Both string and numeric values
+	// are supported — numbers are converted to their decimal string representation
+	// before being forwarded as a query parameter.
+	//
+	// Must be set together with `nextPageParam`.
+	//
+	// **Supported pagination styles:**
+	//
+	//   - **Cursor/token-based** — server returns an opaque token in the response body
+	//     (e.g. `{"nextCursor": "abc123"}`). Set `nextPagePath: "nextCursor"` and the
+	//     platform forwards it verbatim on the next request.
+	//   - **Server-computed offset/page** — server echoes back the next offset or page
+	//     number in the response body (e.g. `{"nextOffset": 50}` or `{"nextPage": 2}`).
+	//     Set `nextPagePath: "nextOffset"` and the platform forwards the value as-is.
+	//
+	// **Not supported:**
+	//
+	//   - **Client-computed offset** — APIs where the client must compute
+	//     `offset += limit` itself (e.g. `?offset=0&limit=50` with no next-offset in the
+	//     response). Workaround: ask the API provider to return the next offset in the
+	//     response body, or bake a fixed page size into the URL and use a server-side
+	//     cursor instead.
+	//   - **Client-computed page number** — APIs where the client increments `?page=N`
+	//     itself with no next-page value in the response. Same workaround applies.
+	//   - **Link header** — `Link: <url>; rel="next"` in HTTP response headers. The
+	//     platform only inspects the response body.
+	NextPagePath string `json:"nextPagePath"`
+	// Query parameter name used to pass the extracted source value. **Required for GET
+	// endpoints.** The value is URL-encoded and appended as
+	// `?{queryParam}={sourceValue}`.
+	//
+	// Example: `queryParam: "q"` → `GET /products?q=blue+widget`
+	QueryParam string `json:"queryParam"`
+	// JMESPath expression applied to the response body to extract the enrichment
+	// value. Omit to use the entire response body as the result.
+	//
+	// **For agent reasoning:** use a wildcard projection (e.g. `items[*]` or
+	// `results[*].data`) so the endpoint's list of candidates is flattened into an
+	// array before being passed to the LLM. A non-wildcard path (e.g. `data.product`)
+	// extracts a single value treated as one candidate.
+	//
+	// **Response size:** the platform reads at most 50 MB of the response body before
+	// decoding, regardless of the Content-Length header.
+	ResponsePath string `json:"responsePath"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Method            respjson.Field
+		Name              respjson.Field
+		URL               respjson.Field
+		BodyTemplate      respjson.Field
+		Headers           respjson.Field
+		MatchInstructions respjson.Field
+		MatchTopK         respjson.Field
+		MaxCandidates     respjson.Field
+		MaxPages          respjson.Field
+		NextPageParam     respjson.Field
+		NextPagePath      respjson.Field
+		QueryParam        respjson.Field
+		ResponsePath      respjson.Field
+		ExtraFields       map[string]respjson.Field
+		raw               string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r EnrichConfigEndpoint) RawJSON() string { return r.JSON.raw }
+func (r *EnrichConfigEndpoint) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Configuration for an enrich function.
 //
 // **How Enrich Functions Work:**
 //
-// Enrich functions use semantic search to augment JSON data with relevant
-// information from collections. They take JSON input (typically from a transform
-// function), extract specified fields, perform vector-based semantic search
-// against collections, and inject the results back into the data.
+// Enrich functions augment JSON input with data from external sources. They take
+// JSON input (typically from a previous function), extract specified fields, fetch
+// or search for matching data, and inject the results back into the JSON.
+//
+// **Data Sources:**
+//
+//   - **Collections** (`source: "collection"`): Vector/keyword search against a BEM
+//     collection. Best for semantic matching against pre-indexed documents.
+//   - **Endpoints** (`source: "endpoint"`): HTTP call to any user-provided REST API.
+//     Best for looking up live data from CRMs, ERPs, or other external systems.
+//     Optionally uses LLM agent reasoning to rank candidates returned by the
+//     endpoint.
 //
 // **Input Requirements:**
 //
-// - Must receive JSON input (typically uploaded to S3 from a previous function)
-// - Can be chained after transform or other functions that produce JSON output
+// - Must receive JSON input (typically from a previous function's output)
 //
 // **Example Use Cases:**
 //
-// - Match product descriptions to SKU codes from a product catalog
-// - Enrich customer data with account information
-// - Link order line items to inventory records
+//   - Match product descriptions to SKU codes from a product catalog collection
+//   - Enrich customer data with account details from a CRM endpoint
+//   - Use LLM agent reasoning to fuzzy-match line item descriptions to catalog
+//     products
 //
 // **Configuration:**
 //
-// - Define one or more enrichment steps
-// - Each step extracts values, searches a collection, and injects results
-// - Steps are executed sequentially
+// - Define named endpoints (for endpoint-source steps)
+// - Define one or more enrichment steps; steps are executed sequentially
 //
 // The property Steps is required.
 type EnrichConfigParam struct {
-	// Array of enrichment steps to execute sequentially
+	// Array of enrichment steps to execute sequentially.
 	Steps []EnrichStepParam `json:"steps,omitzero" api:"required"`
+	// Named HTTP endpoints available to endpoint-source steps. Each endpoint must have
+	// a unique `name` referenced by the step's `endpointName`. Required when any step
+	// uses `source: "endpoint"`.
+	Endpoints []EnrichConfigEndpointParam `json:"endpoints,omitzero"`
 	paramObj
 }
 
@@ -1022,9 +1181,131 @@ func (r *EnrichConfigParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
+// A named HTTP endpoint that an enrich step can call to fetch enrichment data.
+//
+// The platform makes one request per extracted source value, substituting the
+// value as a query parameter or body template placeholder. The raw response (or
+// the sub-value selected by `responsePath`) is injected into the output, or passed
+// to LLM agent reasoning when `matchInstructions` is set.
+//
+// **Request formats:**
+//
+//   - `GET`: Appends `?{queryParam}={value}` to the URL.
+//   - `POST`: Sends `bodyTemplate` as the request body, replacing `{value}` with the
+//     extracted value.
+//
+// The properties Method, Name, URL are required.
+type EnrichConfigEndpointParam struct {
+	// HTTP method to use.
+	//
+	// Any of "GET", "POST".
+	Method string `json:"method,omitzero" api:"required"`
+	// Unique name for this endpoint, referenced by enrichStep.endpointName.
+	Name string `json:"name" api:"required"`
+	// Full URL of the endpoint (must be http:// or https://).
+	URL string `json:"url" api:"required"`
+	// JSON body template for POST requests. **Required for POST endpoints.** Must
+	// contain the `{value}` placeholder, which is replaced with the extracted source
+	// value at runtime.
+	//
+	// Example: `bodyTemplate: "{\"query\": \"{value}\", \"limit\": 10}"`
+	BodyTemplate param.Opt[string] `json:"bodyTemplate,omitzero"`
+	// Natural-language instructions for LLM agent reasoning.
+	//
+	// When set, the candidates fetched from the endpoint are passed to an LLM with
+	// these instructions, which selects the best match(es) and returns them with
+	// confidence scores. Each injected result has the shape
+	// `{ data, confidence, reasoning? }`.
+	//
+	// When omitted, the raw fetched value is injected without any LLM involvement.
+	MatchInstructions param.Opt[string] `json:"matchInstructions,omitzero"`
+	// Maximum number of ranked matches to return per source value when
+	// `matchInstructions` is set (default: 1). Ignored when `matchInstructions` is
+	// empty.
+	MatchTopK param.Opt[int64] `json:"matchTopK,omitzero"`
+	// LLM batch size during agent reasoning (default: 50). All candidates — across all
+	// fetched pages — are scored in batches of this size. Smaller values reduce
+	// per-call token usage; larger values mean fewer LLM calls. Ignored when
+	// `matchInstructions` is empty.
+	MaxCandidates param.Opt[int64] `json:"maxCandidates,omitzero"`
+	// Maximum number of pages to fetch (default: 10). Acts as a safety cap against
+	// infinite pagination loops when the server never returns an empty cursor.
+	MaxPages param.Opt[int64] `json:"maxPages,omitzero"`
+	// Query parameter name used to pass the cursor on subsequent GET requests, or the
+	// `{placeholder}` name used in the POST `bodyTemplate` (e.g. `"cursor"`,
+	// `"pageToken"`, `"offset"`).
+	//
+	// Must be set together with `nextPagePath`.
+	NextPageParam param.Opt[string] `json:"nextPageParam,omitzero"`
+	// JMESPath expression applied to each raw response to extract the cursor or token
+	// for the next page (e.g. `"nextCursor"`, `"pagination.nextToken"`). An absent,
+	// null, or empty-string result stops pagination. Both string and numeric values
+	// are supported — numbers are converted to their decimal string representation
+	// before being forwarded as a query parameter.
+	//
+	// Must be set together with `nextPageParam`.
+	//
+	// **Supported pagination styles:**
+	//
+	//   - **Cursor/token-based** — server returns an opaque token in the response body
+	//     (e.g. `{"nextCursor": "abc123"}`). Set `nextPagePath: "nextCursor"` and the
+	//     platform forwards it verbatim on the next request.
+	//   - **Server-computed offset/page** — server echoes back the next offset or page
+	//     number in the response body (e.g. `{"nextOffset": 50}` or `{"nextPage": 2}`).
+	//     Set `nextPagePath: "nextOffset"` and the platform forwards the value as-is.
+	//
+	// **Not supported:**
+	//
+	//   - **Client-computed offset** — APIs where the client must compute
+	//     `offset += limit` itself (e.g. `?offset=0&limit=50` with no next-offset in the
+	//     response). Workaround: ask the API provider to return the next offset in the
+	//     response body, or bake a fixed page size into the URL and use a server-side
+	//     cursor instead.
+	//   - **Client-computed page number** — APIs where the client increments `?page=N`
+	//     itself with no next-page value in the response. Same workaround applies.
+	//   - **Link header** — `Link: <url>; rel="next"` in HTTP response headers. The
+	//     platform only inspects the response body.
+	NextPagePath param.Opt[string] `json:"nextPagePath,omitzero"`
+	// Query parameter name used to pass the extracted source value. **Required for GET
+	// endpoints.** The value is URL-encoded and appended as
+	// `?{queryParam}={sourceValue}`.
+	//
+	// Example: `queryParam: "q"` → `GET /products?q=blue+widget`
+	QueryParam param.Opt[string] `json:"queryParam,omitzero"`
+	// JMESPath expression applied to the response body to extract the enrichment
+	// value. Omit to use the entire response body as the result.
+	//
+	// **For agent reasoning:** use a wildcard projection (e.g. `items[*]` or
+	// `results[*].data`) so the endpoint's list of candidates is flattened into an
+	// array before being passed to the LLM. A non-wildcard path (e.g. `data.product`)
+	// extracts a single value treated as one candidate.
+	//
+	// **Response size:** the platform reads at most 50 MB of the response body before
+	// decoding, regardless of the Content-Length header.
+	ResponsePath param.Opt[string] `json:"responsePath,omitzero"`
+	// Additional HTTP headers to include in every request (e.g.
+	// `Authorization: Bearer <token>`).
+	Headers any `json:"headers,omitzero"`
+	paramObj
+}
+
+func (r EnrichConfigEndpointParam) MarshalJSON() (data []byte, err error) {
+	type shadow EnrichConfigEndpointParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *EnrichConfigEndpointParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+func init() {
+	apijson.RegisterFieldValidator[EnrichConfigEndpointParam](
+		"method", "GET", "POST",
+	)
+}
+
 // Single enrichment step configuration.
 //
-// **Process Flow:**
+// **Process Flow (collection source):**
 //
 //  1. Extract values from `sourceField` using JMESPath
 //  2. Perform search against the specified collection (semantic, exact, or hybrid
@@ -1032,33 +1313,51 @@ func (r *EnrichConfigParam) UnmarshalJSON(data []byte) error {
 //  3. Return top K matches sorted by relevance (best match first)
 //  4. Inject results into `targetField`
 //
-// **Search Modes:**
+// **Process Flow (endpoint source):**
 //
-//   - `semantic` (default): Vector similarity search - best for natural language and
+//  1. Extract values from `sourceField` using JMESPath
+//  2. Call the named endpoint once per extracted value, following pagination if
+//     `nextPagePath`/`nextPageParam` are configured on the endpoint
+//  3. Optionally apply LLM agent reasoning to rank candidates
+//     (`matchInstructions`), batching across all fetched pages in groups of
+//     `maxCandidates`
+//  4. Inject results into `targetField`
+//
+// **Collection Search Modes** (`source: "collection"` only):
+//
+//   - `semantic` (default): Vector similarity search — best for natural language and
 //     conceptual matching
-//   - `exact`: Exact keyword matching - best for SKU numbers, IDs, routing numbers
-//   - `hybrid`: Combined semantic + keyword search - best for tags and categories
+//   - `exact`: Exact keyword matching — best for SKU numbers, IDs, routing numbers
+//   - `hybrid`: Combined semantic + keyword search — best for tags and categories
 //
-// **Result Format:**
+// **Result Format (collection source):**
 //
-//   - Results are always returned as an array (list), regardless of `topK` value
-//   - Array is sorted by relevance (best match first)
-//   - Each result contains `data` (the collection item) and optionally
-//     `cosineDistance`
-//   - With `topK=1`: Returns array with single best match:
-//     `[{data: {...}, cosineDistance: 0.15}]`
-//   - With `topK>1`: Returns array with multiple matches sorted by relevance
+// - Always an array sorted by relevance (best match first)
+// - Each element: `{ data, cosineDistance? }` or `{ data, hybridScore? }`
+//
+// **Result Format (endpoint source, no matchInstructions):**
+//
+// - Always an array; the raw fetched value is the single element
+//
+// **Result Format (endpoint source, with matchInstructions):**
+//
+// - Array of LLM-ranked matches: `[{ data, confidence, reasoning? }, ...]`
+// - Length capped by `enrichEndpoint.matchTopK` (default 1)
 type EnrichStep struct {
-	// Name of the collection to search against. The collection must exist and contain
-	// items. Supports hierarchical paths when used with `includeSubcollections`.
-	CollectionName string `json:"collectionName" api:"required"`
-	// JMESPath expression to extract source data for semantic search. Can extract
-	// single values or arrays. All extracted values will be used for search.
+	// JMESPath expression to extract source data. Can extract a single value or an
+	// array. Each extracted value is looked up independently.
 	SourceField string `json:"sourceField" api:"required"`
 	// Field path where enriched results should be placed. Use simple field names
 	// (e.g., "enriched_products"). Results are always injected as an array (list),
 	// regardless of topK value.
 	TargetField string `json:"targetField" api:"required"`
+	// Name of the collection to search against. Required when `source` is
+	// `"collection"`. The collection must exist and contain items. Supports
+	// hierarchical paths when used with `includeSubcollections`.
+	CollectionName string `json:"collectionName"`
+	// Name of an endpoint defined in `enrichConfig.endpoints`. Required when `source`
+	// is `"endpoint"`.
+	EndpointName string `json:"endpointName"`
 	// Whether to include cosine distance scores in results. Cosine distance ranges
 	// from 0.0 (perfect match) to 2.0 (completely dissimilar). Lower scores indicate
 	// better semantic similarity.
@@ -1107,6 +1406,15 @@ type EnrichStep struct {
 	//
 	// Any of "semantic", "exact", "hybrid".
 	SearchMode EnrichStepSearchMode `json:"searchMode"`
+	// Where to fetch enrichment data from (default: `"collection"`).
+	//
+	//   - `"collection"`: Vector/keyword search against a BEM collection. Requires
+	//     `collectionName`.
+	//   - `"endpoint"`: HTTP call to a named endpoint defined in
+	//     `enrichConfig.endpoints`. Requires `endpointName`.
+	//
+	// Any of "collection", "endpoint".
+	Source EnrichStepSource `json:"source"`
 	// Number of top matching results to return per query (default: 1). Results are
 	// always returned as an array (list) and automatically sorted by cosine distance
 	// (best match = lowest distance first).
@@ -1116,13 +1424,15 @@ type EnrichStep struct {
 	TopK int64 `json:"topK"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		CollectionName        respjson.Field
 		SourceField           respjson.Field
 		TargetField           respjson.Field
+		CollectionName        respjson.Field
+		EndpointName          respjson.Field
 		IncludeScore          respjson.Field
 		IncludeSubcollections respjson.Field
 		ScoreThreshold        respjson.Field
 		SearchMode            respjson.Field
+		Source                respjson.Field
 		TopK                  respjson.Field
 		ExtraFields           map[string]respjson.Field
 		raw                   string
@@ -1171,9 +1481,22 @@ const (
 	EnrichStepSearchModeHybrid   EnrichStepSearchMode = "hybrid"
 )
 
+// Where to fetch enrichment data from (default: `"collection"`).
+//
+//   - `"collection"`: Vector/keyword search against a BEM collection. Requires
+//     `collectionName`.
+//   - `"endpoint"`: HTTP call to a named endpoint defined in
+//     `enrichConfig.endpoints`. Requires `endpointName`.
+type EnrichStepSource string
+
+const (
+	EnrichStepSourceCollection EnrichStepSource = "collection"
+	EnrichStepSourceEndpoint   EnrichStepSource = "endpoint"
+)
+
 // Single enrichment step configuration.
 //
-// **Process Flow:**
+// **Process Flow (collection source):**
 //
 //  1. Extract values from `sourceField` using JMESPath
 //  2. Perform search against the specified collection (semantic, exact, or hybrid
@@ -1181,35 +1504,53 @@ const (
 //  3. Return top K matches sorted by relevance (best match first)
 //  4. Inject results into `targetField`
 //
-// **Search Modes:**
+// **Process Flow (endpoint source):**
 //
-//   - `semantic` (default): Vector similarity search - best for natural language and
+//  1. Extract values from `sourceField` using JMESPath
+//  2. Call the named endpoint once per extracted value, following pagination if
+//     `nextPagePath`/`nextPageParam` are configured on the endpoint
+//  3. Optionally apply LLM agent reasoning to rank candidates
+//     (`matchInstructions`), batching across all fetched pages in groups of
+//     `maxCandidates`
+//  4. Inject results into `targetField`
+//
+// **Collection Search Modes** (`source: "collection"` only):
+//
+//   - `semantic` (default): Vector similarity search — best for natural language and
 //     conceptual matching
-//   - `exact`: Exact keyword matching - best for SKU numbers, IDs, routing numbers
-//   - `hybrid`: Combined semantic + keyword search - best for tags and categories
+//   - `exact`: Exact keyword matching — best for SKU numbers, IDs, routing numbers
+//   - `hybrid`: Combined semantic + keyword search — best for tags and categories
 //
-// **Result Format:**
+// **Result Format (collection source):**
 //
-//   - Results are always returned as an array (list), regardless of `topK` value
-//   - Array is sorted by relevance (best match first)
-//   - Each result contains `data` (the collection item) and optionally
-//     `cosineDistance`
-//   - With `topK=1`: Returns array with single best match:
-//     `[{data: {...}, cosineDistance: 0.15}]`
-//   - With `topK>1`: Returns array with multiple matches sorted by relevance
+// - Always an array sorted by relevance (best match first)
+// - Each element: `{ data, cosineDistance? }` or `{ data, hybridScore? }`
 //
-// The properties CollectionName, SourceField, TargetField are required.
+// **Result Format (endpoint source, no matchInstructions):**
+//
+// - Always an array; the raw fetched value is the single element
+//
+// **Result Format (endpoint source, with matchInstructions):**
+//
+// - Array of LLM-ranked matches: `[{ data, confidence, reasoning? }, ...]`
+// - Length capped by `enrichEndpoint.matchTopK` (default 1)
+//
+// The properties SourceField, TargetField are required.
 type EnrichStepParam struct {
-	// Name of the collection to search against. The collection must exist and contain
-	// items. Supports hierarchical paths when used with `includeSubcollections`.
-	CollectionName string `json:"collectionName" api:"required"`
-	// JMESPath expression to extract source data for semantic search. Can extract
-	// single values or arrays. All extracted values will be used for search.
+	// JMESPath expression to extract source data. Can extract a single value or an
+	// array. Each extracted value is looked up independently.
 	SourceField string `json:"sourceField" api:"required"`
 	// Field path where enriched results should be placed. Use simple field names
 	// (e.g., "enriched_products"). Results are always injected as an array (list),
 	// regardless of topK value.
 	TargetField string `json:"targetField" api:"required"`
+	// Name of the collection to search against. Required when `source` is
+	// `"collection"`. The collection must exist and contain items. Supports
+	// hierarchical paths when used with `includeSubcollections`.
+	CollectionName param.Opt[string] `json:"collectionName,omitzero"`
+	// Name of an endpoint defined in `enrichConfig.endpoints`. Required when `source`
+	// is `"endpoint"`.
+	EndpointName param.Opt[string] `json:"endpointName,omitzero"`
 	// Whether to include cosine distance scores in results. Cosine distance ranges
 	// from 0.0 (perfect match) to 2.0 (completely dissimilar). Lower scores indicate
 	// better semantic similarity.
@@ -1265,6 +1606,15 @@ type EnrichStepParam struct {
 	//
 	// Any of "semantic", "exact", "hybrid".
 	SearchMode EnrichStepSearchMode `json:"searchMode,omitzero"`
+	// Where to fetch enrichment data from (default: `"collection"`).
+	//
+	//   - `"collection"`: Vector/keyword search against a BEM collection. Requires
+	//     `collectionName`.
+	//   - `"endpoint"`: HTTP call to a named endpoint defined in
+	//     `enrichConfig.endpoints`. Requires `endpointName`.
+	//
+	// Any of "collection", "endpoint".
+	Source EnrichStepSource `json:"source,omitzero"`
 	paramObj
 }
 
@@ -1936,31 +2286,38 @@ func (r *FunctionPayloadShaping) UnmarshalJSON(data []byte) error {
 }
 
 type FunctionEnrich struct {
-	// Configuration for enrich function with semantic search steps.
+	// Configuration for an enrich function.
 	//
 	// **How Enrich Functions Work:**
 	//
-	// Enrich functions use semantic search to augment JSON data with relevant
-	// information from collections. They take JSON input (typically from a transform
-	// function), extract specified fields, perform vector-based semantic search
-	// against collections, and inject the results back into the data.
+	// Enrich functions augment JSON input with data from external sources. They take
+	// JSON input (typically from a previous function), extract specified fields, fetch
+	// or search for matching data, and inject the results back into the JSON.
+	//
+	// **Data Sources:**
+	//
+	//   - **Collections** (`source: "collection"`): Vector/keyword search against a BEM
+	//     collection. Best for semantic matching against pre-indexed documents.
+	//   - **Endpoints** (`source: "endpoint"`): HTTP call to any user-provided REST API.
+	//     Best for looking up live data from CRMs, ERPs, or other external systems.
+	//     Optionally uses LLM agent reasoning to rank candidates returned by the
+	//     endpoint.
 	//
 	// **Input Requirements:**
 	//
-	// - Must receive JSON input (typically uploaded to S3 from a previous function)
-	// - Can be chained after transform or other functions that produce JSON output
+	// - Must receive JSON input (typically from a previous function's output)
 	//
 	// **Example Use Cases:**
 	//
-	// - Match product descriptions to SKU codes from a product catalog
-	// - Enrich customer data with account information
-	// - Link order line items to inventory records
+	//   - Match product descriptions to SKU codes from a product catalog collection
+	//   - Enrich customer data with account details from a CRM endpoint
+	//   - Use LLM agent reasoning to fuzzy-match line item descriptions to catalog
+	//     products
 	//
 	// **Configuration:**
 	//
-	// - Define one or more enrichment steps
-	// - Each step extracts values, searches a collection, and injects results
-	// - Steps are executed sequentially
+	// - Define named endpoints (for endpoint-source steps)
+	// - Define one or more enrichment steps; steps are executed sequentially
 	Config EnrichConfig `json:"config" api:"required"`
 	// Unique identifier of function.
 	FunctionID string `json:"functionID" api:"required"`
@@ -2586,31 +2943,38 @@ func (r *UpdateFunctionPayloadShapingParam) UnmarshalJSON(data []byte) error {
 
 // The property Type is required.
 type UpdateFunctionEnrichParam struct {
-	// Configuration for enrich function with semantic search steps.
+	// Configuration for an enrich function.
 	//
 	// **How Enrich Functions Work:**
 	//
-	// Enrich functions use semantic search to augment JSON data with relevant
-	// information from collections. They take JSON input (typically from a transform
-	// function), extract specified fields, perform vector-based semantic search
-	// against collections, and inject the results back into the data.
+	// Enrich functions augment JSON input with data from external sources. They take
+	// JSON input (typically from a previous function), extract specified fields, fetch
+	// or search for matching data, and inject the results back into the JSON.
+	//
+	// **Data Sources:**
+	//
+	//   - **Collections** (`source: "collection"`): Vector/keyword search against a BEM
+	//     collection. Best for semantic matching against pre-indexed documents.
+	//   - **Endpoints** (`source: "endpoint"`): HTTP call to any user-provided REST API.
+	//     Best for looking up live data from CRMs, ERPs, or other external systems.
+	//     Optionally uses LLM agent reasoning to rank candidates returned by the
+	//     endpoint.
 	//
 	// **Input Requirements:**
 	//
-	// - Must receive JSON input (typically uploaded to S3 from a previous function)
-	// - Can be chained after transform or other functions that produce JSON output
+	// - Must receive JSON input (typically from a previous function's output)
 	//
 	// **Example Use Cases:**
 	//
-	// - Match product descriptions to SKU codes from a product catalog
-	// - Enrich customer data with account information
-	// - Link order line items to inventory records
+	//   - Match product descriptions to SKU codes from a product catalog collection
+	//   - Enrich customer data with account details from a CRM endpoint
+	//   - Use LLM agent reasoning to fuzzy-match line item descriptions to catalog
+	//     products
 	//
 	// **Configuration:**
 	//
-	// - Define one or more enrichment steps
-	// - Each step extracts values, searches a collection, and injects results
-	// - Steps are executed sequentially
+	// - Define named endpoints (for endpoint-source steps)
+	// - Define one or more enrichment steps; steps are executed sequentially
 	Config EnrichConfigParam `json:"config,omitzero"`
 	// This field can be elided, and will marshal its zero value as "enrich".
 	Type constant.Enrich `json:"type" default:"enrich"`

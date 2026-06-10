@@ -717,31 +717,38 @@ func (r *FunctionVersionJoin) UnmarshalJSON(data []byte) error {
 }
 
 type FunctionVersionEnrich struct {
-	// Configuration for enrich function with semantic search steps.
+	// Configuration for an enrich function.
 	//
 	// **How Enrich Functions Work:**
 	//
-	// Enrich functions use semantic search to augment JSON data with relevant
-	// information from collections. They take JSON input (typically from a transform
-	// function), extract specified fields, perform vector-based semantic search
-	// against collections, and inject the results back into the data.
+	// Enrich functions augment JSON input with data from external sources. They take
+	// JSON input (typically from a previous function), extract specified fields, fetch
+	// or search for matching data, and inject the results back into the JSON.
+	//
+	// **Data Sources:**
+	//
+	//   - **Collections** (`source: "collection"`): Vector/keyword search against a BEM
+	//     collection. Best for semantic matching against pre-indexed documents.
+	//   - **Endpoints** (`source: "endpoint"`): HTTP call to any user-provided REST API.
+	//     Best for looking up live data from CRMs, ERPs, or other external systems.
+	//     Optionally uses LLM agent reasoning to rank candidates returned by the
+	//     endpoint.
 	//
 	// **Input Requirements:**
 	//
-	// - Must receive JSON input (typically uploaded to S3 from a previous function)
-	// - Can be chained after transform or other functions that produce JSON output
+	// - Must receive JSON input (typically from a previous function's output)
 	//
 	// **Example Use Cases:**
 	//
-	// - Match product descriptions to SKU codes from a product catalog
-	// - Enrich customer data with account information
-	// - Link order line items to inventory records
+	//   - Match product descriptions to SKU codes from a product catalog collection
+	//   - Enrich customer data with account details from a CRM endpoint
+	//   - Use LLM agent reasoning to fuzzy-match line item descriptions to catalog
+	//     products
 	//
 	// **Configuration:**
 	//
-	// - Define one or more enrichment steps
-	// - Each step extracts values, searches a collection, and injects results
-	// - Steps are executed sequentially
+	// - Define named endpoints (for endpoint-source steps)
+	// - Define one or more enrichment steps; steps are executed sequentially
 	Config EnrichConfig `json:"config" api:"required"`
 	// Unique identifier of function.
 	FunctionID string `json:"functionID" api:"required"`

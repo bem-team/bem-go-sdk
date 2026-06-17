@@ -277,10 +277,23 @@ type Client struct {
 	// Subscriptions wire up notifications for the events your functions and
 	// collections produce.
 	//
-	// Each subscription targets a single function (by `functionName` or `functionID`)
-	// or a single collection (by `collectionName` or `collectionID`) and selects a
+	// Most subscriptions target a single function (by `functionName` or `functionID`)
+	// or a single collection (by `collectionName` or `collectionID`) and select a
 	// `type` corresponding to the event you want to receive — for example `transform`,
 	// `route`, `join`, `evaluation`, `error`, `enrich`, or `collection_processing`.
+	//
+	// Entity-lifecycle events are account-wide and target no function or collection.
+	// Set `type` to one of the following and provide a `webhookURL` (these event types
+	// support webhook delivery only):
+	//
+	//   - `entity_proposed` — an entity entered the `proposed` curation status (queued
+	//     for review).
+	//   - `entity_validated` — an entity was approved/validated by a reviewer.
+	//   - `entity_rejected` — an entity was rejected by a reviewer.
+	//
+	// Each entity-lifecycle delivery is a JSON POST describing the transition
+	// (`entityID`, `typeName`, `priorStatus`, `newStatus`, optional `actorUserID` and
+	// `reason`, and a `timestamp`).
 	//
 	// Deliveries can be sent to any combination of:
 	//

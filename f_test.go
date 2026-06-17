@@ -28,7 +28,10 @@ func TestFNavigateWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.Fs.Navigate(context.TODO(), bem.FNavigateParams{
-		Op:        bem.FsOpLs,
+		Op: bem.FsOpLs,
+		Context: bem.FNavigateParamsContext{
+			Bucket: bem.String("bucket"),
+		},
 		CountOnly: bem.Bool(true),
 		Cursor:    bem.String("cursor"),
 		Filter: bem.FNavigateParamsFilter{

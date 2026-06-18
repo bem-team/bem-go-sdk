@@ -98,6 +98,44 @@ type EvalService struct {
 	// All five endpoints support `extract` end-to-end on both the vision and OCR
 	// paths, alongside the legacy `transform` / `analyze` / `join` types.
 	Results EvalResultService
+	// Monitor, evaluate, and iterate on the quality of every function in your
+	// environment. Function Accuracy bundles two complementary loops:
+	//
+	// ## Evaluations (`/v3/eval`)
+	//
+	// Trigger and retrieve per-transformation evaluations. Evaluations run
+	// asynchronously and score each transformation's output against the function's
+	// schema for confidence, per-field hallucination detection, and relevance.
+	// Supported for `extract`, `transform`, `analyze`, and `join` events.
+	//
+	//  1. **Trigger** — `POST /v3/eval` queues jobs for a batch of transformation IDs.
+	//  2. **Poll** — `GET /v3/eval/results` returns the current state of each requested
+	//     ID, partitioned into `results`, `pending`, and `failed`. Accepts either
+	//     `eventIDs` (preferred) or `transformationIDs` as a comma-separated query
+	//     parameter, and always keys the response by event KSUID.
+	//
+	// Up to 100 IDs may be submitted per request.
+	//
+	// ## Metrics, review, regression (`/v3/functions/{metrics,review,regression,compare}`)
+	//
+	// Roll evaluation results and user corrections up into actionable function-level
+	// signal:
+	//
+	//   - **`GET /v3/functions/metrics`** — aggregate accuracy, precision, recall, F1,
+	//     and confusion-matrix counts per function.
+	//   - **`POST /v3/functions/review`** — sample-size estimation, confidence-bucketed
+	//     distribution, PR-AUC, and per-threshold confidence intervals (Wald or Wilson)
+	//     for picking review cutoffs.
+	//   - **`POST /v3/functions/regression`** — replay corrected historical inputs
+	//     against a new function version, producing a labeled regression dataset.
+	//   - **`POST /v3/functions/regression/corrections`** — propagate baseline
+	//     corrections onto the regression dataset so it can be scored.
+	//   - **`POST /v3/functions/compare`** — compute aggregate and field-level lift
+	//     between any two versions, optionally scoped to the regression dataset.
+	//
+	// All five endpoints support `extract` end-to-end on both the vision and OCR
+	// paths, alongside the legacy `transform` / `analyze` / `join` types.
+	Score EvalScoreService
 }
 
 // NewEvalService generates a new service that applies the given options to each
@@ -107,6 +145,7 @@ func NewEvalService(opts ...option.RequestOption) (r EvalService) {
 	r = EvalService{}
 	r.options = opts
 	r.Results = NewEvalResultService(opts...)
+	r.Score = NewEvalScoreService(opts...)
 	return
 }
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.21.0 (2026-06-18)
+
+Full Changelog: [v0.20.0...v0.21.0](https://github.com/bem-team/bem-go-sdk/compare/v0.20.0...v0.21.0)
+
+### Features
+
+* **api:** api update ([185c2fa](https://github.com/bem-team/bem-go-sdk/commit/185c2fac1fd32ad2dff91d7f96824381d06e6c42))
+* **api:** memory v1 and bulk scoring updates ([02063f5](https://github.com/bem-team/bem-go-sdk/commit/02063f59a4bf724118d4a88d4262085a2335dbd4))
+
 ## 0.20.0 (2026-06-09)
 
 Full Changelog: [v0.19.0...v0.20.0](https://github.com/bem-team/bem-go-sdk/compare/v0.19.0...v0.20.0)

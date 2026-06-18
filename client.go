@@ -277,10 +277,23 @@ type Client struct {
 	// Subscriptions wire up notifications for the events your functions and
 	// collections produce.
 	//
-	// Each subscription targets a single function (by `functionName` or `functionID`)
-	// or a single collection (by `collectionName` or `collectionID`) and selects a
+	// Most subscriptions target a single function (by `functionName` or `functionID`)
+	// or a single collection (by `collectionName` or `collectionID`) and select a
 	// `type` corresponding to the event you want to receive — for example `transform`,
 	// `route`, `join`, `evaluation`, `error`, `enrich`, or `collection_processing`.
+	//
+	// Entity-lifecycle events are account-wide and target no function or collection.
+	// Set `type` to one of the following and provide a `webhookURL` (these event types
+	// support webhook delivery only):
+	//
+	//   - `entity_proposed` — an entity entered the `proposed` curation status (queued
+	//     for review).
+	//   - `entity_validated` — an entity was approved/validated by a reviewer.
+	//   - `entity_rejected` — an entity was rejected by a reviewer.
+	//
+	// Each entity-lifecycle delivery is a JSON POST describing the transition
+	// (`entityID`, `typeName`, `priorStatus`, `newStatus`, optional `actorUserID` and
+	// `reason`, and a `timestamp`).
 	//
 	// Deliveries can be sent to any combination of:
 	//
@@ -323,6 +336,93 @@ type Client struct {
 	// Both endpoints take a `timeWindow` to bound the transformation set and require
 	// at least one `function` to read from.
 	Views ViewService
+	// Buckets are named partitions of the knowledge graph within an
+	// account+environment. Entities, mentions, and relations are scoped to a bucket so
+	// a single account+environment can host multiple isolated graphs — for example one
+	// per data source or workspace.
+	//
+	// Every account+environment has exactly one **default** bucket, used by unscoped
+	// flows. The default bucket can be renamed but never deleted.
+	//
+	// Use these endpoints to create, list, fetch, rename, and delete buckets:
+	//
+	//   - **`POST /v3/buckets`** creates a non-default bucket.
+	//   - **`GET /v3/buckets`** lists buckets with cursor pagination (`startingAfter` /
+	//     `endingBefore` over `bucketID`).
+	//   - **`PATCH /v3/buckets/{bucketID}`** updates `name` and/or `description`.
+	//   - **`DELETE /v3/buckets/{bucketID}`** soft-deletes a bucket. A non-empty bucket
+	//     is rejected with `409 Conflict` unless `?cascade=true` is passed; the default
+	//     bucket can never be deleted.
+	Buckets  BucketService
+	Entities EntityService
+	// Entity Types are the customer-defined taxonomy for the knowledge graph, scoped
+	// to an account+environment. Each type has a unique, immutable name and can be
+	// organised into hierarchies via `parentTypeID`. A type may carry per-type
+	// structured attribute metadata in `attributeSchema` (for example
+	// `{"unit": "mg", "range": [0, 100]}`).
+	//
+	// Use these endpoints to create, list, fetch, update, and delete entity types:
+	//
+	//   - **`POST /v3/entity-types`** creates a type, optionally under a parent.
+	//   - **`GET /v3/entity-types`** lists types with cursor pagination (`startingAfter`
+	//     / `endingBefore` over `typeID`) and an optional `parentTypeId` filter for
+	//     direct children.
+	//   - **`PATCH /v3/entity-types/{typeID}`** updates `description`, `parentTypeID`,
+	//     and/or `attributeSchema`. The `name` is immutable.
+	//   - **`DELETE /v3/entity-types/{typeID}`** soft-deletes a type. The request is
+	//     rejected with `409 Conflict` while any live entity is assigned to the type or
+	//     any live child type points at it.
+	EntityTypes EntityTypeService
+	// Read the cross-document knowledge graph — the canonical entities and the
+	// directed relations between them that the Parse pipeline populates when
+	// `linkAcrossDocuments` is enabled.
+	//
+	//   - **`GET /v3/entities/{id}/relations`** returns the inbound and outbound edges
+	//     incident to one entity, split by direction. Supports `direction`, an exact
+	//     `relationType` filter, and cursor pagination over edges. A merged-away entity
+	//     id transparently resolves to its surviving canonical entity.
+	//   - **`GET /v3/knowledge-graph`** returns the graph as `{ nodes, edges }`,
+	//     paginating over edges. The `nodes` for a page are the distinct endpoint
+	//     entities of that page's edges (both endpoints of every edge are included).
+	//     Filter with `type[]`, `since`, and `search`; an edge is returned only when
+	//     both of its endpoints survive the entity filters.
+	//
+	// Both endpoints take an optional `bucket` (`bkt_...`) to scope the read to a
+	// single bucket; omit it for the unscoped account+environment view.
+	KnowledgeGraph KnowledgeGraphService
+	// The reviewer-facing read surface for entity curation, available on the dashboard
+	// (JWT) only.
+	//
+	//   - **`GET /v3/review-queue`** returns a cursor-paginated set of entities awaiting
+	//     curation, scoped to your account+environment (and optional `bucket`). Each row
+	//     is a full entity plus a small preview (up to 2) of its first mentions, so a
+	//     reviewer can triage without opening every entity.
+	//
+	// Filters AND together. `status` (repeatable) defaults to the pre-terminal states
+	// `extracted` + `proposed` when omitted. `type` (repeatable `ety_…` IDs) matches
+	// the entity's _effective_ type — its assigned type id, or, for entities with no
+	// assigned type, its bem-inferred type name. `assignedTo` (`me` or a `usr_…` ID)
+	// restricts to entities whose effective type the user reviews. `since` (RFC3339)
+	// filters by creation time. Pagination is cursor-based on `entityID` ascending;
+	// default limit 50, maximum 200.
+	ReviewQueue ReviewQueueService
+	// Reviewer assignments link users to the entity types they are responsible for
+	// reviewing, scoped to an account+environment. These are dashboard-only endpoints:
+	// an assignment needs a user identity, which only the dashboard (JWT) surface
+	// carries.
+	//
+	//   - **`POST /v3/entity-types/{typeID}/reviewers`** assigns a user as a reviewer of
+	//     the type. The assignment is idempotent: re-assigning an existing reviewer
+	//     returns the existing assignment. Requires the `admin` role.
+	//   - **`GET /v3/entity-types/{typeID}/reviewers`** lists the users assigned to
+	//     review the type, with each user's email and role. Requires the `operator`
+	//     role.
+	//   - **`DELETE /v3/entity-types/{typeID}/reviewers/{userID}`** removes an
+	//     assignment. Requires the `admin` role.
+	//   - **`GET /v3/users/{userID}/reviewer-assignments`** is the reverse lookup: the
+	//     entity types a user reviews. A user may read their own assignments; reading
+	//     another user's assignments requires the `admin` role.
+	Users UserService
 }
 
 // DefaultClientOptions read from the environment (BEM_API_KEY, BEM_BASE_URL). This
@@ -370,6 +470,12 @@ func NewClient(opts ...option.RequestOption) (r Client) {
 	r.Connectors = NewConnectorService(opts...)
 	r.Subscriptions = NewSubscriptionService(opts...)
 	r.Views = NewViewService(opts...)
+	r.Buckets = NewBucketService(opts...)
+	r.Entities = NewEntityService(opts...)
+	r.EntityTypes = NewEntityTypeService(opts...)
+	r.KnowledgeGraph = NewKnowledgeGraphService(opts...)
+	r.ReviewQueue = NewReviewQueueService(opts...)
+	r.Users = NewUserService(opts...)
 
 	return
 }

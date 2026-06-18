@@ -286,6 +286,10 @@ type FNavigateParams struct {
 	// Restricts grep to one part of the parse output. One of `"sections"`,
 	// `"entities"`, `"relationships"`, `"all"` (default).
 	Scope param.Opt[string] `json:"scope,omitzero"`
+	// Request-scoping concerns that are orthogonal to the op itself. Carried on a
+	// `context` object so future scoping hints (e.g. as-of timestamps, read
+	// consistency) can slot in without reshaping the op-specific fields.
+	Context FNavigateParamsContext `json:"context,omitzero"`
 	// Filter options for `op=ls` and `op=find`.
 	Filter FNavigateParamsFilter `json:"filter,omitzero"`
 	// Slice the parse output along page or section dimensions. Used with `op=cat`.
@@ -302,6 +306,34 @@ func (r FNavigateParams) MarshalJSON() (data []byte, err error) {
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *FNavigateParams) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Request-scoping concerns that are orthogonal to the op itself. Carried on a
+// `context` object so future scoping hints (e.g. as-of timestamps, read
+// consistency) can slot in without reshaping the op-specific fields.
+type FNavigateParamsContext struct {
+	// Bucket KSUID (prefix `bkt_`) to scope the request to — a named partition of the
+	// knowledge graph within the caller's account+environment.
+	//
+	// **Optional.** Omitting it (or passing an empty value) leaves the request
+	// UNSCOPED: memory-level reads (`find` / `open` / `xref`) return entities across
+	// every bucket in the account+environment, so pre-bucket callers keep their
+	// original all-entities behavior unchanged. (Writes are different: a parse call
+	// with no bucket targets the account default bucket.) When a bucket IS supplied,
+	// memory-level ops return only entities in that bucket; doc-level ops
+	// (`ls`/`cat`/`head`/`stat`/`grep`) are unaffected either way — documents are not
+	// bucket-partitioned. A bucket that does not belong to the caller's
+	// account+environment is rejected.
+	Bucket param.Opt[string] `json:"bucket,omitzero"`
+	paramObj
+}
+
+func (r FNavigateParamsContext) MarshalJSON() (data []byte, err error) {
+	type shadow FNavigateParamsContext
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *FNavigateParamsContext) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

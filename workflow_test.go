@@ -232,6 +232,7 @@ func TestWorkflowCallWithOptionalParams(t *testing.T) {
 				},
 			},
 			Wait:            bem.Bool(true),
+			Bucket:          bem.String("bucket"),
 			CallReferenceID: bem.String("callReferenceID"),
 			Metadata:        map[string]any{},
 		},

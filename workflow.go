@@ -962,6 +962,12 @@ type WorkflowCallParams struct {
 	// object. Default: `false`. This is a boolean flag — use `--wait` or
 	// `--wait=true`, not `--wait true`.
 	Wait param.Opt[bool] `query:"wait,omitzero" json:"-"`
+	// Optional bucket NAME that entities extracted by the workflow's parse function(s)
+	// land in. Resolution precedence: this call-level bucket > the parse function's
+	// configured `defaultBucket` > the account+environment default bucket. A
+	// non-existent bucket name returns 400, but only when the workflow contains a
+	// parse function; on a parse-free workflow it is ignored.
+	Bucket param.Opt[string] `json:"bucket,omitzero"`
 	// Your reference ID for tracking this call.
 	CallReferenceID param.Opt[string] `json:"callReferenceID,omitzero"`
 	// Arbitrary JSON object attached to this call. Stored on the call record and

@@ -2518,6 +2518,10 @@ func (r *ListFunctionsResponse) UnmarshalJSON(data []byte) error {
 // JSON. The two toggles below independently control entity extraction (a per-call
 // output concern) and cross-document memory linking (an environment-wide concern).
 type ParseConfig struct {
+	// Optional bucket NAME that parse-extracted entities land in when no call-level
+	// bucket is supplied. Lower precedence than a call-level bucket, higher than the
+	// account+environment default.
+	DefaultBucket string `json:"defaultBucket"`
 	// When true, extract named entities (people, organizations, products, studies,
 	// identifiers, etc.) and the relationships between them, and dedupe by canonical
 	// name within the document. When false, only `sections[]` is extracted;
@@ -2536,6 +2540,7 @@ type ParseConfig struct {
 	Schema any `json:"schema"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
+		DefaultBucket       respjson.Field
 		ExtractEntities     respjson.Field
 		LinkAcrossDocuments respjson.Field
 		Schema              respjson.Field
@@ -2565,6 +2570,10 @@ func (r ParseConfig) ToParam() ParseConfigParam {
 // JSON. The two toggles below independently control entity extraction (a per-call
 // output concern) and cross-document memory linking (an environment-wide concern).
 type ParseConfigParam struct {
+	// Optional bucket NAME that parse-extracted entities land in when no call-level
+	// bucket is supplied. Lower precedence than a call-level bucket, higher than the
+	// account+environment default.
+	DefaultBucket param.Opt[string] `json:"defaultBucket,omitzero"`
 	// When true, extract named entities (people, organizations, products, studies,
 	// identifiers, etc.) and the relationships between them, and dedupe by canonical
 	// name within the document. When false, only `sections[]` is extracted;

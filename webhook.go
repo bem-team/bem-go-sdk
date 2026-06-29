@@ -1726,7 +1726,9 @@ type UnwrapWebhookEventUnion struct {
 	CollectionItemIDs []string `json:"collectionItemIDs"`
 	// This field is from variant [ErrorEvent].
 	Message string `json:"message"`
-	JSON    struct {
+	// This field is from variant [ErrorEvent].
+	Kind string `json:"kind"`
+	JSON struct {
 		EventID               respjson.Field
 		FunctionID            respjson.Field
 		FunctionName          respjson.Field
@@ -1778,6 +1780,7 @@ type UnwrapWebhookEventUnion struct {
 		ProcessedCount        respjson.Field
 		CollectionItemIDs     respjson.Field
 		Message               respjson.Field
+		Kind                  respjson.Field
 		raw                   string
 	} `json:"-"`
 }

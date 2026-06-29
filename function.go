@@ -131,8 +131,8 @@ func NewFunctionService(opts ...option.RequestOption) (r FunctionService) {
 
 // **Create a function.**
 //
-// The function type (`extract`, `classify`, `split`, `join`, `enrich`, or
-// `payload_shaping`) determines which configuration fields are required — see
+// The function `type` determines which configuration fields are required — see the
+// `CreateFunctionV3` discriminated union and
 // [Function types overview](/guide/function-types/overview) for the per-type
 // contract.
 //
@@ -560,6 +560,13 @@ func CreateFunctionParamOfParse(functionName string) CreateFunctionUnionParam {
 	return CreateFunctionUnionParam{OfParse: &parse}
 }
 
+func CreateFunctionParamOfRender(functionName string, renderConfig CreateFunctionRenderRenderConfigParam) CreateFunctionUnionParam {
+	var render CreateFunctionRenderParam
+	render.FunctionName = functionName
+	render.RenderConfig = renderConfig
+	return CreateFunctionUnionParam{OfRender: &render}
+}
+
 // Only one field can be non-zero.
 //
 // Use [param.IsOmitted] to confirm if a field is set.
@@ -572,6 +579,7 @@ type CreateFunctionUnionParam struct {
 	OfPayloadShaping *CreateFunctionPayloadShapingParam `json:",omitzero,inline"`
 	OfEnrich         *CreateFunctionEnrichParam         `json:",omitzero,inline"`
 	OfParse          *CreateFunctionParseParam          `json:",omitzero,inline"`
+	OfRender         *CreateFunctionRenderParam         `json:",omitzero,inline"`
 	paramUnion
 }
 
@@ -583,7 +591,8 @@ func (u CreateFunctionUnionParam) MarshalJSON() ([]byte, error) {
 		u.OfJoin,
 		u.OfPayloadShaping,
 		u.OfEnrich,
-		u.OfParse)
+		u.OfParse,
+		u.OfRender)
 }
 func (u *CreateFunctionUnionParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, u)
@@ -600,6 +609,7 @@ func init() {
 		apijson.Discriminator[CreateFunctionPayloadShapingParam]("payload_shaping"),
 		apijson.Discriminator[CreateFunctionEnrichParam]("enrich"),
 		apijson.Discriminator[CreateFunctionParseParam]("parse"),
+		apijson.Discriminator[CreateFunctionRenderParam]("render"),
 	)
 }
 
@@ -934,6 +944,72 @@ func (r CreateFunctionParseExtraConfigParam) MarshalJSON() (data []byte, err err
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *CreateFunctionParseExtraConfigParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The properties FunctionName, RenderConfig, Type are required.
+type CreateFunctionRenderParam struct {
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName string `json:"functionName" api:"required"`
+	// Request-side render configuration. Carries the template document as
+	// base64-encoded `.docx` bytes: the server validates them, stores the template,
+	// and derives the placeholder/style-id contract at create/update time, so clients
+	// never submit `placeholders` or `styleIds`. The response shape (`RenderConfig`)
+	// returns the derived contract.
+	RenderConfig CreateFunctionRenderRenderConfigParam `json:"renderConfig,omitzero" api:"required"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "render".
+	Type constant.Render `json:"type" default:"render"`
+	paramObj
+}
+
+func (r CreateFunctionRenderParam) MarshalJSON() (data []byte, err error) {
+	type shadow CreateFunctionRenderParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *CreateFunctionRenderParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Request-side render configuration. Carries the template document as
+// base64-encoded `.docx` bytes: the server validates them, stores the template,
+// and derives the placeholder/style-id contract at create/update time, so clients
+// never submit `placeholders` or `styleIds`. The response shape (`RenderConfig`)
+// returns the derived contract.
+//
+// The property Template is required.
+type CreateFunctionRenderRenderConfigParam struct {
+	Template CreateFunctionRenderRenderConfigTemplateParam `json:"template,omitzero" api:"required"`
+	paramObj
+}
+
+func (r CreateFunctionRenderRenderConfigParam) MarshalJSON() (data []byte, err error) {
+	type shadow CreateFunctionRenderRenderConfigParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *CreateFunctionRenderRenderConfigParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The property Base64 is required.
+type CreateFunctionRenderRenderConfigTemplateParam struct {
+	// Base64-encoded `.docx` bytes. In the Bem CLI, use `@path/to/file` to embed it
+	// automatically.
+	Base64 string `json:"base64" api:"required"`
+	// Original upload filename (e.g. `contract.docx`), stored for display only. Does
+	// not affect where the template is stored.
+	Name param.Opt[string] `json:"name,omitzero"`
+	paramObj
+}
+
+func (r CreateFunctionRenderRenderConfigTemplateParam) MarshalJSON() (data []byte, err error) {
+	type shadow CreateFunctionRenderRenderConfigTemplateParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *CreateFunctionRenderRenderConfigTemplateParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -1629,7 +1705,7 @@ func (r *EnrichStepParam) UnmarshalJSON(data []byte) error {
 // FunctionUnion contains all possible properties and values from
 // [FunctionTransform], [FunctionExtract], [FunctionAnalyze], [FunctionClassify],
 // [FunctionSend], [FunctionSplit], [FunctionJoin], [FunctionPayloadShaping],
-// [FunctionEnrich], [FunctionParse].
+// [FunctionEnrich], [FunctionParse], [FunctionRender].
 //
 // Use the [FunctionUnion.AsAny] method to switch on the variant.
 //
@@ -1643,7 +1719,7 @@ type FunctionUnion struct {
 	// This field is from variant [FunctionTransform].
 	TabularChunkingEnabled bool `json:"tabularChunkingEnabled"`
 	// Any of "transform", "extract", "analyze", "classify", "send", "split", "join",
-	// "payload_shaping", "enrich", "parse".
+	// "payload_shaping", "enrich", "parse", "render".
 	Type       string `json:"type"`
 	VersionNum int64  `json:"versionNum"`
 	// This field is from variant [FunctionTransform].
@@ -1684,7 +1760,9 @@ type FunctionUnion struct {
 	ExtraConfig FunctionParseExtraConfig `json:"extraConfig"`
 	// This field is from variant [FunctionParse].
 	ParseConfig ParseConfig `json:"parseConfig"`
-	JSON        struct {
+	// This field is from variant [FunctionRender].
+	RenderConfig FunctionRenderRenderConfig `json:"renderConfig"`
+	JSON         struct {
 		EmailAddress            respjson.Field
 		FunctionID              respjson.Field
 		FunctionName            respjson.Field
@@ -1715,6 +1793,7 @@ type FunctionUnion struct {
 		Config                  respjson.Field
 		ExtraConfig             respjson.Field
 		ParseConfig             respjson.Field
+		RenderConfig            respjson.Field
 		raw                     string
 	} `json:"-"`
 }
@@ -1735,6 +1814,7 @@ func (FunctionJoin) implFunctionUnion()           {}
 func (FunctionPayloadShaping) implFunctionUnion() {}
 func (FunctionEnrich) implFunctionUnion()         {}
 func (FunctionParse) implFunctionUnion()          {}
+func (FunctionRender) implFunctionUnion()         {}
 
 // Use the following switch statement to find the correct variant
 //
@@ -1749,6 +1829,7 @@ func (FunctionParse) implFunctionUnion()          {}
 //	case bem.FunctionPayloadShaping:
 //	case bem.FunctionEnrich:
 //	case bem.FunctionParse:
+//	case bem.FunctionRender:
 //	default:
 //	  fmt.Errorf("no variant present")
 //	}
@@ -1774,6 +1855,8 @@ func (u FunctionUnion) AsAny() anyFunction {
 		return u.AsEnrich()
 	case "parse":
 		return u.AsParse()
+	case "render":
+		return u.AsRender()
 	}
 	return nil
 }
@@ -1824,6 +1907,11 @@ func (u FunctionUnion) AsEnrich() (v FunctionEnrich) {
 }
 
 func (u FunctionUnion) AsParse() (v FunctionParse) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u FunctionUnion) AsRender() (v FunctionRender) {
 	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
 	return
 }
@@ -2431,6 +2519,160 @@ func (r *FunctionParseExtraConfig) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
+type FunctionRender struct {
+	// Unique identifier of function.
+	FunctionID string `json:"functionID" api:"required"`
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName string          `json:"functionName" api:"required"`
+	Type         constant.Render `json:"type" default:"render"`
+	// Version number of function.
+	VersionNum int64 `json:"versionNum" api:"required"`
+	// Audit trail information for the function.
+	Audit FunctionAudit `json:"audit"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName string `json:"displayName"`
+	// Per-version configuration for a Render function.
+	//
+	// Render emits a `.docx` from schema-typed JSON by composing the JSON into a
+	// `.docx` template. The template document is stored server-side; this response
+	// exposes only the contract derived from it. Schema validation runs internally in
+	// the ML service against the bundled core schema; no customer-supplied schema
+	// rides this surface.
+	RenderConfig FunctionRenderRenderConfig `json:"renderConfig"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags"`
+	// List of workflows that use this function.
+	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		FunctionID      respjson.Field
+		FunctionName    respjson.Field
+		Type            respjson.Field
+		VersionNum      respjson.Field
+		Audit           respjson.Field
+		DisplayName     respjson.Field
+		RenderConfig    respjson.Field
+		Tags            respjson.Field
+		UsedInWorkflows respjson.Field
+		ExtraFields     map[string]respjson.Field
+		raw             string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r FunctionRender) RawJSON() string { return r.JSON.raw }
+func (r *FunctionRender) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Per-version configuration for a Render function.
+//
+// Render emits a `.docx` from schema-typed JSON by composing the JSON into a
+// `.docx` template. The template document is stored server-side; this response
+// exposes only the contract derived from it. Schema validation runs internally in
+// the ML service against the bundled core schema; no customer-supplied schema
+// rides this surface.
+type FunctionRenderRenderConfig struct {
+	// The uploaded template: its filename, a short-lived presigned download URL, and
+	// the placeholder/style contract derived from it. Absent on configs created before
+	// template capture existed.
+	Template FunctionRenderRenderConfigTemplate `json:"template"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Template    respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r FunctionRenderRenderConfig) RawJSON() string { return r.JSON.raw }
+func (r *FunctionRenderRenderConfig) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The uploaded template: its filename, a short-lived presigned download URL, and
+// the placeholder/style contract derived from it. Absent on configs created before
+// template capture existed.
+type FunctionRenderRenderConfigTemplate struct {
+	// Short-lived presigned URL to download the stored `.docx`. The private storage
+	// location is never exposed.
+	DownloadURL string `json:"downloadURL" format:"uri"`
+	// Supported list kinds (`decimal`, `bullet`) the template's `numbering.xml`
+	// defines an `abstractNum` for. Empty means the template can hold no list, so any
+	// list primitive will fail at render.
+	//
+	// Any of "decimal", "bullet".
+	ListKinds []string `json:"listKinds"`
+	// Original filename of the uploaded template (e.g. `contract.docx`), echoed back
+	// for display. Absent on templates uploaded before the filename was captured.
+	Name string `json:"name"`
+	// The placeholder contract a Render template declares, grouped by how each
+	// placeholder is filled. Derived from the template at create/update time by
+	// scanning its `docxtpl` tags; not user-supplied.
+	//
+	//   - `stringKeys`: bare string placeholders (`{{ key }}`) filled with a single
+	//     value.
+	//   - `blockKeys`: wrapped-primitive placeholders (`{{p key }}`) — bind one core
+	//     primitive (paragraph, table, image, or list). The placeholder's own paragraph
+	//     dissolves and is replaced by the rendered subdocument's blocks, rather than
+	//     substituting text inline.
+	Placeholders FunctionRenderRenderConfigTemplatePlaceholders `json:"placeholders"`
+	// Paragraph/character style IDs the uploaded template defines and the rendered
+	// output can reference. Derived from the template's `styles.xml` at create/update
+	// time.
+	StyleIDs []string `json:"styleIds"`
+	// Style IDs whose type is table — the styles a `table` primitive's required
+	// `styleId` can name. Empty means the template defines no table style, so any
+	// table primitive will fail at render.
+	TableStyleIDs []string `json:"tableStyleIds"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DownloadURL   respjson.Field
+		ListKinds     respjson.Field
+		Name          respjson.Field
+		Placeholders  respjson.Field
+		StyleIDs      respjson.Field
+		TableStyleIDs respjson.Field
+		ExtraFields   map[string]respjson.Field
+		raw           string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r FunctionRenderRenderConfigTemplate) RawJSON() string { return r.JSON.raw }
+func (r *FunctionRenderRenderConfigTemplate) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The placeholder contract a Render template declares, grouped by how each
+// placeholder is filled. Derived from the template at create/update time by
+// scanning its `docxtpl` tags; not user-supplied.
+//
+//   - `stringKeys`: bare string placeholders (`{{ key }}`) filled with a single
+//     value.
+//   - `blockKeys`: wrapped-primitive placeholders (`{{p key }}`) — bind one core
+//     primitive (paragraph, table, image, or list). The placeholder's own paragraph
+//     dissolves and is replaced by the rendered subdocument's blocks, rather than
+//     substituting text inline.
+type FunctionRenderRenderConfigTemplatePlaceholders struct {
+	BlockKeys  []string `json:"blockKeys" api:"required"`
+	StringKeys []string `json:"stringKeys" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		BlockKeys   respjson.Field
+		StringKeys  respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r FunctionRenderRenderConfigTemplatePlaceholders) RawJSON() string { return r.JSON.raw }
+func (r *FunctionRenderRenderConfigTemplatePlaceholders) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
 type FunctionAudit struct {
 	// Information about who created the function.
 	FunctionCreatedBy UserActionSummary `json:"functionCreatedBy"`
@@ -2491,6 +2733,7 @@ const (
 	FunctionTypePayloadShaping FunctionType = "payload_shaping"
 	FunctionTypeEnrich         FunctionType = "enrich"
 	FunctionTypeParse          FunctionType = "parse"
+	FunctionTypeRender         FunctionType = "render"
 )
 
 type ListFunctionsResponse struct {
@@ -2675,6 +2918,7 @@ type UpdateFunctionUnionParam struct {
 	OfPayloadShaping *UpdateFunctionPayloadShapingParam `json:",omitzero,inline"`
 	OfEnrich         *UpdateFunctionEnrichParam         `json:",omitzero,inline"`
 	OfParse          *UpdateFunctionParseParam          `json:",omitzero,inline"`
+	OfRender         *UpdateFunctionRenderParam         `json:",omitzero,inline"`
 	paramUnion
 }
 
@@ -2686,7 +2930,8 @@ func (u UpdateFunctionUnionParam) MarshalJSON() ([]byte, error) {
 		u.OfJoin,
 		u.OfPayloadShaping,
 		u.OfEnrich,
-		u.OfParse)
+		u.OfParse,
+		u.OfRender)
 }
 func (u *UpdateFunctionUnionParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, u)
@@ -2703,6 +2948,7 @@ func init() {
 		apijson.Discriminator[UpdateFunctionPayloadShapingParam]("payload_shaping"),
 		apijson.Discriminator[UpdateFunctionEnrichParam]("enrich"),
 		apijson.Discriminator[UpdateFunctionParseParam]("parse"),
+		apijson.Discriminator[UpdateFunctionRenderParam]("render"),
 	)
 }
 
@@ -3049,6 +3295,72 @@ func (r UpdateFunctionParseExtraConfigParam) MarshalJSON() (data []byte, err err
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *UpdateFunctionParseExtraConfigParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The property Type is required.
+type UpdateFunctionRenderParam struct {
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName param.Opt[string] `json:"functionName,omitzero"`
+	// Request-side render configuration. Carries the template document as
+	// base64-encoded `.docx` bytes: the server validates them, stores the template,
+	// and derives the placeholder/style-id contract at create/update time, so clients
+	// never submit `placeholders` or `styleIds`. The response shape (`RenderConfig`)
+	// returns the derived contract.
+	RenderConfig UpdateFunctionRenderRenderConfigParam `json:"renderConfig,omitzero"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags,omitzero"`
+	// This field can be elided, and will marshal its zero value as "render".
+	Type constant.Render `json:"type" default:"render"`
+	paramObj
+}
+
+func (r UpdateFunctionRenderParam) MarshalJSON() (data []byte, err error) {
+	type shadow UpdateFunctionRenderParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *UpdateFunctionRenderParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Request-side render configuration. Carries the template document as
+// base64-encoded `.docx` bytes: the server validates them, stores the template,
+// and derives the placeholder/style-id contract at create/update time, so clients
+// never submit `placeholders` or `styleIds`. The response shape (`RenderConfig`)
+// returns the derived contract.
+//
+// The property Template is required.
+type UpdateFunctionRenderRenderConfigParam struct {
+	Template UpdateFunctionRenderRenderConfigTemplateParam `json:"template,omitzero" api:"required"`
+	paramObj
+}
+
+func (r UpdateFunctionRenderRenderConfigParam) MarshalJSON() (data []byte, err error) {
+	type shadow UpdateFunctionRenderRenderConfigParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *UpdateFunctionRenderRenderConfigParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The property Base64 is required.
+type UpdateFunctionRenderRenderConfigTemplateParam struct {
+	// Base64-encoded `.docx` bytes. In the Bem CLI, use `@path/to/file` to embed it
+	// automatically.
+	Base64 string `json:"base64" api:"required"`
+	// Original upload filename (e.g. `contract.docx`), stored for display only. Does
+	// not affect where the template is stored.
+	Name param.Opt[string] `json:"name,omitzero"`
+	paramObj
+}
+
+func (r UpdateFunctionRenderRenderConfigTemplateParam) MarshalJSON() (data []byte, err error) {
+	type shadow UpdateFunctionRenderRenderConfigTemplateParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *UpdateFunctionRenderRenderConfigTemplateParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

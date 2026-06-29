@@ -25,6 +25,7 @@ type Extract string        // Always "extract"
 type Join string           // Always "join"
 type Parse string          // Always "parse"
 type PayloadShaping string // Always "payload_shaping"
+type Render string         // Always "render"
 type Send string           // Always "send"
 type Split string          // Always "split"
 type Transform string      // Always "transform"
@@ -36,6 +37,7 @@ func (c Extract) Default() Extract               { return "extract" }
 func (c Join) Default() Join                     { return "join" }
 func (c Parse) Default() Parse                   { return "parse" }
 func (c PayloadShaping) Default() PayloadShaping { return "payload_shaping" }
+func (c Render) Default() Render                 { return "render" }
 func (c Send) Default() Send                     { return "send" }
 func (c Split) Default() Split                   { return "split" }
 func (c Transform) Default() Transform           { return "transform" }
@@ -47,6 +49,7 @@ func (c Extract) MarshalJSON() ([]byte, error)        { return marshalString(c) 
 func (c Join) MarshalJSON() ([]byte, error)           { return marshalString(c) }
 func (c Parse) MarshalJSON() ([]byte, error)          { return marshalString(c) }
 func (c PayloadShaping) MarshalJSON() ([]byte, error) { return marshalString(c) }
+func (c Render) MarshalJSON() ([]byte, error)         { return marshalString(c) }
 func (c Send) MarshalJSON() ([]byte, error)           { return marshalString(c) }
 func (c Split) MarshalJSON() ([]byte, error)          { return marshalString(c) }
 func (c Transform) MarshalJSON() ([]byte, error)      { return marshalString(c) }

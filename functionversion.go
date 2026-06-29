@@ -98,7 +98,7 @@ func (r *FunctionVersionService) List(ctx context.Context, functionName string, 
 // [FunctionVersionTransform], [FunctionVersionExtract], [FunctionVersionAnalyze],
 // [FunctionVersionClassify], [FunctionVersionSend], [FunctionVersionSplit],
 // [FunctionVersionJoin], [FunctionVersionEnrich], [FunctionVersionPayloadShaping],
-// [FunctionVersionParse].
+// [FunctionVersionParse], [FunctionVersionRender].
 //
 // Use the [FunctionVersionUnion.AsAny] method to switch on the variant.
 //
@@ -111,7 +111,7 @@ type FunctionVersionUnion struct {
 	OutputSchemaName       string `json:"outputSchemaName"`
 	TabularChunkingEnabled bool   `json:"tabularChunkingEnabled"`
 	// Any of "transform", "extract", "analyze", "classify", "send", "split", "join",
-	// "enrich", "payload_shaping", "parse".
+	// "enrich", "payload_shaping", "parse", "render".
 	Type       string `json:"type"`
 	VersionNum int64  `json:"versionNum"`
 	// This field is from variant [FunctionVersionTransform].
@@ -153,7 +153,9 @@ type FunctionVersionUnion struct {
 	ExtraConfig FunctionVersionParseExtraConfig `json:"extraConfig"`
 	// This field is from variant [FunctionVersionParse].
 	ParseConfig ParseConfig `json:"parseConfig"`
-	JSON        struct {
+	// This field is from variant [FunctionVersionRender].
+	RenderConfig FunctionVersionRenderRenderConfig `json:"renderConfig"`
+	JSON         struct {
 		EmailAddress            respjson.Field
 		FunctionID              respjson.Field
 		FunctionName            respjson.Field
@@ -185,6 +187,7 @@ type FunctionVersionUnion struct {
 		ShapingSchema           respjson.Field
 		ExtraConfig             respjson.Field
 		ParseConfig             respjson.Field
+		RenderConfig            respjson.Field
 		raw                     string
 	} `json:"-"`
 }
@@ -205,6 +208,7 @@ func (FunctionVersionJoin) implFunctionVersionUnion()           {}
 func (FunctionVersionEnrich) implFunctionVersionUnion()         {}
 func (FunctionVersionPayloadShaping) implFunctionVersionUnion() {}
 func (FunctionVersionParse) implFunctionVersionUnion()          {}
+func (FunctionVersionRender) implFunctionVersionUnion()         {}
 
 // Use the following switch statement to find the correct variant
 //
@@ -219,6 +223,7 @@ func (FunctionVersionParse) implFunctionVersionUnion()          {}
 //	case bem.FunctionVersionEnrich:
 //	case bem.FunctionVersionPayloadShaping:
 //	case bem.FunctionVersionParse:
+//	case bem.FunctionVersionRender:
 //	default:
 //	  fmt.Errorf("no variant present")
 //	}
@@ -244,6 +249,8 @@ func (u FunctionVersionUnion) AsAny() anyFunctionVersion {
 		return u.AsPayloadShaping()
 	case "parse":
 		return u.AsParse()
+	case "render":
+		return u.AsRender()
 	}
 	return nil
 }
@@ -294,6 +301,11 @@ func (u FunctionVersionUnion) AsPayloadShaping() (v FunctionVersionPayloadShapin
 }
 
 func (u FunctionVersionUnion) AsParse() (v FunctionVersionParse) {
+	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
+	return
+}
+
+func (u FunctionVersionUnion) AsRender() (v FunctionVersionRender) {
 	apijson.UnmarshalRoot(json.RawMessage(u.JSON.raw), &v)
 	return
 }
@@ -917,6 +929,163 @@ type FunctionVersionParseExtraConfig struct {
 // Returns the unmodified JSON received from the API
 func (r FunctionVersionParseExtraConfig) RawJSON() string { return r.JSON.raw }
 func (r *FunctionVersionParseExtraConfig) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+type FunctionVersionRender struct {
+	// Unique identifier of function.
+	FunctionID string `json:"functionID" api:"required"`
+	// Name of function. Must be UNIQUE on a per-environment basis.
+	FunctionName string          `json:"functionName" api:"required"`
+	Type         constant.Render `json:"type" default:"render"`
+	// Version number of function.
+	VersionNum int64 `json:"versionNum" api:"required"`
+	// Audit trail information for the function version.
+	Audit FunctionAudit `json:"audit"`
+	// The date and time the function version was created.
+	CreatedAt time.Time `json:"createdAt" format:"date-time"`
+	// Display name of function. Human-readable name to help you identify the function.
+	DisplayName string `json:"displayName"`
+	// Per-version configuration for a Render function.
+	//
+	// Render emits a `.docx` from schema-typed JSON by composing the JSON into a
+	// `.docx` template. The template document is stored server-side; this response
+	// exposes only the contract derived from it. Schema validation runs internally in
+	// the ML service against the bundled core schema; no customer-supplied schema
+	// rides this surface.
+	RenderConfig FunctionVersionRenderRenderConfig `json:"renderConfig"`
+	// Array of tags to categorize and organize functions.
+	Tags []string `json:"tags"`
+	// List of workflows that use this function.
+	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		FunctionID      respjson.Field
+		FunctionName    respjson.Field
+		Type            respjson.Field
+		VersionNum      respjson.Field
+		Audit           respjson.Field
+		CreatedAt       respjson.Field
+		DisplayName     respjson.Field
+		RenderConfig    respjson.Field
+		Tags            respjson.Field
+		UsedInWorkflows respjson.Field
+		ExtraFields     map[string]respjson.Field
+		raw             string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r FunctionVersionRender) RawJSON() string { return r.JSON.raw }
+func (r *FunctionVersionRender) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Per-version configuration for a Render function.
+//
+// Render emits a `.docx` from schema-typed JSON by composing the JSON into a
+// `.docx` template. The template document is stored server-side; this response
+// exposes only the contract derived from it. Schema validation runs internally in
+// the ML service against the bundled core schema; no customer-supplied schema
+// rides this surface.
+type FunctionVersionRenderRenderConfig struct {
+	// The uploaded template: its filename, a short-lived presigned download URL, and
+	// the placeholder/style contract derived from it. Absent on configs created before
+	// template capture existed.
+	Template FunctionVersionRenderRenderConfigTemplate `json:"template"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Template    respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r FunctionVersionRenderRenderConfig) RawJSON() string { return r.JSON.raw }
+func (r *FunctionVersionRenderRenderConfig) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The uploaded template: its filename, a short-lived presigned download URL, and
+// the placeholder/style contract derived from it. Absent on configs created before
+// template capture existed.
+type FunctionVersionRenderRenderConfigTemplate struct {
+	// Short-lived presigned URL to download the stored `.docx`. The private storage
+	// location is never exposed.
+	DownloadURL string `json:"downloadURL" format:"uri"`
+	// Supported list kinds (`decimal`, `bullet`) the template's `numbering.xml`
+	// defines an `abstractNum` for. Empty means the template can hold no list, so any
+	// list primitive will fail at render.
+	//
+	// Any of "decimal", "bullet".
+	ListKinds []string `json:"listKinds"`
+	// Original filename of the uploaded template (e.g. `contract.docx`), echoed back
+	// for display. Absent on templates uploaded before the filename was captured.
+	Name string `json:"name"`
+	// The placeholder contract a Render template declares, grouped by how each
+	// placeholder is filled. Derived from the template at create/update time by
+	// scanning its `docxtpl` tags; not user-supplied.
+	//
+	//   - `stringKeys`: bare string placeholders (`{{ key }}`) filled with a single
+	//     value.
+	//   - `blockKeys`: wrapped-primitive placeholders (`{{p key }}`) — bind one core
+	//     primitive (paragraph, table, image, or list). The placeholder's own paragraph
+	//     dissolves and is replaced by the rendered subdocument's blocks, rather than
+	//     substituting text inline.
+	Placeholders FunctionVersionRenderRenderConfigTemplatePlaceholders `json:"placeholders"`
+	// Paragraph/character style IDs the uploaded template defines and the rendered
+	// output can reference. Derived from the template's `styles.xml` at create/update
+	// time.
+	StyleIDs []string `json:"styleIds"`
+	// Style IDs whose type is table — the styles a `table` primitive's required
+	// `styleId` can name. Empty means the template defines no table style, so any
+	// table primitive will fail at render.
+	TableStyleIDs []string `json:"tableStyleIds"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DownloadURL   respjson.Field
+		ListKinds     respjson.Field
+		Name          respjson.Field
+		Placeholders  respjson.Field
+		StyleIDs      respjson.Field
+		TableStyleIDs respjson.Field
+		ExtraFields   map[string]respjson.Field
+		raw           string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r FunctionVersionRenderRenderConfigTemplate) RawJSON() string { return r.JSON.raw }
+func (r *FunctionVersionRenderRenderConfigTemplate) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The placeholder contract a Render template declares, grouped by how each
+// placeholder is filled. Derived from the template at create/update time by
+// scanning its `docxtpl` tags; not user-supplied.
+//
+//   - `stringKeys`: bare string placeholders (`{{ key }}`) filled with a single
+//     value.
+//   - `blockKeys`: wrapped-primitive placeholders (`{{p key }}`) — bind one core
+//     primitive (paragraph, table, image, or list). The placeholder's own paragraph
+//     dissolves and is replaced by the rendered subdocument's blocks, rather than
+//     substituting text inline.
+type FunctionVersionRenderRenderConfigTemplatePlaceholders struct {
+	BlockKeys  []string `json:"blockKeys" api:"required"`
+	StringKeys []string `json:"stringKeys" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		BlockKeys   respjson.Field
+		StringKeys  respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r FunctionVersionRenderRenderConfigTemplatePlaceholders) RawJSON() string { return r.JSON.raw }
+func (r *FunctionVersionRenderRenderConfigTemplatePlaceholders) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

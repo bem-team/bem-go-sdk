@@ -378,12 +378,16 @@ type EntityGetRelationsResponseInboundSourceEntity struct {
 	ID string `json:"id" api:"required"`
 	// Canonical (most descriptive) surface form of the entity.
 	Canonical string `json:"canonical" api:"required"`
+	// Hops from the queried entity. This endpoint returns direct relations, so this is
+	// 1 (a self-loop's far end is the queried entity itself, 0).
+	Depth int64 `json:"depth" api:"required"`
 	// Effective entity type.
 	Type string `json:"type" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		ID          respjson.Field
 		Canonical   respjson.Field
+		Depth       respjson.Field
 		Type        respjson.Field
 		ExtraFields map[string]respjson.Field
 		raw         string
@@ -433,12 +437,16 @@ type EntityGetRelationsResponseOutboundTargetEntity struct {
 	ID string `json:"id" api:"required"`
 	// Canonical (most descriptive) surface form of the entity.
 	Canonical string `json:"canonical" api:"required"`
+	// Hops from the queried entity. This endpoint returns direct relations, so this is
+	// 1 (a self-loop's far end is the queried entity itself, 0).
+	Depth int64 `json:"depth" api:"required"`
 	// Effective entity type.
 	Type string `json:"type" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		ID          respjson.Field
 		Canonical   respjson.Field
+		Depth       respjson.Field
 		Type        respjson.Field
 		ExtraFields map[string]respjson.Field
 		raw         string

@@ -121,6 +121,10 @@ type KnowledgeGraphGetResponseNode struct {
 	ID string `json:"id" api:"required"`
 	// Canonical (most descriptive) surface form.
 	Canonical string `json:"canonical" api:"required"`
+	// Hops from the center node when the request centers the graph on one entity
+	// (`nodeID`). The center is depth 0. When the request is uncentered (no `nodeID`),
+	// this is 0 for every node.
+	Depth int64 `json:"depth" api:"required"`
 	// Total mentions of this entity across all parsed documents.
 	MentionCount int64 `json:"mentionCount" api:"required"`
 	// Effective entity type.
@@ -129,6 +133,7 @@ type KnowledgeGraphGetResponseNode struct {
 	JSON struct {
 		ID           respjson.Field
 		Canonical    respjson.Field
+		Depth        respjson.Field
 		MentionCount respjson.Field
 		Type         respjson.Field
 		ExtraFields  map[string]respjson.Field
@@ -150,6 +155,14 @@ type KnowledgeGraphGetParams struct {
 	Cursor param.Opt[string] `query:"cursor,omitzero" json:"-"`
 	// Maximum number of edges per page (default 50, max 200).
 	Limit param.Opt[int64] `query:"limit,omitzero" json:"-"`
+	// Maximum hops from the center node. Only meaningful with `nodeID`. Defaults to 2
+	// and is clamped down to a system maximum (5).
+	MaxDepth param.Opt[int64] `query:"maxDepth,omitzero" json:"-"`
+	// Center the graph on this entity (`ent_...`) and only return the subgraph within
+	// `maxDepth` hops of it; every node then carries its `depth` (hops from the
+	// center, center = 0). Omit for the uncentered whole-graph view. `rootNodeID` and
+	// `focusNodeID` are accepted as aliases.
+	NodeID param.Opt[string] `query:"nodeID,omitzero" json:"-"`
 	// Case-insensitive substring match on canonical names. Both endpoints of an edge
 	// must match for the edge (and its nodes) to be returned.
 	Search param.Opt[string] `query:"search,omitzero" json:"-"`

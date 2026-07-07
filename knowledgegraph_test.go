@@ -28,12 +28,14 @@ func TestKnowledgeGraphGetWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.KnowledgeGraph.Get(context.TODO(), bem.KnowledgeGraphGetParams{
-		Bucket: bem.String("bucket"),
-		Cursor: bem.String("cursor"),
-		Limit:  bem.Int(0),
-		Search: bem.String("search"),
-		Since:  bem.Time(time.Now()),
-		Type:   []string{"string"},
+		Bucket:   bem.String("bucket"),
+		Cursor:   bem.String("cursor"),
+		Limit:    bem.Int(0),
+		MaxDepth: bem.Int(0),
+		NodeID:   bem.String("nodeID"),
+		Search:   bem.String("search"),
+		Since:    bem.Time(time.Now()),
+		Type:     []string{"string"},
 	})
 	if err != nil {
 		var apierr *bem.Error

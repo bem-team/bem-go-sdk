@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.22.0 (2026-07-09)
+
+Full Changelog: [v0.21.0...v0.22.0](https://github.com/bem-team/bem-go-sdk/compare/v0.21.0...v0.22.0)
+
+### Features
+
+* **api:** api update ([eb9050f](https://github.com/bem-team/bem-go-sdk/commit/eb9050f4b491ffe290c96c3eb34ea6551b18c050))
+* **api:** api update ([3798b99](https://github.com/bem-team/bem-go-sdk/commit/3798b994f2090ea47ed8fc0115813346d2fa73c3))
+* **api:** api update ([c1dc3c0](https://github.com/bem-team/bem-go-sdk/commit/c1dc3c0cc54bbd89bcbf81adf5759f852ac63dc5))
+* **api:** api update ([74bcc31](https://github.com/bem-team/bem-go-sdk/commit/74bcc31371c658c1e09568d3a469c1911b48e856))
+
 ## 0.21.0 (2026-06-18)
 
 Full Changelog: [v0.20.0...v0.21.0](https://github.com/bem-team/bem-go-sdk/compare/v0.20.0...v0.21.0)

@@ -647,7 +647,7 @@ type EvalScoreNewParamsPairInput struct {
 	// The input type of the content you're sending for transformation.
 	//
 	// Any of "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a",
-	// "mp3", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
+	// "mov", "mp3", "mp4", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
 	InputType InputType `json:"inputType,omitzero" api:"required"`
 	paramObj
 }

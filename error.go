@@ -133,8 +133,15 @@ type ErrorEvent struct {
 	// Version number of function that this event is associated with.
 	FunctionVersionNum int64 `json:"functionVersionNum"`
 	// The inbound email that triggered this event.
-	InboundEmail InboundEmailEvent  `json:"inboundEmail"`
-	Metadata     ErrorEventMetadata `json:"metadata"`
+	InboundEmail InboundEmailEvent `json:"inboundEmail"`
+	// Open, extensible error-kind label for typed transformation errors. The platform
+	// emits these as plain strings and the set grows over time, so clients must accept
+	// unknown values. For render functions the known kinds are `render_source_fetch`,
+	// `render_template_fetch`, `render_image_unresolved`, `render_validation`,
+	// `render_exception`, `render_upload`, and `render_contract`. Omitted for
+	// historical events that pre-date the kind column and for non-transform errors.
+	Kind     string             `json:"kind"`
+	Metadata ErrorEventMetadata `json:"metadata"`
 	// Unique identifier of workflow that this event is associated with.
 	WorkflowID string `json:"workflowID"`
 	// Name of workflow that this event is associated with.
@@ -155,6 +162,7 @@ type ErrorEvent struct {
 		FunctionCallTryNumber respjson.Field
 		FunctionVersionNum    respjson.Field
 		InboundEmail          respjson.Field
+		Kind                  respjson.Field
 		Metadata              respjson.Field
 		WorkflowID            respjson.Field
 		WorkflowName          respjson.Field

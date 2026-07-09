@@ -97,7 +97,7 @@ type ExtractWebhookEvent struct {
 	// The input type of the content you're sending for transformation.
 	//
 	// Any of "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a",
-	// "mp3", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
+	// "mov", "mp3", "mp4", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
 	InputType InputType `json:"inputType"`
 	// List of properties that were invalid in the input.
 	InvalidProperties []string                    `json:"invalidProperties"`
@@ -415,7 +415,7 @@ type ParseWebhookEvent struct {
 	// The input type of the content you're sending for transformation.
 	//
 	// Any of "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a",
-	// "mp3", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
+	// "mov", "mp3", "mp4", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
 	InputType InputType `json:"inputType"`
 	// List of properties that were invalid in the input.
 	InvalidProperties []string                  `json:"invalidProperties"`
@@ -1726,7 +1726,9 @@ type UnwrapWebhookEventUnion struct {
 	CollectionItemIDs []string `json:"collectionItemIDs"`
 	// This field is from variant [ErrorEvent].
 	Message string `json:"message"`
-	JSON    struct {
+	// This field is from variant [ErrorEvent].
+	Kind string `json:"kind"`
+	JSON struct {
 		EventID               respjson.Field
 		FunctionID            respjson.Field
 		FunctionName          respjson.Field
@@ -1778,6 +1780,7 @@ type UnwrapWebhookEventUnion struct {
 		ProcessedCount        respjson.Field
 		CollectionItemIDs     respjson.Field
 		Message               respjson.Field
+		Kind                  respjson.Field
 		raw                   string
 	} `json:"-"`
 }

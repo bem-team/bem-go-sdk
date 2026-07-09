@@ -726,7 +726,7 @@ type EventTransform struct {
 	// The input type of the content you're sending for transformation.
 	//
 	// Any of "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a",
-	// "mp3", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
+	// "mov", "mp3", "mp4", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
 	InputType InputType `json:"inputType"`
 	// List of properties that were invalid in the input.
 	InvalidProperties []string `json:"invalidProperties"`
@@ -1039,7 +1039,7 @@ type EventExtract struct {
 	// The input type of the content you're sending for transformation.
 	//
 	// Any of "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a",
-	// "mp3", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
+	// "mov", "mp3", "mp4", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
 	InputType InputType `json:"inputType"`
 	// List of properties that were invalid in the input.
 	InvalidProperties []string             `json:"invalidProperties"`
@@ -1263,7 +1263,7 @@ type EventParse struct {
 	// The input type of the content you're sending for transformation.
 	//
 	// Any of "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a",
-	// "mp3", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
+	// "mov", "mp3", "mp4", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
 	InputType InputType `json:"inputType"`
 	// List of properties that were invalid in the input.
 	InvalidProperties []string           `json:"invalidProperties"`
@@ -2734,7 +2734,9 @@ const (
 	InputTypeJson  InputType = "json"
 	InputTypeHeif  InputType = "heif"
 	InputTypeM4a   InputType = "m4a"
+	InputTypeMov   InputType = "mov"
 	InputTypeMP3   InputType = "mp3"
+	InputTypeMP4   InputType = "mp4"
 	InputTypePdf   InputType = "pdf"
 	InputTypePng   InputType = "png"
 	InputTypeText  InputType = "text"

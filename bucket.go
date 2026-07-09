@@ -57,7 +57,7 @@ func NewBucketService(opts ...option.RequestOption) (r BucketService) {
 }
 
 // Create a Bucket
-func (r *BucketService) New(ctx context.Context, body BucketNewParams, opts ...option.RequestOption) (res *BucketNewResponse, err error) {
+func (r *BucketService) New(ctx context.Context, body BucketNewParams, opts ...option.RequestOption) (res *BucketV3, err error) {
 	opts = slices.Concat(r.options, opts)
 	path := "v3/buckets"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
@@ -65,7 +65,7 @@ func (r *BucketService) New(ctx context.Context, body BucketNewParams, opts ...o
 }
 
 // Get a Bucket
-func (r *BucketService) Get(ctx context.Context, bucketID string, opts ...option.RequestOption) (res *BucketGetResponse, err error) {
+func (r *BucketService) Get(ctx context.Context, bucketID string, opts ...option.RequestOption) (res *BucketV3, err error) {
 	opts = slices.Concat(r.options, opts)
 	if bucketID == "" {
 		err = errors.New("missing required bucketID parameter")
@@ -77,7 +77,7 @@ func (r *BucketService) Get(ctx context.Context, bucketID string, opts ...option
 }
 
 // Update a Bucket
-func (r *BucketService) Update(ctx context.Context, bucketID string, body BucketUpdateParams, opts ...option.RequestOption) (res *BucketUpdateResponse, err error) {
+func (r *BucketService) Update(ctx context.Context, bucketID string, body BucketUpdateParams, opts ...option.RequestOption) (res *BucketV3, err error) {
 	opts = slices.Concat(r.options, opts)
 	if bucketID == "" {
 		err = errors.New("missing required bucketID parameter")
@@ -115,7 +115,7 @@ func (r *BucketService) Delete(ctx context.Context, bucketID string, body Bucket
 //
 // Every account+environment has exactly one default bucket. The default bucket can
 // be renamed but never deleted.
-type BucketNewResponse struct {
+type BucketV3 struct {
 	// Stable public identifier for the bucket (`bkt_...`).
 	BucketID string `json:"bucketID" api:"required"`
 	// Creation timestamp (RFC 3339).
@@ -142,90 +142,14 @@ type BucketNewResponse struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r BucketNewResponse) RawJSON() string { return r.JSON.raw }
-func (r *BucketNewResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// A Bucket is a named partition of the knowledge graph within an
-// account+environment. Entities, mentions, and relations are scoped to a bucket so
-// a single account+environment can host multiple isolated graphs.
-//
-// Every account+environment has exactly one default bucket. The default bucket can
-// be renamed but never deleted.
-type BucketGetResponse struct {
-	// Stable public identifier for the bucket (`bkt_...`).
-	BucketID string `json:"bucketID" api:"required"`
-	// Creation timestamp (RFC 3339).
-	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
-	// Optional human-facing note about the bucket.
-	Description string `json:"description" api:"required"`
-	// Whether this is the account+environment's default bucket.
-	IsDefault bool `json:"isDefault" api:"required"`
-	// Human-facing bucket name. Unique within an account+environment.
-	Name string `json:"name" api:"required"`
-	// Last-update timestamp (RFC 3339).
-	UpdatedAt time.Time `json:"updatedAt" api:"required" format:"date-time"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		BucketID    respjson.Field
-		CreatedAt   respjson.Field
-		Description respjson.Field
-		IsDefault   respjson.Field
-		Name        respjson.Field
-		UpdatedAt   respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r BucketGetResponse) RawJSON() string { return r.JSON.raw }
-func (r *BucketGetResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// A Bucket is a named partition of the knowledge graph within an
-// account+environment. Entities, mentions, and relations are scoped to a bucket so
-// a single account+environment can host multiple isolated graphs.
-//
-// Every account+environment has exactly one default bucket. The default bucket can
-// be renamed but never deleted.
-type BucketUpdateResponse struct {
-	// Stable public identifier for the bucket (`bkt_...`).
-	BucketID string `json:"bucketID" api:"required"`
-	// Creation timestamp (RFC 3339).
-	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
-	// Optional human-facing note about the bucket.
-	Description string `json:"description" api:"required"`
-	// Whether this is the account+environment's default bucket.
-	IsDefault bool `json:"isDefault" api:"required"`
-	// Human-facing bucket name. Unique within an account+environment.
-	Name string `json:"name" api:"required"`
-	// Last-update timestamp (RFC 3339).
-	UpdatedAt time.Time `json:"updatedAt" api:"required" format:"date-time"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		BucketID    respjson.Field
-		CreatedAt   respjson.Field
-		Description respjson.Field
-		IsDefault   respjson.Field
-		Name        respjson.Field
-		UpdatedAt   respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r BucketUpdateResponse) RawJSON() string { return r.JSON.raw }
-func (r *BucketUpdateResponse) UnmarshalJSON(data []byte) error {
+func (r BucketV3) RawJSON() string { return r.JSON.raw }
+func (r *BucketV3) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
 // Response body for listing buckets.
 type BucketListResponse struct {
-	Buckets []BucketListResponseBucket `json:"buckets" api:"required"`
+	Buckets []BucketV3 `json:"buckets" api:"required"`
 	// Total number of buckets matching the query, ignoring pagination.
 	TotalCount int64 `json:"totalCount" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
@@ -240,44 +164,6 @@ type BucketListResponse struct {
 // Returns the unmodified JSON received from the API
 func (r BucketListResponse) RawJSON() string { return r.JSON.raw }
 func (r *BucketListResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// A Bucket is a named partition of the knowledge graph within an
-// account+environment. Entities, mentions, and relations are scoped to a bucket so
-// a single account+environment can host multiple isolated graphs.
-//
-// Every account+environment has exactly one default bucket. The default bucket can
-// be renamed but never deleted.
-type BucketListResponseBucket struct {
-	// Stable public identifier for the bucket (`bkt_...`).
-	BucketID string `json:"bucketID" api:"required"`
-	// Creation timestamp (RFC 3339).
-	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
-	// Optional human-facing note about the bucket.
-	Description string `json:"description" api:"required"`
-	// Whether this is the account+environment's default bucket.
-	IsDefault bool `json:"isDefault" api:"required"`
-	// Human-facing bucket name. Unique within an account+environment.
-	Name string `json:"name" api:"required"`
-	// Last-update timestamp (RFC 3339).
-	UpdatedAt time.Time `json:"updatedAt" api:"required" format:"date-time"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		BucketID    respjson.Field
-		CreatedAt   respjson.Field
-		Description respjson.Field
-		IsDefault   respjson.Field
-		Name        respjson.Field
-		UpdatedAt   respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r BucketListResponseBucket) RawJSON() string { return r.JSON.raw }
-func (r *BucketListResponseBucket) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

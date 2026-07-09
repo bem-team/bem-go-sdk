@@ -226,7 +226,7 @@ func TestWorkflowCallWithOptionalParams(t *testing.T) {
 						ItemReferenceID: bem.String("itemReferenceID"),
 					}},
 				},
-				SingleFile: bem.WorkflowCallParamsInputSingleFile{
+				SingleFile: bem.FileInputParam{
 					InputContent: "inputContent",
 					InputType:    bem.InputTypeCsv,
 				},

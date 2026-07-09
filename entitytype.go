@@ -75,7 +75,7 @@ func NewEntityTypeService(opts ...option.RequestOption) (r EntityTypeService) {
 }
 
 // Create an Entity Type
-func (r *EntityTypeService) New(ctx context.Context, body EntityTypeNewParams, opts ...option.RequestOption) (res *EntityTypeNewResponse, err error) {
+func (r *EntityTypeService) New(ctx context.Context, body EntityTypeNewParams, opts ...option.RequestOption) (res *EntityType, err error) {
 	opts = slices.Concat(r.options, opts)
 	path := "v3/entity-types"
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
@@ -83,7 +83,7 @@ func (r *EntityTypeService) New(ctx context.Context, body EntityTypeNewParams, o
 }
 
 // Get an Entity Type
-func (r *EntityTypeService) Get(ctx context.Context, typeID string, opts ...option.RequestOption) (res *EntityTypeGetResponse, err error) {
+func (r *EntityTypeService) Get(ctx context.Context, typeID string, opts ...option.RequestOption) (res *EntityType, err error) {
 	opts = slices.Concat(r.options, opts)
 	if typeID == "" {
 		err = errors.New("missing required typeID parameter")
@@ -95,7 +95,7 @@ func (r *EntityTypeService) Get(ctx context.Context, typeID string, opts ...opti
 }
 
 // Update an Entity Type
-func (r *EntityTypeService) Update(ctx context.Context, typeID string, body EntityTypeUpdateParams, opts ...option.RequestOption) (res *EntityTypeUpdateResponse, err error) {
+func (r *EntityTypeService) Update(ctx context.Context, typeID string, body EntityTypeUpdateParams, opts ...option.RequestOption) (res *EntityType, err error) {
 	opts = slices.Concat(r.options, opts)
 	if typeID == "" {
 		err = errors.New("missing required typeID parameter")
@@ -131,7 +131,7 @@ func (r *EntityTypeService) Delete(ctx context.Context, typeID string, opts ...o
 // to an account+environment. Types may be organised into hierarchies via
 // `parentTypeID`, and may carry per-type structured attribute metadata in
 // `attributeSchema` (for example `{"unit": "mg", "range": [0, 100]}`).
-type EntityTypeNewResponse struct {
+type EntityType struct {
 	// Creation timestamp (RFC 3339).
 	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
 	// Optional human-facing note about the type.
@@ -163,96 +163,14 @@ type EntityTypeNewResponse struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r EntityTypeNewResponse) RawJSON() string { return r.JSON.raw }
-func (r *EntityTypeNewResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// An EntityType is a customer-defined type in the knowledge-graph taxonomy, scoped
-// to an account+environment. Types may be organised into hierarchies via
-// `parentTypeID`, and may carry per-type structured attribute metadata in
-// `attributeSchema` (for example `{"unit": "mg", "range": [0, 100]}`).
-type EntityTypeGetResponse struct {
-	// Creation timestamp (RFC 3339).
-	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
-	// Optional human-facing note about the type.
-	Description string `json:"description" api:"required"`
-	// Human-facing type name. Unique within an account+environment, and immutable once
-	// set.
-	Name string `json:"name" api:"required"`
-	// Public ID (`ety_...`) of the parent type, or an empty string when the type is
-	// top-level.
-	ParentTypeID string `json:"parentTypeID" api:"required"`
-	// Stable public identifier for the entity type (`ety_...`).
-	TypeID string `json:"typeID" api:"required"`
-	// Last-update timestamp (RFC 3339).
-	UpdatedAt time.Time `json:"updatedAt" api:"required" format:"date-time"`
-	// Optional per-type structured attribute metadata.
-	AttributeSchema any `json:"attributeSchema"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		CreatedAt       respjson.Field
-		Description     respjson.Field
-		Name            respjson.Field
-		ParentTypeID    respjson.Field
-		TypeID          respjson.Field
-		UpdatedAt       respjson.Field
-		AttributeSchema respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EntityTypeGetResponse) RawJSON() string { return r.JSON.raw }
-func (r *EntityTypeGetResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// An EntityType is a customer-defined type in the knowledge-graph taxonomy, scoped
-// to an account+environment. Types may be organised into hierarchies via
-// `parentTypeID`, and may carry per-type structured attribute metadata in
-// `attributeSchema` (for example `{"unit": "mg", "range": [0, 100]}`).
-type EntityTypeUpdateResponse struct {
-	// Creation timestamp (RFC 3339).
-	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
-	// Optional human-facing note about the type.
-	Description string `json:"description" api:"required"`
-	// Human-facing type name. Unique within an account+environment, and immutable once
-	// set.
-	Name string `json:"name" api:"required"`
-	// Public ID (`ety_...`) of the parent type, or an empty string when the type is
-	// top-level.
-	ParentTypeID string `json:"parentTypeID" api:"required"`
-	// Stable public identifier for the entity type (`ety_...`).
-	TypeID string `json:"typeID" api:"required"`
-	// Last-update timestamp (RFC 3339).
-	UpdatedAt time.Time `json:"updatedAt" api:"required" format:"date-time"`
-	// Optional per-type structured attribute metadata.
-	AttributeSchema any `json:"attributeSchema"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		CreatedAt       respjson.Field
-		Description     respjson.Field
-		Name            respjson.Field
-		ParentTypeID    respjson.Field
-		TypeID          respjson.Field
-		UpdatedAt       respjson.Field
-		AttributeSchema respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EntityTypeUpdateResponse) RawJSON() string { return r.JSON.raw }
-func (r *EntityTypeUpdateResponse) UnmarshalJSON(data []byte) error {
+func (r EntityType) RawJSON() string { return r.JSON.raw }
+func (r *EntityType) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
 // Response body for listing entity types.
 type EntityTypeListResponse struct {
-	EntityTypes []EntityTypeListResponseEntityType `json:"entityTypes" api:"required"`
+	EntityTypes []EntityType `json:"entityTypes" api:"required"`
 	// Total number of entity types matching the query, ignoring pagination.
 	TotalCount int64 `json:"totalCount" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
@@ -267,47 +185,6 @@ type EntityTypeListResponse struct {
 // Returns the unmodified JSON received from the API
 func (r EntityTypeListResponse) RawJSON() string { return r.JSON.raw }
 func (r *EntityTypeListResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// An EntityType is a customer-defined type in the knowledge-graph taxonomy, scoped
-// to an account+environment. Types may be organised into hierarchies via
-// `parentTypeID`, and may carry per-type structured attribute metadata in
-// `attributeSchema` (for example `{"unit": "mg", "range": [0, 100]}`).
-type EntityTypeListResponseEntityType struct {
-	// Creation timestamp (RFC 3339).
-	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
-	// Optional human-facing note about the type.
-	Description string `json:"description" api:"required"`
-	// Human-facing type name. Unique within an account+environment, and immutable once
-	// set.
-	Name string `json:"name" api:"required"`
-	// Public ID (`ety_...`) of the parent type, or an empty string when the type is
-	// top-level.
-	ParentTypeID string `json:"parentTypeID" api:"required"`
-	// Stable public identifier for the entity type (`ety_...`).
-	TypeID string `json:"typeID" api:"required"`
-	// Last-update timestamp (RFC 3339).
-	UpdatedAt time.Time `json:"updatedAt" api:"required" format:"date-time"`
-	// Optional per-type structured attribute metadata.
-	AttributeSchema any `json:"attributeSchema"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		CreatedAt       respjson.Field
-		Description     respjson.Field
-		Name            respjson.Field
-		ParentTypeID    respjson.Field
-		TypeID          respjson.Field
-		UpdatedAt       respjson.Field
-		AttributeSchema respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EntityTypeListResponseEntityType) RawJSON() string { return r.JSON.raw }
-func (r *EntityTypeListResponseEntityType) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

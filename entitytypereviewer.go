@@ -67,7 +67,7 @@ func (r *EntityTypeReviewerService) List(ctx context.Context, typeID string, opt
 }
 
 // Assign a Reviewer
-func (r *EntityTypeReviewerService) Assign(ctx context.Context, typeID string, body EntityTypeReviewerAssignParams, opts ...option.RequestOption) (res *EntityTypeReviewerAssignResponse, err error) {
+func (r *EntityTypeReviewerService) Assign(ctx context.Context, typeID string, body EntityTypeReviewerAssignParams, opts ...option.RequestOption) (res *Reviewer, err error) {
 	opts = slices.Concat(r.options, opts)
 	if typeID == "" {
 		err = errors.New("missing required typeID parameter")
@@ -95,9 +95,41 @@ func (r *EntityTypeReviewerService) Remove(ctx context.Context, userID string, b
 	return err
 }
 
+// A reviewer assignment links a user to an entity type they are responsible for
+// reviewing. The assignment is scoped to an account+environment and is unique per
+// (entity type, user).
+type Reviewer struct {
+	// When the assignment was created (RFC 3339).
+	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
+	// The assigned user's email.
+	Email string `json:"email" api:"required"`
+	// Stable public identifier for the assignment (`etr_...`).
+	ReviewerID string `json:"reviewerID" api:"required"`
+	// The assigned user's account role (for example `operator`, `admin`).
+	Role string `json:"role" api:"required"`
+	// Public identifier of the assigned user (`usr_...`).
+	UserID string `json:"userID" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		CreatedAt   respjson.Field
+		Email       respjson.Field
+		ReviewerID  respjson.Field
+		Role        respjson.Field
+		UserID      respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r Reviewer) RawJSON() string { return r.JSON.raw }
+func (r *Reviewer) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
 // Response body for listing the reviewers of an entity type.
 type EntityTypeReviewerListResponse struct {
-	Reviewers []EntityTypeReviewerListResponseReviewer `json:"reviewers" api:"required"`
+	Reviewers []Reviewer `json:"reviewers" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Reviewers   respjson.Field
@@ -109,70 +141,6 @@ type EntityTypeReviewerListResponse struct {
 // Returns the unmodified JSON received from the API
 func (r EntityTypeReviewerListResponse) RawJSON() string { return r.JSON.raw }
 func (r *EntityTypeReviewerListResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// A reviewer assignment links a user to an entity type they are responsible for
-// reviewing. The assignment is scoped to an account+environment and is unique per
-// (entity type, user).
-type EntityTypeReviewerListResponseReviewer struct {
-	// When the assignment was created (RFC 3339).
-	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
-	// The assigned user's email.
-	Email string `json:"email" api:"required"`
-	// Stable public identifier for the assignment (`etr_...`).
-	ReviewerID string `json:"reviewerID" api:"required"`
-	// The assigned user's account role (for example `operator`, `admin`).
-	Role string `json:"role" api:"required"`
-	// Public identifier of the assigned user (`usr_...`).
-	UserID string `json:"userID" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		CreatedAt   respjson.Field
-		Email       respjson.Field
-		ReviewerID  respjson.Field
-		Role        respjson.Field
-		UserID      respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EntityTypeReviewerListResponseReviewer) RawJSON() string { return r.JSON.raw }
-func (r *EntityTypeReviewerListResponseReviewer) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// A reviewer assignment links a user to an entity type they are responsible for
-// reviewing. The assignment is scoped to an account+environment and is unique per
-// (entity type, user).
-type EntityTypeReviewerAssignResponse struct {
-	// When the assignment was created (RFC 3339).
-	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
-	// The assigned user's email.
-	Email string `json:"email" api:"required"`
-	// Stable public identifier for the assignment (`etr_...`).
-	ReviewerID string `json:"reviewerID" api:"required"`
-	// The assigned user's account role (for example `operator`, `admin`).
-	Role string `json:"role" api:"required"`
-	// Public identifier of the assigned user (`usr_...`).
-	UserID string `json:"userID" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		CreatedAt   respjson.Field
-		Email       respjson.Field
-		ReviewerID  respjson.Field
-		Role        respjson.Field
-		UserID      respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EntityTypeReviewerAssignResponse) RawJSON() string { return r.JSON.raw }
-func (r *EntityTypeReviewerAssignResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

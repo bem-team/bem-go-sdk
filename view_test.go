@@ -28,30 +28,32 @@ func TestViewNewWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.Views.New(context.TODO(), bem.ViewNewParams{
-		Aggregations: []bem.ViewNewParamsAggregation{{
-			Function:            "count",
-			Name:                "name",
-			AggregateColumnName: bem.String("aggregateColumnName"),
-			DisplayType:         "table",
-			GroupByColumnName:   bem.String("groupByColumnName"),
-		}},
-		Columns: []bem.ViewNewParamsColumn{{
-			DisplayOrderIndex: 0,
-			Name:              "name",
-			ValueSchemaPath:   []string{"string"},
-		}},
-		Filters: []bem.ViewNewParamsFilter{{
-			ColumnName: "columnName",
-			FilterType: "equals_string",
-			Number:     bem.Float(0),
-			String:     bem.String("string"),
-		}},
-		Functions: []bem.ViewNewParamsFunction{{
-			ID:   bem.String("id"),
-			Name: bem.String("name"),
-		}},
-		Name:        "name",
-		Description: bem.String("description"),
+		ViewCreate: bem.ViewCreateParam{
+			Aggregations: []bem.ViewAggregationParam{{
+				Function:            bem.ViewAggregationFunctionCount,
+				Name:                "name",
+				AggregateColumnName: bem.String("aggregateColumnName"),
+				DisplayType:         bem.ViewAggregationDisplayTypeTable,
+				GroupByColumnName:   bem.String("groupByColumnName"),
+			}},
+			Columns: []bem.ViewColumnParam{{
+				DisplayOrderIndex: 0,
+				Name:              "name",
+				ValueSchemaPath:   []string{"string"},
+			}},
+			Filters: []bem.ViewFilterParam{{
+				ColumnName: "columnName",
+				FilterType: bem.ViewFilterFilterTypeEqualsString,
+				Number:     bem.Float(0),
+				String:     bem.String("string"),
+			}},
+			Functions: []bem.FunctionIdentifierParam{{
+				ID:   bem.String("id"),
+				Name: bem.String("name"),
+			}},
+			Name:        "name",
+			Description: bem.String("description"),
+		},
 	})
 	if err != nil {
 		var apierr *bem.Error
@@ -102,30 +104,32 @@ func TestViewUpdateWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"view_id",
 		bem.ViewUpdateParams{
-			Aggregations: []bem.ViewUpdateParamsAggregation{{
-				Function:            "count",
-				Name:                "name",
-				AggregateColumnName: bem.String("aggregateColumnName"),
-				DisplayType:         "table",
-				GroupByColumnName:   bem.String("groupByColumnName"),
-			}},
-			Columns: []bem.ViewUpdateParamsColumn{{
-				DisplayOrderIndex: 0,
-				Name:              "name",
-				ValueSchemaPath:   []string{"string"},
-			}},
-			Filters: []bem.ViewUpdateParamsFilter{{
-				ColumnName: "columnName",
-				FilterType: "equals_string",
-				Number:     bem.Float(0),
-				String:     bem.String("string"),
-			}},
-			Functions: []bem.ViewUpdateParamsFunction{{
-				ID:   bem.String("id"),
-				Name: bem.String("name"),
-			}},
-			Name:        "name",
-			Description: bem.String("description"),
+			ViewCreate: bem.ViewCreateParam{
+				Aggregations: []bem.ViewAggregationParam{{
+					Function:            bem.ViewAggregationFunctionCount,
+					Name:                "name",
+					AggregateColumnName: bem.String("aggregateColumnName"),
+					DisplayType:         bem.ViewAggregationDisplayTypeTable,
+					GroupByColumnName:   bem.String("groupByColumnName"),
+				}},
+				Columns: []bem.ViewColumnParam{{
+					DisplayOrderIndex: 0,
+					Name:              "name",
+					ValueSchemaPath:   []string{"string"},
+				}},
+				Filters: []bem.ViewFilterParam{{
+					ColumnName: "columnName",
+					FilterType: bem.ViewFilterFilterTypeEqualsString,
+					Number:     bem.Float(0),
+					String:     bem.String("string"),
+				}},
+				Functions: []bem.FunctionIdentifierParam{{
+					ID:   bem.String("id"),
+					Name: bem.String("name"),
+				}},
+				Name:        "name",
+				Description: bem.String("description"),
+			},
 		},
 	)
 	if err != nil {
@@ -206,30 +210,30 @@ func TestViewGenerateAggregationDataWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.Views.GenerateAggregationData(context.TODO(), bem.ViewGenerateAggregationDataParams{
-		Aggregations: []bem.ViewGenerateAggregationDataParamsAggregation{{
-			Function:            "count",
+		Aggregations: []bem.ViewAggregationParam{{
+			Function:            bem.ViewAggregationFunctionCount,
 			Name:                "name",
 			AggregateColumnName: bem.String("aggregateColumnName"),
-			DisplayType:         "table",
+			DisplayType:         bem.ViewAggregationDisplayTypeTable,
 			GroupByColumnName:   bem.String("groupByColumnName"),
 		}},
-		Columns: []bem.ViewGenerateAggregationDataParamsColumn{{
+		Columns: []bem.ViewColumnParam{{
 			DisplayOrderIndex: 0,
 			Name:              "name",
 			ValueSchemaPath:   []string{"string"},
 		}},
-		Filters: []bem.ViewGenerateAggregationDataParamsFilter{{
+		Filters: []bem.ViewFilterParam{{
 			ColumnName: "columnName",
-			FilterType: "equals_string",
+			FilterType: bem.ViewFilterFilterTypeEqualsString,
 			Number:     bem.Float(0),
 			String:     bem.String("string"),
 		}},
-		Functions: []bem.ViewGenerateAggregationDataParamsFunction{{
+		Functions: []bem.FunctionIdentifierParam{{
 			ID:   bem.String("id"),
 			Name: bem.String("name"),
 		}},
 		Name: "name",
-		TimeWindow: bem.ViewGenerateAggregationDataParamsTimeWindow{
+		TimeWindow: bem.TimeWindowParam{
 			End:   time.Now(),
 			Start: time.Now(),
 		},
@@ -258,30 +262,30 @@ func TestViewGenerateTableDataWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.Views.GenerateTableData(context.TODO(), bem.ViewGenerateTableDataParams{
-		Aggregations: []bem.ViewGenerateTableDataParamsAggregation{{
-			Function:            "count",
+		Aggregations: []bem.ViewAggregationParam{{
+			Function:            bem.ViewAggregationFunctionCount,
 			Name:                "name",
 			AggregateColumnName: bem.String("aggregateColumnName"),
-			DisplayType:         "table",
+			DisplayType:         bem.ViewAggregationDisplayTypeTable,
 			GroupByColumnName:   bem.String("groupByColumnName"),
 		}},
-		Columns: []bem.ViewGenerateTableDataParamsColumn{{
+		Columns: []bem.ViewColumnParam{{
 			DisplayOrderIndex: 0,
 			Name:              "name",
 			ValueSchemaPath:   []string{"string"},
 		}},
-		Filters: []bem.ViewGenerateTableDataParamsFilter{{
+		Filters: []bem.ViewFilterParam{{
 			ColumnName: "columnName",
-			FilterType: "equals_string",
+			FilterType: bem.ViewFilterFilterTypeEqualsString,
 			Number:     bem.Float(0),
 			String:     bem.String("string"),
 		}},
-		Functions: []bem.ViewGenerateTableDataParamsFunction{{
+		Functions: []bem.FunctionIdentifierParam{{
 			ID:   bem.String("id"),
 			Name: bem.String("name"),
 		}},
 		Name: "name",
-		TimeWindow: bem.ViewGenerateTableDataParamsTimeWindow{
+		TimeWindow: bem.TimeWindowParam{
 			End:   time.Now(),
 			Start: time.Now(),
 		},

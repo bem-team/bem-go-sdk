@@ -106,6 +106,76 @@ func (r *EntityService) GetSeedStatus(ctx context.Context, id string, opts ...op
 	return res, err
 }
 
+// A compact view of an entity sitting on the far end of a relation edge — the
+// stable public id, the canonical name, and the effective type. The full entity is
+// fetched separately via the entity detail / File System endpoints.
+type RelatedEntity struct {
+	// Stable public identifier for the entity (`ent_...`).
+	ID string `json:"id" api:"required"`
+	// Canonical (most descriptive) surface form of the entity.
+	Canonical string `json:"canonical" api:"required"`
+	// Hops from the queried entity. This endpoint returns direct relations, so this is
+	// 1 (a self-loop's far end is the queried entity itself, 0).
+	Depth int64 `json:"depth" api:"required"`
+	// Effective entity type.
+	Type string `json:"type" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		ID          respjson.Field
+		Canonical   respjson.Field
+		Depth       respjson.Field
+		Type        respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r RelatedEntity) RawJSON() string { return r.JSON.raw }
+func (r *RelatedEntity) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The outcome of seeding one row.
+type SeedRowResult struct {
+	// The canonical name from the input row.
+	Canonical string `json:"canonical" api:"required"`
+	// What happened to this row: `created` (new entity), `merged-with` (matched an
+	// existing entity), or `rejected` (see `reason`).
+	//
+	// Any of "created", "merged-with", "rejected".
+	Outcome SeedRowResultOutcome `json:"outcome" api:"required"`
+	// Public ID (`ent_...`) of the created or merged entity. Absent when rejected.
+	EntityID string `json:"entityID"`
+	// Human-readable explanation when `outcome` is `rejected`.
+	Reason string `json:"reason"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Canonical   respjson.Field
+		Outcome     respjson.Field
+		EntityID    respjson.Field
+		Reason      respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r SeedRowResult) RawJSON() string { return r.JSON.raw }
+func (r *SeedRowResult) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// What happened to this row: `created` (new entity), `merged-with` (matched an
+// existing entity), or `rejected` (see `reason`).
+type SeedRowResultOutcome string
+
+const (
+	SeedRowResultOutcomeCreated    SeedRowResultOutcome = "created"
+	SeedRowResultOutcomeMergedWith SeedRowResultOutcome = "merged-with"
+	SeedRowResultOutcomeRejected   SeedRowResultOutcome = "rejected"
+)
+
 // An entity record, including its curation status and assigned type.
 type EntityUpdateResponse struct {
 	// The canonical (longest / most descriptive) surface form.
@@ -172,7 +242,7 @@ const (
 // `200` response for a synchronously processed (small) batch.
 type EntityBulkNewResponse struct {
 	// Per-row outcomes, in request order.
-	Results []EntityBulkNewResponseResult `json:"results" api:"required"`
+	Results []SeedRowResult `json:"results" api:"required"`
 	// Per-outcome tally across a batch.
 	Summary EntityBulkNewResponseSummary `json:"summary" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
@@ -187,36 +257,6 @@ type EntityBulkNewResponse struct {
 // Returns the unmodified JSON received from the API
 func (r EntityBulkNewResponse) RawJSON() string { return r.JSON.raw }
 func (r *EntityBulkNewResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// The outcome of seeding one row.
-type EntityBulkNewResponseResult struct {
-	// The canonical name from the input row.
-	Canonical string `json:"canonical" api:"required"`
-	// What happened to this row: `created` (new entity), `merged-with` (matched an
-	// existing entity), or `rejected` (see `reason`).
-	//
-	// Any of "created", "merged-with", "rejected".
-	Outcome string `json:"outcome" api:"required"`
-	// Public ID (`ent_...`) of the created or merged entity. Absent when rejected.
-	EntityID string `json:"entityID"`
-	// Human-readable explanation when `outcome` is `rejected`.
-	Reason string `json:"reason"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Canonical   respjson.Field
-		Outcome     respjson.Field
-		EntityID    respjson.Field
-		Reason      respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EntityBulkNewResponseResult) RawJSON() string { return r.JSON.raw }
-func (r *EntityBulkNewResponseResult) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -352,7 +392,7 @@ type EntityGetRelationsResponseInbound struct {
 	// A compact view of an entity sitting on the far end of a relation edge — the
 	// stable public id, the canonical name, and the effective type. The full entity is
 	// fetched separately via the entity detail / File System endpoints.
-	SourceEntity EntityGetRelationsResponseInboundSourceEntity `json:"sourceEntity" api:"required"`
+	SourceEntity RelatedEntity `json:"sourceEntity" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		FirstSeenAt  respjson.Field
@@ -370,36 +410,6 @@ func (r *EntityGetRelationsResponseInbound) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// A compact view of an entity sitting on the far end of a relation edge — the
-// stable public id, the canonical name, and the effective type. The full entity is
-// fetched separately via the entity detail / File System endpoints.
-type EntityGetRelationsResponseInboundSourceEntity struct {
-	// Stable public identifier for the entity (`ent_...`).
-	ID string `json:"id" api:"required"`
-	// Canonical (most descriptive) surface form of the entity.
-	Canonical string `json:"canonical" api:"required"`
-	// Hops from the queried entity. This endpoint returns direct relations, so this is
-	// 1 (a self-loop's far end is the queried entity itself, 0).
-	Depth int64 `json:"depth" api:"required"`
-	// Effective entity type.
-	Type string `json:"type" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		ID          respjson.Field
-		Canonical   respjson.Field
-		Depth       respjson.Field
-		Type        respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EntityGetRelationsResponseInboundSourceEntity) RawJSON() string { return r.JSON.raw }
-func (r *EntityGetRelationsResponseInboundSourceEntity) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 // One edge pointing AWAY from the queried entity (it is the source).
 type EntityGetRelationsResponseOutbound struct {
 	// First-seen timestamp of the edge (RFC 3339).
@@ -411,7 +421,7 @@ type EntityGetRelationsResponseOutbound struct {
 	// A compact view of an entity sitting on the far end of a relation edge — the
 	// stable public id, the canonical name, and the effective type. The full entity is
 	// fetched separately via the entity detail / File System endpoints.
-	TargetEntity EntityGetRelationsResponseOutboundTargetEntity `json:"targetEntity" api:"required"`
+	TargetEntity RelatedEntity `json:"targetEntity" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		FirstSeenAt  respjson.Field
@@ -426,36 +436,6 @@ type EntityGetRelationsResponseOutbound struct {
 // Returns the unmodified JSON received from the API
 func (r EntityGetRelationsResponseOutbound) RawJSON() string { return r.JSON.raw }
 func (r *EntityGetRelationsResponseOutbound) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// A compact view of an entity sitting on the far end of a relation edge — the
-// stable public id, the canonical name, and the effective type. The full entity is
-// fetched separately via the entity detail / File System endpoints.
-type EntityGetRelationsResponseOutboundTargetEntity struct {
-	// Stable public identifier for the entity (`ent_...`).
-	ID string `json:"id" api:"required"`
-	// Canonical (most descriptive) surface form of the entity.
-	Canonical string `json:"canonical" api:"required"`
-	// Hops from the queried entity. This endpoint returns direct relations, so this is
-	// 1 (a self-loop's far end is the queried entity itself, 0).
-	Depth int64 `json:"depth" api:"required"`
-	// Effective entity type.
-	Type string `json:"type" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		ID          respjson.Field
-		Canonical   respjson.Field
-		Depth       respjson.Field
-		Type        respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EntityGetRelationsResponseOutboundTargetEntity) RawJSON() string { return r.JSON.raw }
-func (r *EntityGetRelationsResponseOutboundTargetEntity) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -478,7 +458,7 @@ type EntityGetSeedStatusResponse struct {
 	// Terminal error message when `status` is `failed`.
 	Error string `json:"error"`
 	// Per-row outcomes. Present only once `status` is `completed`.
-	Results []EntityGetSeedStatusResponseResult `json:"results"`
+	Results []SeedRowResult `json:"results"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		CreatedCount  respjson.Field
@@ -509,36 +489,6 @@ const (
 	EntityGetSeedStatusResponseStatusCompleted  EntityGetSeedStatusResponseStatus = "completed"
 	EntityGetSeedStatusResponseStatusFailed     EntityGetSeedStatusResponseStatus = "failed"
 )
-
-// The outcome of seeding one row.
-type EntityGetSeedStatusResponseResult struct {
-	// The canonical name from the input row.
-	Canonical string `json:"canonical" api:"required"`
-	// What happened to this row: `created` (new entity), `merged-with` (matched an
-	// existing entity), or `rejected` (see `reason`).
-	//
-	// Any of "created", "merged-with", "rejected".
-	Outcome string `json:"outcome" api:"required"`
-	// Public ID (`ent_...`) of the created or merged entity. Absent when rejected.
-	EntityID string `json:"entityID"`
-	// Human-readable explanation when `outcome` is `rejected`.
-	Reason string `json:"reason"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Canonical   respjson.Field
-		Outcome     respjson.Field
-		EntityID    respjson.Field
-		Reason      respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EntityGetSeedStatusResponseResult) RawJSON() string { return r.JSON.raw }
-func (r *EntityGetSeedStatusResponseResult) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
 
 type EntityUpdateParams struct {
 	// The `ety_...` public ID of the type to assign (overriding the bem-inferred

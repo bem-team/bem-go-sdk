@@ -30,18 +30,18 @@ func TestEvalScoreNewWithOptionalParams(t *testing.T) {
 		FunctionName: "functionName",
 		Pairs: []bem.EvalScoreNewParamsPair{{
 			Expected: map[string]any{},
-			Input: bem.EvalScoreNewParamsPairInput{
+			Input: bem.FileInputParam{
 				InputContent: "inputContent",
 				InputType:    bem.InputTypeCsv,
 			},
 		}},
 		FunctionVersionNum: bem.Int(0),
-		MatchConfig: bem.EvalScoreNewParamsMatchConfig{
-			ArrayMatch:       "by-index",
+		MatchConfig: bem.EvalMatchConfigParam{
+			ArrayMatch:       bem.EvalMatchConfigArrayMatchByIndex,
 			FuzzyThreshold:   bem.Float(0),
 			IgnorePaths:      []string{"string"},
 			NumericTolerance: bem.Float(0),
-			StringMatch:      "exact",
+			StringMatch:      bem.EvalMatchConfigStringMatchExact,
 		},
 	})
 	if err != nil {

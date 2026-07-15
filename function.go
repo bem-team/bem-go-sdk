@@ -560,7 +560,7 @@ func CreateFunctionParamOfParse(functionName string) CreateFunctionUnionParam {
 	return CreateFunctionUnionParam{OfParse: &parse}
 }
 
-func CreateFunctionParamOfRender(functionName string, renderConfig CreateFunctionRenderRenderConfigParam) CreateFunctionUnionParam {
+func CreateFunctionParamOfRender(functionName string, renderConfig RenderConfigInputParam) CreateFunctionUnionParam {
 	var render CreateFunctionRenderParam
 	render.FunctionName = functionName
 	render.RenderConfig = renderConfig
@@ -902,7 +902,7 @@ type CreateFunctionParseParam struct {
 	// Cross-cutting toggles for Parse functions. Mirrors the `extraConfig` surface on
 	// Extract / Join — separated from `parseConfig` so the per-call Parse output shape
 	// stays distinct from operator-level execution flags.
-	ExtraConfig CreateFunctionParseExtraConfigParam `json:"extraConfig,omitzero"`
+	ExtraConfig ParseExtraFunctionConfigParam `json:"extraConfig,omitzero"`
 	// Per-version configuration for a Parse function.
 	//
 	// Parse renders document pages (PDF, image) via vision LLM and emits structured
@@ -924,29 +924,6 @@ func (r *CreateFunctionParseParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Cross-cutting toggles for Parse functions. Mirrors the `extraConfig` surface on
-// Extract / Join — separated from `parseConfig` so the per-call Parse output shape
-// stays distinct from operator-level execution flags.
-type CreateFunctionParseExtraConfigParam struct {
-	// When true, return per-section and per-entity-mention coordinates in the parse
-	// event's `fieldBoundingBoxes` map (same shape as Extract: JSON Pointer key →
-	// array of `{page, left, top, width, height}` with coordinates normalized to [0,
-	// 1]). Keys are `/sections/{N}` and `/entities/{N}/occurrences/{M}` into the parse
-	// output. Only applies to the open-ended discovery path (no `schema`) and to
-	// vision input types. Bedrock-backed parse functions silently return an empty map
-	// (no native bbox support). Defaults to false.
-	EnableBoundingBoxes param.Opt[bool] `json:"enableBoundingBoxes,omitzero"`
-	paramObj
-}
-
-func (r CreateFunctionParseExtraConfigParam) MarshalJSON() (data []byte, err error) {
-	type shadow CreateFunctionParseExtraConfigParam
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *CreateFunctionParseExtraConfigParam) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 // The properties FunctionName, RenderConfig, Type are required.
 type CreateFunctionRenderParam struct {
 	// Name of function. Must be UNIQUE on a per-environment basis.
@@ -956,7 +933,7 @@ type CreateFunctionRenderParam struct {
 	// and derives the placeholder/style-id contract at create/update time, so clients
 	// never submit `placeholders` or `styleIds`. The response shape (`RenderConfig`)
 	// returns the derived contract.
-	RenderConfig CreateFunctionRenderRenderConfigParam `json:"renderConfig,omitzero" api:"required"`
+	RenderConfig RenderConfigInputParam `json:"renderConfig,omitzero" api:"required"`
 	// Display name of function. Human-readable name to help you identify the function.
 	DisplayName param.Opt[string] `json:"displayName,omitzero"`
 	// Array of tags to categorize and organize functions.
@@ -971,45 +948,6 @@ func (r CreateFunctionRenderParam) MarshalJSON() (data []byte, err error) {
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *CreateFunctionRenderParam) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Request-side render configuration. Carries the template document as
-// base64-encoded `.docx` bytes: the server validates them, stores the template,
-// and derives the placeholder/style-id contract at create/update time, so clients
-// never submit `placeholders` or `styleIds`. The response shape (`RenderConfig`)
-// returns the derived contract.
-//
-// The property Template is required.
-type CreateFunctionRenderRenderConfigParam struct {
-	Template CreateFunctionRenderRenderConfigTemplateParam `json:"template,omitzero" api:"required"`
-	paramObj
-}
-
-func (r CreateFunctionRenderRenderConfigParam) MarshalJSON() (data []byte, err error) {
-	type shadow CreateFunctionRenderRenderConfigParam
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *CreateFunctionRenderRenderConfigParam) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// The property Base64 is required.
-type CreateFunctionRenderRenderConfigTemplateParam struct {
-	// Base64-encoded `.docx` bytes. In the Bem CLI, use `@path/to/file` to embed it
-	// automatically.
-	Base64 string `json:"base64" api:"required"`
-	// Original upload filename (e.g. `contract.docx`), stored for display only. Does
-	// not affect where the template is stored.
-	Name param.Opt[string] `json:"name,omitzero"`
-	paramObj
-}
-
-func (r CreateFunctionRenderRenderConfigTemplateParam) MarshalJSON() (data []byte, err error) {
-	type shadow CreateFunctionRenderRenderConfigTemplateParam
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *CreateFunctionRenderRenderConfigTemplateParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -1757,11 +1695,11 @@ type FunctionUnion struct {
 	// This field is from variant [FunctionEnrich].
 	Config EnrichConfig `json:"config"`
 	// This field is from variant [FunctionParse].
-	ExtraConfig FunctionParseExtraConfig `json:"extraConfig"`
+	ExtraConfig ParseExtraFunctionConfig `json:"extraConfig"`
 	// This field is from variant [FunctionParse].
 	ParseConfig ParseConfig `json:"parseConfig"`
 	// This field is from variant [FunctionRender].
-	RenderConfig FunctionRenderRenderConfig `json:"renderConfig"`
+	RenderConfig RenderConfig `json:"renderConfig"`
 	JSON         struct {
 		EmailAddress            respjson.Field
 		FunctionID              respjson.Field
@@ -2459,7 +2397,7 @@ type FunctionParse struct {
 	// Cross-cutting toggles for Parse functions. Mirrors the `extraConfig` surface on
 	// Extract / Join — separated from `parseConfig` so the per-call Parse output shape
 	// stays distinct from operator-level execution flags.
-	ExtraConfig FunctionParseExtraConfig `json:"extraConfig"`
+	ExtraConfig ParseExtraFunctionConfig `json:"extraConfig"`
 	// Per-version configuration for a Parse function.
 	//
 	// Parse renders document pages (PDF, image) via vision LLM and emits structured
@@ -2493,32 +2431,6 @@ func (r *FunctionParse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Cross-cutting toggles for Parse functions. Mirrors the `extraConfig` surface on
-// Extract / Join — separated from `parseConfig` so the per-call Parse output shape
-// stays distinct from operator-level execution flags.
-type FunctionParseExtraConfig struct {
-	// When true, return per-section and per-entity-mention coordinates in the parse
-	// event's `fieldBoundingBoxes` map (same shape as Extract: JSON Pointer key →
-	// array of `{page, left, top, width, height}` with coordinates normalized to [0,
-	// 1]). Keys are `/sections/{N}` and `/entities/{N}/occurrences/{M}` into the parse
-	// output. Only applies to the open-ended discovery path (no `schema`) and to
-	// vision input types. Bedrock-backed parse functions silently return an empty map
-	// (no native bbox support). Defaults to false.
-	EnableBoundingBoxes bool `json:"enableBoundingBoxes"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		EnableBoundingBoxes respjson.Field
-		ExtraFields         map[string]respjson.Field
-		raw                 string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionParseExtraConfig) RawJSON() string { return r.JSON.raw }
-func (r *FunctionParseExtraConfig) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 type FunctionRender struct {
 	// Unique identifier of function.
 	FunctionID string `json:"functionID" api:"required"`
@@ -2538,7 +2450,7 @@ type FunctionRender struct {
 	// exposes only the contract derived from it. Schema validation runs internally in
 	// the ML service against the bundled core schema; no customer-supplied schema
 	// rides this surface.
-	RenderConfig FunctionRenderRenderConfig `json:"renderConfig"`
+	RenderConfig RenderConfig `json:"renderConfig"`
 	// Array of tags to categorize and organize functions.
 	Tags []string `json:"tags"`
 	// List of workflows that use this function.
@@ -2562,114 +2474,6 @@ type FunctionRender struct {
 // Returns the unmodified JSON received from the API
 func (r FunctionRender) RawJSON() string { return r.JSON.raw }
 func (r *FunctionRender) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Per-version configuration for a Render function.
-//
-// Render emits a `.docx` from schema-typed JSON by composing the JSON into a
-// `.docx` template. The template document is stored server-side; this response
-// exposes only the contract derived from it. Schema validation runs internally in
-// the ML service against the bundled core schema; no customer-supplied schema
-// rides this surface.
-type FunctionRenderRenderConfig struct {
-	// The uploaded template: its filename, a short-lived presigned download URL, and
-	// the placeholder/style contract derived from it. Absent on configs created before
-	// template capture existed.
-	Template FunctionRenderRenderConfigTemplate `json:"template"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Template    respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionRenderRenderConfig) RawJSON() string { return r.JSON.raw }
-func (r *FunctionRenderRenderConfig) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// The uploaded template: its filename, a short-lived presigned download URL, and
-// the placeholder/style contract derived from it. Absent on configs created before
-// template capture existed.
-type FunctionRenderRenderConfigTemplate struct {
-	// Short-lived presigned URL to download the stored `.docx`. The private storage
-	// location is never exposed.
-	DownloadURL string `json:"downloadURL" format:"uri"`
-	// Supported list kinds (`decimal`, `bullet`) the template's `numbering.xml`
-	// defines an `abstractNum` for. Empty means the template can hold no list, so any
-	// list primitive will fail at render.
-	//
-	// Any of "decimal", "bullet".
-	ListKinds []string `json:"listKinds"`
-	// Original filename of the uploaded template (e.g. `contract.docx`), echoed back
-	// for display. Absent on templates uploaded before the filename was captured.
-	Name string `json:"name"`
-	// The placeholder contract a Render template declares, grouped by how each
-	// placeholder is filled. Derived from the template at create/update time by
-	// scanning its `docxtpl` tags; not user-supplied.
-	//
-	//   - `stringKeys`: bare string placeholders (`{{ key }}`) filled with a single
-	//     value.
-	//   - `blockKeys`: wrapped-primitive placeholders (`{{p key }}`) — bind one core
-	//     primitive (paragraph, table, image, or list). The placeholder's own paragraph
-	//     dissolves and is replaced by the rendered subdocument's blocks, rather than
-	//     substituting text inline.
-	Placeholders FunctionRenderRenderConfigTemplatePlaceholders `json:"placeholders"`
-	// Paragraph/character style IDs the uploaded template defines and the rendered
-	// output can reference. Derived from the template's `styles.xml` at create/update
-	// time.
-	StyleIDs []string `json:"styleIds"`
-	// Style IDs whose type is table — the styles a `table` primitive's required
-	// `styleId` can name. Empty means the template defines no table style, so any
-	// table primitive will fail at render.
-	TableStyleIDs []string `json:"tableStyleIds"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		DownloadURL   respjson.Field
-		ListKinds     respjson.Field
-		Name          respjson.Field
-		Placeholders  respjson.Field
-		StyleIDs      respjson.Field
-		TableStyleIDs respjson.Field
-		ExtraFields   map[string]respjson.Field
-		raw           string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionRenderRenderConfigTemplate) RawJSON() string { return r.JSON.raw }
-func (r *FunctionRenderRenderConfigTemplate) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// The placeholder contract a Render template declares, grouped by how each
-// placeholder is filled. Derived from the template at create/update time by
-// scanning its `docxtpl` tags; not user-supplied.
-//
-//   - `stringKeys`: bare string placeholders (`{{ key }}`) filled with a single
-//     value.
-//   - `blockKeys`: wrapped-primitive placeholders (`{{p key }}`) — bind one core
-//     primitive (paragraph, table, image, or list). The placeholder's own paragraph
-//     dissolves and is replaced by the rendered subdocument's blocks, rather than
-//     substituting text inline.
-type FunctionRenderRenderConfigTemplatePlaceholders struct {
-	BlockKeys  []string `json:"blockKeys" api:"required"`
-	StringKeys []string `json:"stringKeys" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		BlockKeys   respjson.Field
-		StringKeys  respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionRenderRenderConfigTemplatePlaceholders) RawJSON() string { return r.JSON.raw }
-func (r *FunctionRenderRenderConfigTemplatePlaceholders) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -2752,6 +2556,149 @@ type ListFunctionsResponse struct {
 // Returns the unmodified JSON received from the API
 func (r ListFunctionsResponse) RawJSON() string { return r.JSON.raw }
 func (r *ListFunctionsResponse) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Comparison of a single metric between two versions
+type MetricComparison struct {
+	// Value in baseline version (null if not available)
+	BaselineValue float64 `json:"baselineValue" api:"nullable"`
+	// Value in comparison version (null if not available)
+	ComparisonValue float64 `json:"comparisonValue" api:"nullable"`
+	// Absolute difference (comparisonValue - baselineValue)
+	Difference float64 `json:"difference" api:"nullable"`
+	// **Percentage change from baseline to comparison**
+	//
+	// Formula: ((comparisonValue - baselineValue) / baselineValue) \* 100
+	//
+	// - Positive values indicate improvement
+	// - Negative values indicate regression
+	LiftPercent float64 `json:"liftPercent" api:"nullable"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		BaselineValue   respjson.Field
+		ComparisonValue respjson.Field
+		Difference      respjson.Field
+		LiftPercent     respjson.Field
+		ExtraFields     map[string]respjson.Field
+		raw             string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r MetricComparison) RawJSON() string { return r.JSON.raw }
+func (r *MetricComparison) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Comprehensive performance metrics
+type Metrics struct {
+	// Overall accuracy
+	Accuracy float64 `json:"accuracy" api:"nullable"`
+	// F1 Score (harmonic mean of precision and recall)
+	F1Score float64 `json:"f1Score" api:"nullable"`
+	// False Negatives
+	Fn int64 `json:"fn"`
+	// False Positives
+	Fp int64 `json:"fp"`
+	// Precision (TP / (TP + FP))
+	Precision float64 `json:"precision" api:"nullable"`
+	// Recall (TP / (TP + FN))
+	Recall float64 `json:"recall" api:"nullable"`
+	// True Negatives
+	Tn int64 `json:"tn"`
+	// True Positives
+	Tp int64 `json:"tp"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Accuracy    respjson.Field
+		F1Score     respjson.Field
+		Fn          respjson.Field
+		Fp          respjson.Field
+		Precision   respjson.Field
+		Recall      respjson.Field
+		Tn          respjson.Field
+		Tp          respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r Metrics) RawJSON() string { return r.JSON.raw }
+func (r *Metrics) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Comparison of metrics between two versions
+type MetricsComparison struct {
+	// Comparison of a single metric between two versions
+	Accuracy MetricComparison `json:"accuracy"`
+	// Comparison of a single metric between two versions
+	F1Score MetricComparison `json:"f1Score"`
+	// Comparison of a single metric between two versions
+	Precision MetricComparison `json:"precision"`
+	// Comparison of a single metric between two versions
+	Recall MetricComparison `json:"recall"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Accuracy    respjson.Field
+		F1Score     respjson.Field
+		Precision   respjson.Field
+		Recall      respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r MetricsComparison) RawJSON() string { return r.JSON.raw }
+func (r *MetricsComparison) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Detailed performance metrics and analysis
+type MetricsDetails struct {
+	// Comprehensive performance metrics
+	AggregateMetrics Metrics `json:"aggregateMetrics"`
+	// Enhanced field metrics with comprehensive analytics
+	FieldMetrics []MetricsDetailsFieldMetric `json:"fieldMetrics"`
+	// Area Under the Precision-Recall Curve
+	PrecisionRecallAuc float64 `json:"precisionRecallAuc"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		AggregateMetrics   respjson.Field
+		FieldMetrics       respjson.Field
+		PrecisionRecallAuc respjson.Field
+		ExtraFields        map[string]respjson.Field
+		raw                string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r MetricsDetails) RawJSON() string { return r.JSON.raw }
+func (r *MetricsDetails) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Enhanced field metrics with comprehensive analytics
+type MetricsDetailsFieldMetric struct {
+	// JSON path to the field
+	FieldPath string `json:"fieldPath" api:"required"`
+	// Comprehensive performance metrics
+	Metrics Metrics `json:"metrics"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		FieldPath   respjson.Field
+		Metrics     respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r MetricsDetailsFieldMetric) RawJSON() string { return r.JSON.raw }
+func (r *MetricsDetailsFieldMetric) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -2841,6 +2788,248 @@ func (r ParseConfigParam) MarshalJSON() (data []byte, err error) {
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *ParseConfigParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Cross-cutting toggles for Parse functions. Mirrors the `extraConfig` surface on
+// Extract / Join — separated from `parseConfig` so the per-call Parse output shape
+// stays distinct from operator-level execution flags.
+type ParseExtraFunctionConfig struct {
+	// When true, return per-section and per-entity-mention coordinates in the parse
+	// event's `fieldBoundingBoxes` map (same shape as Extract: JSON Pointer key →
+	// array of `{page, left, top, width, height}` with coordinates normalized to [0,
+	// 1]). Keys are `/sections/{N}` and `/entities/{N}/occurrences/{M}` into the parse
+	// output. Only applies to the open-ended discovery path (no `schema`) and to
+	// vision input types. Bedrock-backed parse functions silently return an empty map
+	// (no native bbox support). Defaults to false.
+	EnableBoundingBoxes bool `json:"enableBoundingBoxes"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		EnableBoundingBoxes respjson.Field
+		ExtraFields         map[string]respjson.Field
+		raw                 string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r ParseExtraFunctionConfig) RawJSON() string { return r.JSON.raw }
+func (r *ParseExtraFunctionConfig) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// ToParam converts this ParseExtraFunctionConfig to a
+// ParseExtraFunctionConfigParam.
+//
+// Warning: the fields of the param type will not be present. ToParam should only
+// be used at the last possible moment before sending a request. Test for this with
+// ParseExtraFunctionConfigParam.Overrides()
+func (r ParseExtraFunctionConfig) ToParam() ParseExtraFunctionConfigParam {
+	return param.Override[ParseExtraFunctionConfigParam](json.RawMessage(r.RawJSON()))
+}
+
+// Cross-cutting toggles for Parse functions. Mirrors the `extraConfig` surface on
+// Extract / Join — separated from `parseConfig` so the per-call Parse output shape
+// stays distinct from operator-level execution flags.
+type ParseExtraFunctionConfigParam struct {
+	// When true, return per-section and per-entity-mention coordinates in the parse
+	// event's `fieldBoundingBoxes` map (same shape as Extract: JSON Pointer key →
+	// array of `{page, left, top, width, height}` with coordinates normalized to [0,
+	// 1]). Keys are `/sections/{N}` and `/entities/{N}/occurrences/{M}` into the parse
+	// output. Only applies to the open-ended discovery path (no `schema`) and to
+	// vision input types. Bedrock-backed parse functions silently return an empty map
+	// (no native bbox support). Defaults to false.
+	EnableBoundingBoxes param.Opt[bool] `json:"enableBoundingBoxes,omitzero"`
+	paramObj
+}
+
+func (r ParseExtraFunctionConfigParam) MarshalJSON() (data []byte, err error) {
+	type shadow ParseExtraFunctionConfigParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *ParseExtraFunctionConfigParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Confidence interval for a rate/proportion using Wald (normal approximation)
+// method by default.
+//
+// Wald confidence intervals use the normal approximation to the binomial
+// distribution. For extreme rates or small sample sizes, Wilson confidence
+// intervals may be more appropriate.
+type RateConfidenceInterval struct {
+	// Current number of samples/observations available
+	CurrentSample int64 `json:"currentSample" api:"required"`
+	// Minimum number of samples needed for reliable confidence interval calculation
+	SampleNeeded int64 `json:"sampleNeeded" api:"required"`
+	// Lower bound of the confidence interval (null if insufficient sample size)
+	CiLower float64 `json:"ciLower" api:"nullable"`
+	// Upper bound of the confidence interval (null if insufficient sample size)
+	CiUpper float64 `json:"ciUpper" api:"nullable"`
+	// Point estimate (observed rate) at the center of the interval (null if
+	// insufficient sample size)
+	Mid float64 `json:"mid" api:"nullable"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		CurrentSample respjson.Field
+		SampleNeeded  respjson.Field
+		CiLower       respjson.Field
+		CiUpper       respjson.Field
+		Mid           respjson.Field
+		ExtraFields   map[string]respjson.Field
+		raw           string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r RateConfidenceInterval) RawJSON() string { return r.JSON.raw }
+func (r *RateConfidenceInterval) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Per-version configuration for a Render function.
+//
+// Render emits a `.docx` from schema-typed JSON by composing the JSON into a
+// `.docx` template. The template document is stored server-side; this response
+// exposes only the contract derived from it. Schema validation runs internally in
+// the ML service against the bundled core schema; no customer-supplied schema
+// rides this surface.
+type RenderConfig struct {
+	// The uploaded template: its filename, a short-lived presigned download URL, and
+	// the placeholder/style contract derived from it. Absent on configs created before
+	// template capture existed.
+	Template RenderConfigTemplate `json:"template"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Template    respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r RenderConfig) RawJSON() string { return r.JSON.raw }
+func (r *RenderConfig) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The uploaded template: its filename, a short-lived presigned download URL, and
+// the placeholder/style contract derived from it. Absent on configs created before
+// template capture existed.
+type RenderConfigTemplate struct {
+	// Short-lived presigned URL to download the stored `.docx`. The private storage
+	// location is never exposed.
+	DownloadURL string `json:"downloadURL" format:"uri"`
+	// Supported list kinds (`decimal`, `bullet`) the template's `numbering.xml`
+	// defines an `abstractNum` for. Empty means the template can hold no list, so any
+	// list primitive will fail at render.
+	//
+	// Any of "decimal", "bullet".
+	ListKinds []string `json:"listKinds"`
+	// Original filename of the uploaded template (e.g. `contract.docx`), echoed back
+	// for display. Absent on templates uploaded before the filename was captured.
+	Name string `json:"name"`
+	// The placeholder contract a Render template declares, grouped by how each
+	// placeholder is filled. Derived from the template at create/update time by
+	// scanning its `docxtpl` tags; not user-supplied.
+	//
+	//   - `stringKeys`: bare string placeholders (`{{ key }}`) filled with a single
+	//     value.
+	//   - `blockKeys`: wrapped-primitive placeholders (`{{p key }}`) — bind one core
+	//     primitive (paragraph, table, image, or list). The placeholder's own paragraph
+	//     dissolves and is replaced by the rendered subdocument's blocks, rather than
+	//     substituting text inline.
+	Placeholders RenderConfigTemplatePlaceholders `json:"placeholders"`
+	// Paragraph/character style IDs the uploaded template defines and the rendered
+	// output can reference. Derived from the template's `styles.xml` at create/update
+	// time.
+	StyleIDs []string `json:"styleIds"`
+	// Style IDs whose type is table — the styles a `table` primitive's required
+	// `styleId` can name. Empty means the template defines no table style, so any
+	// table primitive will fail at render.
+	TableStyleIDs []string `json:"tableStyleIds"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		DownloadURL   respjson.Field
+		ListKinds     respjson.Field
+		Name          respjson.Field
+		Placeholders  respjson.Field
+		StyleIDs      respjson.Field
+		TableStyleIDs respjson.Field
+		ExtraFields   map[string]respjson.Field
+		raw           string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r RenderConfigTemplate) RawJSON() string { return r.JSON.raw }
+func (r *RenderConfigTemplate) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The placeholder contract a Render template declares, grouped by how each
+// placeholder is filled. Derived from the template at create/update time by
+// scanning its `docxtpl` tags; not user-supplied.
+//
+//   - `stringKeys`: bare string placeholders (`{{ key }}`) filled with a single
+//     value.
+//   - `blockKeys`: wrapped-primitive placeholders (`{{p key }}`) — bind one core
+//     primitive (paragraph, table, image, or list). The placeholder's own paragraph
+//     dissolves and is replaced by the rendered subdocument's blocks, rather than
+//     substituting text inline.
+type RenderConfigTemplatePlaceholders struct {
+	BlockKeys  []string `json:"blockKeys" api:"required"`
+	StringKeys []string `json:"stringKeys" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		BlockKeys   respjson.Field
+		StringKeys  respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r RenderConfigTemplatePlaceholders) RawJSON() string { return r.JSON.raw }
+func (r *RenderConfigTemplatePlaceholders) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Request-side render configuration. Carries the template document as
+// base64-encoded `.docx` bytes: the server validates them, stores the template,
+// and derives the placeholder/style-id contract at create/update time, so clients
+// never submit `placeholders` or `styleIds`. The response shape (`RenderConfig`)
+// returns the derived contract.
+//
+// The property Template is required.
+type RenderConfigInputParam struct {
+	Template RenderConfigInputTemplateParam `json:"template,omitzero" api:"required"`
+	paramObj
+}
+
+func (r RenderConfigInputParam) MarshalJSON() (data []byte, err error) {
+	type shadow RenderConfigInputParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *RenderConfigInputParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// The property Base64 is required.
+type RenderConfigInputTemplateParam struct {
+	// Base64-encoded `.docx` bytes. In the Bem CLI, use `@path/to/file` to embed it
+	// automatically.
+	Base64 string `json:"base64" api:"required"`
+	// Original upload filename (e.g. `contract.docx`), stored for display only. Does
+	// not affect where the template is stored.
+	Name param.Opt[string] `json:"name,omitzero"`
+	paramObj
+}
+
+func (r RenderConfigInputTemplateParam) MarshalJSON() (data []byte, err error) {
+	type shadow RenderConfigInputTemplateParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *RenderConfigInputTemplateParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -3253,7 +3442,7 @@ type UpdateFunctionParseParam struct {
 	// Cross-cutting toggles for Parse functions. Mirrors the `extraConfig` surface on
 	// Extract / Join — separated from `parseConfig` so the per-call Parse output shape
 	// stays distinct from operator-level execution flags.
-	ExtraConfig UpdateFunctionParseExtraConfigParam `json:"extraConfig,omitzero"`
+	ExtraConfig ParseExtraFunctionConfigParam `json:"extraConfig,omitzero"`
 	// Per-version configuration for a Parse function.
 	//
 	// Parse renders document pages (PDF, image) via vision LLM and emits structured
@@ -3275,29 +3464,6 @@ func (r *UpdateFunctionParseParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Cross-cutting toggles for Parse functions. Mirrors the `extraConfig` surface on
-// Extract / Join — separated from `parseConfig` so the per-call Parse output shape
-// stays distinct from operator-level execution flags.
-type UpdateFunctionParseExtraConfigParam struct {
-	// When true, return per-section and per-entity-mention coordinates in the parse
-	// event's `fieldBoundingBoxes` map (same shape as Extract: JSON Pointer key →
-	// array of `{page, left, top, width, height}` with coordinates normalized to [0,
-	// 1]). Keys are `/sections/{N}` and `/entities/{N}/occurrences/{M}` into the parse
-	// output. Only applies to the open-ended discovery path (no `schema`) and to
-	// vision input types. Bedrock-backed parse functions silently return an empty map
-	// (no native bbox support). Defaults to false.
-	EnableBoundingBoxes param.Opt[bool] `json:"enableBoundingBoxes,omitzero"`
-	paramObj
-}
-
-func (r UpdateFunctionParseExtraConfigParam) MarshalJSON() (data []byte, err error) {
-	type shadow UpdateFunctionParseExtraConfigParam
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *UpdateFunctionParseExtraConfigParam) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 // The property Type is required.
 type UpdateFunctionRenderParam struct {
 	// Display name of function. Human-readable name to help you identify the function.
@@ -3309,7 +3475,7 @@ type UpdateFunctionRenderParam struct {
 	// and derives the placeholder/style-id contract at create/update time, so clients
 	// never submit `placeholders` or `styleIds`. The response shape (`RenderConfig`)
 	// returns the derived contract.
-	RenderConfig UpdateFunctionRenderRenderConfigParam `json:"renderConfig,omitzero"`
+	RenderConfig RenderConfigInputParam `json:"renderConfig,omitzero"`
 	// Array of tags to categorize and organize functions.
 	Tags []string `json:"tags,omitzero"`
 	// This field can be elided, and will marshal its zero value as "render".
@@ -3322,45 +3488,6 @@ func (r UpdateFunctionRenderParam) MarshalJSON() (data []byte, err error) {
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *UpdateFunctionRenderParam) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Request-side render configuration. Carries the template document as
-// base64-encoded `.docx` bytes: the server validates them, stores the template,
-// and derives the placeholder/style-id contract at create/update time, so clients
-// never submit `placeholders` or `styleIds`. The response shape (`RenderConfig`)
-// returns the derived contract.
-//
-// The property Template is required.
-type UpdateFunctionRenderRenderConfigParam struct {
-	Template UpdateFunctionRenderRenderConfigTemplateParam `json:"template,omitzero" api:"required"`
-	paramObj
-}
-
-func (r UpdateFunctionRenderRenderConfigParam) MarshalJSON() (data []byte, err error) {
-	type shadow UpdateFunctionRenderRenderConfigParam
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *UpdateFunctionRenderRenderConfigParam) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// The property Base64 is required.
-type UpdateFunctionRenderRenderConfigTemplateParam struct {
-	// Base64-encoded `.docx` bytes. In the Bem CLI, use `@path/to/file` to embed it
-	// automatically.
-	Base64 string `json:"base64" api:"required"`
-	// Original upload filename (e.g. `contract.docx`), stored for display only. Does
-	// not affect where the template is stored.
-	Name param.Opt[string] `json:"name,omitzero"`
-	paramObj
-}
-
-func (r UpdateFunctionRenderRenderConfigTemplateParam) MarshalJSON() (data []byte, err error) {
-	type shadow UpdateFunctionRenderRenderConfigTemplateParam
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *UpdateFunctionRenderRenderConfigTemplateParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
@@ -3435,13 +3562,13 @@ type FunctionCompareMetricsResponse struct {
 	// Name of the compared function
 	FunctionName string `json:"functionName" api:"required"`
 	// Comparison of metrics between two versions
-	AggregateComparison FunctionCompareMetricsResponseAggregateComparison `json:"aggregateComparison"`
+	AggregateComparison MetricsComparison `json:"aggregateComparison"`
 	// Detailed performance metrics and analysis
-	BaselineMetrics FunctionCompareMetricsResponseBaselineMetrics `json:"baselineMetrics"`
+	BaselineMetrics MetricsDetails `json:"baselineMetrics"`
 	// Number of transformations used to calculate baseline metrics
 	BaselineTransformationCount int64 `json:"baselineTransformationCount"`
 	// Detailed performance metrics and analysis
-	ComparisonMetrics FunctionCompareMetricsResponseComparisonMetrics `json:"comparisonMetrics"`
+	ComparisonMetrics MetricsDetails `json:"comparisonMetrics"`
 	// Number of transformations used to calculate comparison metrics
 	ComparisonTransformationCount int64 `json:"comparisonTransformationCount"`
 	// **Field-level metrics that changed significantly**
@@ -3473,425 +3600,10 @@ func (r *FunctionCompareMetricsResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Comparison of metrics between two versions
-type FunctionCompareMetricsResponseAggregateComparison struct {
-	// Comparison of a single metric between two versions
-	Accuracy FunctionCompareMetricsResponseAggregateComparisonAccuracy `json:"accuracy"`
-	// Comparison of a single metric between two versions
-	F1Score FunctionCompareMetricsResponseAggregateComparisonF1Score `json:"f1Score"`
-	// Comparison of a single metric between two versions
-	Precision FunctionCompareMetricsResponseAggregateComparisonPrecision `json:"precision"`
-	// Comparison of a single metric between two versions
-	Recall FunctionCompareMetricsResponseAggregateComparisonRecall `json:"recall"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Accuracy    respjson.Field
-		F1Score     respjson.Field
-		Precision   respjson.Field
-		Recall      respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionCompareMetricsResponseAggregateComparison) RawJSON() string { return r.JSON.raw }
-func (r *FunctionCompareMetricsResponseAggregateComparison) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Comparison of a single metric between two versions
-type FunctionCompareMetricsResponseAggregateComparisonAccuracy struct {
-	// Value in baseline version (null if not available)
-	BaselineValue float64 `json:"baselineValue" api:"nullable"`
-	// Value in comparison version (null if not available)
-	ComparisonValue float64 `json:"comparisonValue" api:"nullable"`
-	// Absolute difference (comparisonValue - baselineValue)
-	Difference float64 `json:"difference" api:"nullable"`
-	// **Percentage change from baseline to comparison**
-	//
-	// Formula: ((comparisonValue - baselineValue) / baselineValue) \* 100
-	//
-	// - Positive values indicate improvement
-	// - Negative values indicate regression
-	LiftPercent float64 `json:"liftPercent" api:"nullable"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		BaselineValue   respjson.Field
-		ComparisonValue respjson.Field
-		Difference      respjson.Field
-		LiftPercent     respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionCompareMetricsResponseAggregateComparisonAccuracy) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionCompareMetricsResponseAggregateComparisonAccuracy) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Comparison of a single metric between two versions
-type FunctionCompareMetricsResponseAggregateComparisonF1Score struct {
-	// Value in baseline version (null if not available)
-	BaselineValue float64 `json:"baselineValue" api:"nullable"`
-	// Value in comparison version (null if not available)
-	ComparisonValue float64 `json:"comparisonValue" api:"nullable"`
-	// Absolute difference (comparisonValue - baselineValue)
-	Difference float64 `json:"difference" api:"nullable"`
-	// **Percentage change from baseline to comparison**
-	//
-	// Formula: ((comparisonValue - baselineValue) / baselineValue) \* 100
-	//
-	// - Positive values indicate improvement
-	// - Negative values indicate regression
-	LiftPercent float64 `json:"liftPercent" api:"nullable"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		BaselineValue   respjson.Field
-		ComparisonValue respjson.Field
-		Difference      respjson.Field
-		LiftPercent     respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionCompareMetricsResponseAggregateComparisonF1Score) RawJSON() string { return r.JSON.raw }
-func (r *FunctionCompareMetricsResponseAggregateComparisonF1Score) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Comparison of a single metric between two versions
-type FunctionCompareMetricsResponseAggregateComparisonPrecision struct {
-	// Value in baseline version (null if not available)
-	BaselineValue float64 `json:"baselineValue" api:"nullable"`
-	// Value in comparison version (null if not available)
-	ComparisonValue float64 `json:"comparisonValue" api:"nullable"`
-	// Absolute difference (comparisonValue - baselineValue)
-	Difference float64 `json:"difference" api:"nullable"`
-	// **Percentage change from baseline to comparison**
-	//
-	// Formula: ((comparisonValue - baselineValue) / baselineValue) \* 100
-	//
-	// - Positive values indicate improvement
-	// - Negative values indicate regression
-	LiftPercent float64 `json:"liftPercent" api:"nullable"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		BaselineValue   respjson.Field
-		ComparisonValue respjson.Field
-		Difference      respjson.Field
-		LiftPercent     respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionCompareMetricsResponseAggregateComparisonPrecision) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionCompareMetricsResponseAggregateComparisonPrecision) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Comparison of a single metric between two versions
-type FunctionCompareMetricsResponseAggregateComparisonRecall struct {
-	// Value in baseline version (null if not available)
-	BaselineValue float64 `json:"baselineValue" api:"nullable"`
-	// Value in comparison version (null if not available)
-	ComparisonValue float64 `json:"comparisonValue" api:"nullable"`
-	// Absolute difference (comparisonValue - baselineValue)
-	Difference float64 `json:"difference" api:"nullable"`
-	// **Percentage change from baseline to comparison**
-	//
-	// Formula: ((comparisonValue - baselineValue) / baselineValue) \* 100
-	//
-	// - Positive values indicate improvement
-	// - Negative values indicate regression
-	LiftPercent float64 `json:"liftPercent" api:"nullable"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		BaselineValue   respjson.Field
-		ComparisonValue respjson.Field
-		Difference      respjson.Field
-		LiftPercent     respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionCompareMetricsResponseAggregateComparisonRecall) RawJSON() string { return r.JSON.raw }
-func (r *FunctionCompareMetricsResponseAggregateComparisonRecall) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Detailed performance metrics and analysis
-type FunctionCompareMetricsResponseBaselineMetrics struct {
-	// Comprehensive performance metrics
-	AggregateMetrics FunctionCompareMetricsResponseBaselineMetricsAggregateMetrics `json:"aggregateMetrics"`
-	// Enhanced field metrics with comprehensive analytics
-	FieldMetrics []FunctionCompareMetricsResponseBaselineMetricsFieldMetric `json:"fieldMetrics"`
-	// Area Under the Precision-Recall Curve
-	PrecisionRecallAuc float64 `json:"precisionRecallAuc"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		AggregateMetrics   respjson.Field
-		FieldMetrics       respjson.Field
-		PrecisionRecallAuc respjson.Field
-		ExtraFields        map[string]respjson.Field
-		raw                string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionCompareMetricsResponseBaselineMetrics) RawJSON() string { return r.JSON.raw }
-func (r *FunctionCompareMetricsResponseBaselineMetrics) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Comprehensive performance metrics
-type FunctionCompareMetricsResponseBaselineMetricsAggregateMetrics struct {
-	// Overall accuracy
-	Accuracy float64 `json:"accuracy" api:"nullable"`
-	// F1 Score (harmonic mean of precision and recall)
-	F1Score float64 `json:"f1Score" api:"nullable"`
-	// False Negatives
-	Fn int64 `json:"fn"`
-	// False Positives
-	Fp int64 `json:"fp"`
-	// Precision (TP / (TP + FP))
-	Precision float64 `json:"precision" api:"nullable"`
-	// Recall (TP / (TP + FN))
-	Recall float64 `json:"recall" api:"nullable"`
-	// True Negatives
-	Tn int64 `json:"tn"`
-	// True Positives
-	Tp int64 `json:"tp"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Accuracy    respjson.Field
-		F1Score     respjson.Field
-		Fn          respjson.Field
-		Fp          respjson.Field
-		Precision   respjson.Field
-		Recall      respjson.Field
-		Tn          respjson.Field
-		Tp          respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionCompareMetricsResponseBaselineMetricsAggregateMetrics) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionCompareMetricsResponseBaselineMetricsAggregateMetrics) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Enhanced field metrics with comprehensive analytics
-type FunctionCompareMetricsResponseBaselineMetricsFieldMetric struct {
-	// JSON path to the field
-	FieldPath string `json:"fieldPath" api:"required"`
-	// Comprehensive performance metrics
-	Metrics FunctionCompareMetricsResponseBaselineMetricsFieldMetricMetrics `json:"metrics"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		FieldPath   respjson.Field
-		Metrics     respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionCompareMetricsResponseBaselineMetricsFieldMetric) RawJSON() string { return r.JSON.raw }
-func (r *FunctionCompareMetricsResponseBaselineMetricsFieldMetric) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Comprehensive performance metrics
-type FunctionCompareMetricsResponseBaselineMetricsFieldMetricMetrics struct {
-	// Overall accuracy
-	Accuracy float64 `json:"accuracy" api:"nullable"`
-	// F1 Score (harmonic mean of precision and recall)
-	F1Score float64 `json:"f1Score" api:"nullable"`
-	// False Negatives
-	Fn int64 `json:"fn"`
-	// False Positives
-	Fp int64 `json:"fp"`
-	// Precision (TP / (TP + FP))
-	Precision float64 `json:"precision" api:"nullable"`
-	// Recall (TP / (TP + FN))
-	Recall float64 `json:"recall" api:"nullable"`
-	// True Negatives
-	Tn int64 `json:"tn"`
-	// True Positives
-	Tp int64 `json:"tp"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Accuracy    respjson.Field
-		F1Score     respjson.Field
-		Fn          respjson.Field
-		Fp          respjson.Field
-		Precision   respjson.Field
-		Recall      respjson.Field
-		Tn          respjson.Field
-		Tp          respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionCompareMetricsResponseBaselineMetricsFieldMetricMetrics) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionCompareMetricsResponseBaselineMetricsFieldMetricMetrics) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Detailed performance metrics and analysis
-type FunctionCompareMetricsResponseComparisonMetrics struct {
-	// Comprehensive performance metrics
-	AggregateMetrics FunctionCompareMetricsResponseComparisonMetricsAggregateMetrics `json:"aggregateMetrics"`
-	// Enhanced field metrics with comprehensive analytics
-	FieldMetrics []FunctionCompareMetricsResponseComparisonMetricsFieldMetric `json:"fieldMetrics"`
-	// Area Under the Precision-Recall Curve
-	PrecisionRecallAuc float64 `json:"precisionRecallAuc"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		AggregateMetrics   respjson.Field
-		FieldMetrics       respjson.Field
-		PrecisionRecallAuc respjson.Field
-		ExtraFields        map[string]respjson.Field
-		raw                string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionCompareMetricsResponseComparisonMetrics) RawJSON() string { return r.JSON.raw }
-func (r *FunctionCompareMetricsResponseComparisonMetrics) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Comprehensive performance metrics
-type FunctionCompareMetricsResponseComparisonMetricsAggregateMetrics struct {
-	// Overall accuracy
-	Accuracy float64 `json:"accuracy" api:"nullable"`
-	// F1 Score (harmonic mean of precision and recall)
-	F1Score float64 `json:"f1Score" api:"nullable"`
-	// False Negatives
-	Fn int64 `json:"fn"`
-	// False Positives
-	Fp int64 `json:"fp"`
-	// Precision (TP / (TP + FP))
-	Precision float64 `json:"precision" api:"nullable"`
-	// Recall (TP / (TP + FN))
-	Recall float64 `json:"recall" api:"nullable"`
-	// True Negatives
-	Tn int64 `json:"tn"`
-	// True Positives
-	Tp int64 `json:"tp"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Accuracy    respjson.Field
-		F1Score     respjson.Field
-		Fn          respjson.Field
-		Fp          respjson.Field
-		Precision   respjson.Field
-		Recall      respjson.Field
-		Tn          respjson.Field
-		Tp          respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionCompareMetricsResponseComparisonMetricsAggregateMetrics) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionCompareMetricsResponseComparisonMetricsAggregateMetrics) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Enhanced field metrics with comprehensive analytics
-type FunctionCompareMetricsResponseComparisonMetricsFieldMetric struct {
-	// JSON path to the field
-	FieldPath string `json:"fieldPath" api:"required"`
-	// Comprehensive performance metrics
-	Metrics FunctionCompareMetricsResponseComparisonMetricsFieldMetricMetrics `json:"metrics"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		FieldPath   respjson.Field
-		Metrics     respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionCompareMetricsResponseComparisonMetricsFieldMetric) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionCompareMetricsResponseComparisonMetricsFieldMetric) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Comprehensive performance metrics
-type FunctionCompareMetricsResponseComparisonMetricsFieldMetricMetrics struct {
-	// Overall accuracy
-	Accuracy float64 `json:"accuracy" api:"nullable"`
-	// F1 Score (harmonic mean of precision and recall)
-	F1Score float64 `json:"f1Score" api:"nullable"`
-	// False Negatives
-	Fn int64 `json:"fn"`
-	// False Positives
-	Fp int64 `json:"fp"`
-	// Precision (TP / (TP + FP))
-	Precision float64 `json:"precision" api:"nullable"`
-	// Recall (TP / (TP + FN))
-	Recall float64 `json:"recall" api:"nullable"`
-	// True Negatives
-	Tn int64 `json:"tn"`
-	// True Positives
-	Tp int64 `json:"tp"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Accuracy    respjson.Field
-		F1Score     respjson.Field
-		Fn          respjson.Field
-		Fp          respjson.Field
-		Precision   respjson.Field
-		Recall      respjson.Field
-		Tn          respjson.Field
-		Tp          respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionCompareMetricsResponseComparisonMetricsFieldMetricMetrics) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionCompareMetricsResponseComparisonMetricsFieldMetricMetrics) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 // Comparison of field-level metrics
 type FunctionCompareMetricsResponseFieldMetricsChange struct {
 	// Comparison of metrics between two versions
-	Comparison FunctionCompareMetricsResponseFieldMetricsChangeComparison `json:"comparison" api:"required"`
+	Comparison MetricsComparison `json:"comparison" api:"required"`
 	// JSON pointer path to the field
 	FieldPath string `json:"fieldPath" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
@@ -3909,171 +3621,6 @@ func (r *FunctionCompareMetricsResponseFieldMetricsChange) UnmarshalJSON(data []
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Comparison of metrics between two versions
-type FunctionCompareMetricsResponseFieldMetricsChangeComparison struct {
-	// Comparison of a single metric between two versions
-	Accuracy FunctionCompareMetricsResponseFieldMetricsChangeComparisonAccuracy `json:"accuracy"`
-	// Comparison of a single metric between two versions
-	F1Score FunctionCompareMetricsResponseFieldMetricsChangeComparisonF1Score `json:"f1Score"`
-	// Comparison of a single metric between two versions
-	Precision FunctionCompareMetricsResponseFieldMetricsChangeComparisonPrecision `json:"precision"`
-	// Comparison of a single metric between two versions
-	Recall FunctionCompareMetricsResponseFieldMetricsChangeComparisonRecall `json:"recall"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Accuracy    respjson.Field
-		F1Score     respjson.Field
-		Precision   respjson.Field
-		Recall      respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionCompareMetricsResponseFieldMetricsChangeComparison) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionCompareMetricsResponseFieldMetricsChangeComparison) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Comparison of a single metric between two versions
-type FunctionCompareMetricsResponseFieldMetricsChangeComparisonAccuracy struct {
-	// Value in baseline version (null if not available)
-	BaselineValue float64 `json:"baselineValue" api:"nullable"`
-	// Value in comparison version (null if not available)
-	ComparisonValue float64 `json:"comparisonValue" api:"nullable"`
-	// Absolute difference (comparisonValue - baselineValue)
-	Difference float64 `json:"difference" api:"nullable"`
-	// **Percentage change from baseline to comparison**
-	//
-	// Formula: ((comparisonValue - baselineValue) / baselineValue) \* 100
-	//
-	// - Positive values indicate improvement
-	// - Negative values indicate regression
-	LiftPercent float64 `json:"liftPercent" api:"nullable"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		BaselineValue   respjson.Field
-		ComparisonValue respjson.Field
-		Difference      respjson.Field
-		LiftPercent     respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionCompareMetricsResponseFieldMetricsChangeComparisonAccuracy) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionCompareMetricsResponseFieldMetricsChangeComparisonAccuracy) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Comparison of a single metric between two versions
-type FunctionCompareMetricsResponseFieldMetricsChangeComparisonF1Score struct {
-	// Value in baseline version (null if not available)
-	BaselineValue float64 `json:"baselineValue" api:"nullable"`
-	// Value in comparison version (null if not available)
-	ComparisonValue float64 `json:"comparisonValue" api:"nullable"`
-	// Absolute difference (comparisonValue - baselineValue)
-	Difference float64 `json:"difference" api:"nullable"`
-	// **Percentage change from baseline to comparison**
-	//
-	// Formula: ((comparisonValue - baselineValue) / baselineValue) \* 100
-	//
-	// - Positive values indicate improvement
-	// - Negative values indicate regression
-	LiftPercent float64 `json:"liftPercent" api:"nullable"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		BaselineValue   respjson.Field
-		ComparisonValue respjson.Field
-		Difference      respjson.Field
-		LiftPercent     respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionCompareMetricsResponseFieldMetricsChangeComparisonF1Score) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionCompareMetricsResponseFieldMetricsChangeComparisonF1Score) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Comparison of a single metric between two versions
-type FunctionCompareMetricsResponseFieldMetricsChangeComparisonPrecision struct {
-	// Value in baseline version (null if not available)
-	BaselineValue float64 `json:"baselineValue" api:"nullable"`
-	// Value in comparison version (null if not available)
-	ComparisonValue float64 `json:"comparisonValue" api:"nullable"`
-	// Absolute difference (comparisonValue - baselineValue)
-	Difference float64 `json:"difference" api:"nullable"`
-	// **Percentage change from baseline to comparison**
-	//
-	// Formula: ((comparisonValue - baselineValue) / baselineValue) \* 100
-	//
-	// - Positive values indicate improvement
-	// - Negative values indicate regression
-	LiftPercent float64 `json:"liftPercent" api:"nullable"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		BaselineValue   respjson.Field
-		ComparisonValue respjson.Field
-		Difference      respjson.Field
-		LiftPercent     respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionCompareMetricsResponseFieldMetricsChangeComparisonPrecision) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionCompareMetricsResponseFieldMetricsChangeComparisonPrecision) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Comparison of a single metric between two versions
-type FunctionCompareMetricsResponseFieldMetricsChangeComparisonRecall struct {
-	// Value in baseline version (null if not available)
-	BaselineValue float64 `json:"baselineValue" api:"nullable"`
-	// Value in comparison version (null if not available)
-	ComparisonValue float64 `json:"comparisonValue" api:"nullable"`
-	// Absolute difference (comparisonValue - baselineValue)
-	Difference float64 `json:"difference" api:"nullable"`
-	// **Percentage change from baseline to comparison**
-	//
-	// Formula: ((comparisonValue - baselineValue) / baselineValue) \* 100
-	//
-	// - Positive values indicate improvement
-	// - Negative values indicate regression
-	LiftPercent float64 `json:"liftPercent" api:"nullable"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		BaselineValue   respjson.Field
-		ComparisonValue respjson.Field
-		Difference      respjson.Field
-		LiftPercent     respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionCompareMetricsResponseFieldMetricsChangeComparisonRecall) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionCompareMetricsResponseFieldMetricsChangeComparisonRecall) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 // Response containing review requirements estimate
 type FunctionEstimateReviewRequirementsResponse struct {
 	// Detailed review requirements estimate
@@ -4083,7 +3630,7 @@ type FunctionEstimateReviewRequirementsResponse struct {
 	// Version number of the function that was analyzed
 	FunctionVersionNum int64 `json:"functionVersionNum" api:"required"`
 	// Detailed performance metrics and analysis
-	Metrics FunctionEstimateReviewRequirementsResponseMetrics `json:"metrics"`
+	Metrics MetricsDetails `json:"metrics"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Estimate           respjson.Field
@@ -4222,7 +3769,7 @@ type FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixAccuracyAb
 	// Wald confidence intervals use the normal approximation to the binomial
 	// distribution. For extreme rates or small sample sizes, Wilson confidence
 	// intervals may be more appropriate.
-	Number95 FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixAccuracyAboveThreshold95 `json:"95"`
+	Number95 RateConfidenceInterval `json:"95"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Number95    respjson.Field
@@ -4239,44 +3786,6 @@ func (r *FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixAccura
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Confidence interval for a rate/proportion using Wald (normal approximation)
-// method by default.
-//
-// Wald confidence intervals use the normal approximation to the binomial
-// distribution. For extreme rates or small sample sizes, Wilson confidence
-// intervals may be more appropriate.
-type FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixAccuracyAboveThreshold95 struct {
-	// Current number of samples/observations available
-	CurrentSample int64 `json:"currentSample" api:"required"`
-	// Minimum number of samples needed for reliable confidence interval calculation
-	SampleNeeded int64 `json:"sampleNeeded" api:"required"`
-	// Lower bound of the confidence interval (null if insufficient sample size)
-	CiLower float64 `json:"ciLower" api:"nullable"`
-	// Upper bound of the confidence interval (null if insufficient sample size)
-	CiUpper float64 `json:"ciUpper" api:"nullable"`
-	// Point estimate (observed rate) at the center of the interval (null if
-	// insufficient sample size)
-	Mid float64 `json:"mid" api:"nullable"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		CurrentSample respjson.Field
-		SampleNeeded  respjson.Field
-		CiLower       respjson.Field
-		CiUpper       respjson.Field
-		Mid           respjson.Field
-		ExtraFields   map[string]respjson.Field
-		raw           string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixAccuracyAboveThreshold95) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixAccuracyAboveThreshold95) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 // False Discovery Rate confidence intervals by confidence level. Keys are
 // confidence levels as strings ("90", "95", "99"). Values contain statistical
 // confidence intervals.
@@ -4287,7 +3796,7 @@ type FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalseDisco
 	// Wald confidence intervals use the normal approximation to the binomial
 	// distribution. For extreme rates or small sample sizes, Wilson confidence
 	// intervals may be more appropriate.
-	Number95 FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalseDiscoveryRate95 `json:"95"`
+	Number95 RateConfidenceInterval `json:"95"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Number95    respjson.Field
@@ -4304,44 +3813,6 @@ func (r *FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalseD
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Confidence interval for a rate/proportion using Wald (normal approximation)
-// method by default.
-//
-// Wald confidence intervals use the normal approximation to the binomial
-// distribution. For extreme rates or small sample sizes, Wilson confidence
-// intervals may be more appropriate.
-type FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalseDiscoveryRate95 struct {
-	// Current number of samples/observations available
-	CurrentSample int64 `json:"currentSample" api:"required"`
-	// Minimum number of samples needed for reliable confidence interval calculation
-	SampleNeeded int64 `json:"sampleNeeded" api:"required"`
-	// Lower bound of the confidence interval (null if insufficient sample size)
-	CiLower float64 `json:"ciLower" api:"nullable"`
-	// Upper bound of the confidence interval (null if insufficient sample size)
-	CiUpper float64 `json:"ciUpper" api:"nullable"`
-	// Point estimate (observed rate) at the center of the interval (null if
-	// insufficient sample size)
-	Mid float64 `json:"mid" api:"nullable"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		CurrentSample respjson.Field
-		SampleNeeded  respjson.Field
-		CiLower       respjson.Field
-		CiUpper       respjson.Field
-		Mid           respjson.Field
-		ExtraFields   map[string]respjson.Field
-		raw           string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalseDiscoveryRate95) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalseDiscoveryRate95) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 // False Positive Rate confidence intervals by confidence level. Keys are
 // confidence levels as strings ("90", "95", "99"). Values contain statistical
 // confidence intervals.
@@ -4352,7 +3823,7 @@ type FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalsePosit
 	// Wald confidence intervals use the normal approximation to the binomial
 	// distribution. For extreme rates or small sample sizes, Wilson confidence
 	// intervals may be more appropriate.
-	Number95 FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalsePositiveRate95 `json:"95"`
+	Number95 RateConfidenceInterval `json:"95"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Number95    respjson.Field
@@ -4369,44 +3840,6 @@ func (r *FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalseP
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Confidence interval for a rate/proportion using Wald (normal approximation)
-// method by default.
-//
-// Wald confidence intervals use the normal approximation to the binomial
-// distribution. For extreme rates or small sample sizes, Wilson confidence
-// intervals may be more appropriate.
-type FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalsePositiveRate95 struct {
-	// Current number of samples/observations available
-	CurrentSample int64 `json:"currentSample" api:"required"`
-	// Minimum number of samples needed for reliable confidence interval calculation
-	SampleNeeded int64 `json:"sampleNeeded" api:"required"`
-	// Lower bound of the confidence interval (null if insufficient sample size)
-	CiLower float64 `json:"ciLower" api:"nullable"`
-	// Upper bound of the confidence interval (null if insufficient sample size)
-	CiUpper float64 `json:"ciUpper" api:"nullable"`
-	// Point estimate (observed rate) at the center of the interval (null if
-	// insufficient sample size)
-	Mid float64 `json:"mid" api:"nullable"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		CurrentSample respjson.Field
-		SampleNeeded  respjson.Field
-		CiLower       respjson.Field
-		CiUpper       respjson.Field
-		Mid           respjson.Field
-		ExtraFields   map[string]respjson.Field
-		raw           string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalsePositiveRate95) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalsePositiveRate95) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 // Precision confidence intervals by confidence level. Keys are confidence levels
 // as strings ("90", "95", "99"). Values contain statistical confidence intervals.
 type FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixPrecision struct {
@@ -4416,7 +3849,7 @@ type FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixPrecision 
 	// Wald confidence intervals use the normal approximation to the binomial
 	// distribution. For extreme rates or small sample sizes, Wilson confidence
 	// intervals may be more appropriate.
-	Number95 FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixPrecision95 `json:"95"`
+	Number95 RateConfidenceInterval `json:"95"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Number95    respjson.Field
@@ -4433,44 +3866,6 @@ func (r *FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixPrecis
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Confidence interval for a rate/proportion using Wald (normal approximation)
-// method by default.
-//
-// Wald confidence intervals use the normal approximation to the binomial
-// distribution. For extreme rates or small sample sizes, Wilson confidence
-// intervals may be more appropriate.
-type FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixPrecision95 struct {
-	// Current number of samples/observations available
-	CurrentSample int64 `json:"currentSample" api:"required"`
-	// Minimum number of samples needed for reliable confidence interval calculation
-	SampleNeeded int64 `json:"sampleNeeded" api:"required"`
-	// Lower bound of the confidence interval (null if insufficient sample size)
-	CiLower float64 `json:"ciLower" api:"nullable"`
-	// Upper bound of the confidence interval (null if insufficient sample size)
-	CiUpper float64 `json:"ciUpper" api:"nullable"`
-	// Point estimate (observed rate) at the center of the interval (null if
-	// insufficient sample size)
-	Mid float64 `json:"mid" api:"nullable"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		CurrentSample respjson.Field
-		SampleNeeded  respjson.Field
-		CiLower       respjson.Field
-		CiUpper       respjson.Field
-		Mid           respjson.Field
-		ExtraFields   map[string]respjson.Field
-		raw           string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixPrecision95) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixPrecision95) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 // Recall confidence intervals by confidence level. Keys are confidence levels as
 // strings ("90", "95", "99"). Values contain statistical confidence intervals.
 type FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixRecall struct {
@@ -4480,7 +3875,7 @@ type FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixRecall str
 	// Wald confidence intervals use the normal approximation to the binomial
 	// distribution. For extreme rates or small sample sizes, Wilson confidence
 	// intervals may be more appropriate.
-	Number95 FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixRecall95 `json:"95"`
+	Number95 RateConfidenceInterval `json:"95"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Number95    respjson.Field
@@ -4494,173 +3889,6 @@ func (r FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixRecall)
 	return r.JSON.raw
 }
 func (r *FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixRecall) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Confidence interval for a rate/proportion using Wald (normal approximation)
-// method by default.
-//
-// Wald confidence intervals use the normal approximation to the binomial
-// distribution. For extreme rates or small sample sizes, Wilson confidence
-// intervals may be more appropriate.
-type FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixRecall95 struct {
-	// Current number of samples/observations available
-	CurrentSample int64 `json:"currentSample" api:"required"`
-	// Minimum number of samples needed for reliable confidence interval calculation
-	SampleNeeded int64 `json:"sampleNeeded" api:"required"`
-	// Lower bound of the confidence interval (null if insufficient sample size)
-	CiLower float64 `json:"ciLower" api:"nullable"`
-	// Upper bound of the confidence interval (null if insufficient sample size)
-	CiUpper float64 `json:"ciUpper" api:"nullable"`
-	// Point estimate (observed rate) at the center of the interval (null if
-	// insufficient sample size)
-	Mid float64 `json:"mid" api:"nullable"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		CurrentSample respjson.Field
-		SampleNeeded  respjson.Field
-		CiLower       respjson.Field
-		CiUpper       respjson.Field
-		Mid           respjson.Field
-		ExtraFields   map[string]respjson.Field
-		raw           string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixRecall95) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixRecall95) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Detailed performance metrics and analysis
-type FunctionEstimateReviewRequirementsResponseMetrics struct {
-	// Comprehensive performance metrics
-	AggregateMetrics FunctionEstimateReviewRequirementsResponseMetricsAggregateMetrics `json:"aggregateMetrics"`
-	// Enhanced field metrics with comprehensive analytics
-	FieldMetrics []FunctionEstimateReviewRequirementsResponseMetricsFieldMetric `json:"fieldMetrics"`
-	// Area Under the Precision-Recall Curve
-	PrecisionRecallAuc float64 `json:"precisionRecallAuc"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		AggregateMetrics   respjson.Field
-		FieldMetrics       respjson.Field
-		PrecisionRecallAuc respjson.Field
-		ExtraFields        map[string]respjson.Field
-		raw                string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionEstimateReviewRequirementsResponseMetrics) RawJSON() string { return r.JSON.raw }
-func (r *FunctionEstimateReviewRequirementsResponseMetrics) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Comprehensive performance metrics
-type FunctionEstimateReviewRequirementsResponseMetricsAggregateMetrics struct {
-	// Overall accuracy
-	Accuracy float64 `json:"accuracy" api:"nullable"`
-	// F1 Score (harmonic mean of precision and recall)
-	F1Score float64 `json:"f1Score" api:"nullable"`
-	// False Negatives
-	Fn int64 `json:"fn"`
-	// False Positives
-	Fp int64 `json:"fp"`
-	// Precision (TP / (TP + FP))
-	Precision float64 `json:"precision" api:"nullable"`
-	// Recall (TP / (TP + FN))
-	Recall float64 `json:"recall" api:"nullable"`
-	// True Negatives
-	Tn int64 `json:"tn"`
-	// True Positives
-	Tp int64 `json:"tp"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Accuracy    respjson.Field
-		F1Score     respjson.Field
-		Fn          respjson.Field
-		Fp          respjson.Field
-		Precision   respjson.Field
-		Recall      respjson.Field
-		Tn          respjson.Field
-		Tp          respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionEstimateReviewRequirementsResponseMetricsAggregateMetrics) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionEstimateReviewRequirementsResponseMetricsAggregateMetrics) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Enhanced field metrics with comprehensive analytics
-type FunctionEstimateReviewRequirementsResponseMetricsFieldMetric struct {
-	// JSON path to the field
-	FieldPath string `json:"fieldPath" api:"required"`
-	// Comprehensive performance metrics
-	Metrics FunctionEstimateReviewRequirementsResponseMetricsFieldMetricMetrics `json:"metrics"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		FieldPath   respjson.Field
-		Metrics     respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionEstimateReviewRequirementsResponseMetricsFieldMetric) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionEstimateReviewRequirementsResponseMetricsFieldMetric) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Comprehensive performance metrics
-type FunctionEstimateReviewRequirementsResponseMetricsFieldMetricMetrics struct {
-	// Overall accuracy
-	Accuracy float64 `json:"accuracy" api:"nullable"`
-	// F1 Score (harmonic mean of precision and recall)
-	F1Score float64 `json:"f1Score" api:"nullable"`
-	// False Negatives
-	Fn int64 `json:"fn"`
-	// False Positives
-	Fp int64 `json:"fp"`
-	// Precision (TP / (TP + FP))
-	Precision float64 `json:"precision" api:"nullable"`
-	// Recall (TP / (TP + FN))
-	Recall float64 `json:"recall" api:"nullable"`
-	// True Negatives
-	Tn int64 `json:"tn"`
-	// True Positives
-	Tp int64 `json:"tp"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Accuracy    respjson.Field
-		F1Score     respjson.Field
-		Fn          respjson.Field
-		Fp          respjson.Field
-		Precision   respjson.Field
-		Recall      respjson.Field
-		Tn          respjson.Field
-		Tp          respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionEstimateReviewRequirementsResponseMetricsFieldMetricMetrics) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionEstimateReviewRequirementsResponseMetricsFieldMetricMetrics) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

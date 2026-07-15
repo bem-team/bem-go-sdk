@@ -4,6 +4,7 @@ package bem
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -102,7 +103,7 @@ func (r *EvalScoreService) New(ctx context.Context, body EvalScoreNewParams, opt
 // Returns `aggregate` only once `status` reaches `completed`. `perPair` is
 // populated incrementally — each pair's `fieldResults` appears as its underlying
 // function call terminates.
-func (r *EvalScoreService) Get(ctx context.Context, scoreRunID string, opts ...option.RequestOption) (res *EvalScoreGetResponse, err error) {
+func (r *EvalScoreService) Get(ctx context.Context, scoreRunID string, opts ...option.RequestOption) (res *EvalScoreRun, err error) {
 	opts = slices.Concat(r.options, opts)
 	if scoreRunID == "" {
 		err = errors.New("missing required scoreRunID parameter")
@@ -118,7 +119,7 @@ func (r *EvalScoreService) Get(ctx context.Context, scoreRunID string, opts ...o
 // Transitions the run to `cancelled`. Function calls already in flight are allowed
 // to finish (best-effort cancellation via the job queue); results from completed
 // pairs may still appear in subsequent GETs.
-func (r *EvalScoreService) Cancel(ctx context.Context, scoreRunID string, opts ...option.RequestOption) (res *EvalScoreCancelResponse, err error) {
+func (r *EvalScoreService) Cancel(ctx context.Context, scoreRunID string, opts ...option.RequestOption) (res *EvalScoreRun, err error) {
 	opts = slices.Concat(r.options, opts)
 	if scoreRunID == "" {
 		err = errors.New("missing required scoreRunID parameter")
@@ -129,6 +130,302 @@ func (r *EvalScoreService) Cancel(ctx context.Context, scoreRunID string, opts .
 	return res, err
 }
 
+// Comparator configuration. All fields optional; conservative defaults.
+type EvalMatchConfig struct {
+	// P0 supports only `by-index`.
+	//
+	// Any of "by-index".
+	ArrayMatch EvalMatchConfigArrayMatch `json:"arrayMatch"`
+	// Levenshtein-ratio threshold used when `stringMatch == "fuzzy"`. Range `[0, 1]`.
+	// Default `0.85`.
+	FuzzyThreshold float64 `json:"fuzzyThreshold"`
+	// JSON Pointer paths to skip during comparison. The asterisk character matches
+	// arbitrary object keys / array indices.
+	//
+	// Example values: /metadata, /lineItems with asterisk segment, etc.
+	IgnorePaths []string `json:"ignorePaths"`
+	// Relative tolerance for numeric fields. `0` (default) means exact equality;
+	// `0.01` means ±1%.
+	NumericTolerance float64 `json:"numericTolerance"`
+	// `exact` (default) or `fuzzy`.
+	//
+	// Any of "exact", "fuzzy".
+	StringMatch EvalMatchConfigStringMatch `json:"stringMatch"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		ArrayMatch       respjson.Field
+		FuzzyThreshold   respjson.Field
+		IgnorePaths      respjson.Field
+		NumericTolerance respjson.Field
+		StringMatch      respjson.Field
+		ExtraFields      map[string]respjson.Field
+		raw              string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r EvalMatchConfig) RawJSON() string { return r.JSON.raw }
+func (r *EvalMatchConfig) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// ToParam converts this EvalMatchConfig to a EvalMatchConfigParam.
+//
+// Warning: the fields of the param type will not be present. ToParam should only
+// be used at the last possible moment before sending a request. Test for this with
+// EvalMatchConfigParam.Overrides()
+func (r EvalMatchConfig) ToParam() EvalMatchConfigParam {
+	return param.Override[EvalMatchConfigParam](json.RawMessage(r.RawJSON()))
+}
+
+// P0 supports only `by-index`.
+type EvalMatchConfigArrayMatch string
+
+const (
+	EvalMatchConfigArrayMatchByIndex EvalMatchConfigArrayMatch = "by-index"
+)
+
+// `exact` (default) or `fuzzy`.
+type EvalMatchConfigStringMatch string
+
+const (
+	EvalMatchConfigStringMatchExact EvalMatchConfigStringMatch = "exact"
+	EvalMatchConfigStringMatchFuzzy EvalMatchConfigStringMatch = "fuzzy"
+)
+
+// Comparator configuration. All fields optional; conservative defaults.
+type EvalMatchConfigParam struct {
+	// Levenshtein-ratio threshold used when `stringMatch == "fuzzy"`. Range `[0, 1]`.
+	// Default `0.85`.
+	FuzzyThreshold param.Opt[float64] `json:"fuzzyThreshold,omitzero"`
+	// Relative tolerance for numeric fields. `0` (default) means exact equality;
+	// `0.01` means ±1%.
+	NumericTolerance param.Opt[float64] `json:"numericTolerance,omitzero"`
+	// P0 supports only `by-index`.
+	//
+	// Any of "by-index".
+	ArrayMatch EvalMatchConfigArrayMatch `json:"arrayMatch,omitzero"`
+	// JSON Pointer paths to skip during comparison. The asterisk character matches
+	// arbitrary object keys / array indices.
+	//
+	// Example values: /metadata, /lineItems with asterisk segment, etc.
+	IgnorePaths []string `json:"ignorePaths,omitzero"`
+	// `exact` (default) or `fuzzy`.
+	//
+	// Any of "exact", "fuzzy".
+	StringMatch EvalMatchConfigStringMatch `json:"stringMatch,omitzero"`
+	paramObj
+}
+
+func (r EvalMatchConfigParam) MarshalJSON() (data []byte, err error) {
+	type shadow EvalMatchConfigParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *EvalMatchConfigParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Full status payload returned by `GET /v3/eval/score/{scoreRunID}`.
+type EvalScoreRun struct {
+	FunctionName       string `json:"functionName" api:"required"`
+	FunctionVersionNum int64  `json:"functionVersionNum" api:"required"`
+	// Comparator configuration. All fields optional; conservative defaults.
+	MatchConfig EvalMatchConfig `json:"matchConfig" api:"required"`
+	// Per-pair results. `fieldResults` appears once a pair has been compared.
+	PerPair []EvalScoreRunPerPair `json:"perPair" api:"required"`
+	// Counts across all pairs.
+	Progress   EvalScoreRunProgress `json:"progress" api:"required"`
+	ScoreRunID string               `json:"scoreRunID" api:"required"`
+	// Status values for an eval-score run.
+	//
+	// Any of "pending", "initializing", "running", "completed", "error", "cancelled".
+	Status EvalScoreRunStatus `json:"status" api:"required"`
+	// Aggregate accuracy metrics.
+	Aggregate EvalScoreRunAggregate `json:"aggregate"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		FunctionName       respjson.Field
+		FunctionVersionNum respjson.Field
+		MatchConfig        respjson.Field
+		PerPair            respjson.Field
+		Progress           respjson.Field
+		ScoreRunID         respjson.Field
+		Status             respjson.Field
+		Aggregate          respjson.Field
+		ExtraFields        map[string]respjson.Field
+		raw                string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r EvalScoreRun) RawJSON() string { return r.JSON.raw }
+func (r *EvalScoreRun) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Per-pair result.
+type EvalScoreRunPerPair struct {
+	PairIndex int64 `json:"pairIndex" api:"required"`
+	// Per-pair status.
+	//
+	// Any of "pending", "running", "completed", "failed".
+	Status string `json:"status" api:"required"`
+	// The function call that produced the actual output, if any.
+	CallID string `json:"callID"`
+	// Error message if the underlying function call failed.
+	ErrorMessage string `json:"errorMessage"`
+	// Per-leaf comparator output. Present only after the pair has been compared.
+	FieldResults []EvalScoreRunPerPairFieldResult `json:"fieldResults"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		PairIndex    respjson.Field
+		Status       respjson.Field
+		CallID       respjson.Field
+		ErrorMessage respjson.Field
+		FieldResults respjson.Field
+		ExtraFields  map[string]respjson.Field
+		raw          string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r EvalScoreRunPerPair) RawJSON() string { return r.JSON.raw }
+func (r *EvalScoreRunPerPair) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// One leaf in `expected ∪ actual`.
+type EvalScoreRunPerPairFieldResult struct {
+	// Classification:
+	//
+	// - `exact`: both present and deep-equal
+	// - `within_tolerance`: both numbers, within configured tolerance
+	// - `fuzzy_match`: both strings, Levenshtein ratio above threshold
+	// - `miss`: expected present, actual absent or different
+	// - `extra`: actual present, expected absent
+	//
+	// Any of "exact", "within_tolerance", "fuzzy_match", "miss", "extra".
+	Match string `json:"match" api:"required"`
+	// JSON Pointer to the leaf.
+	Path   string `json:"path" api:"required"`
+	Actual any    `json:"actual"`
+	// Populated for numeric comparisons; `actual - expected`.
+	Delta    float64 `json:"delta"`
+	Expected any     `json:"expected"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Match       respjson.Field
+		Path        respjson.Field
+		Actual      respjson.Field
+		Delta       respjson.Field
+		Expected    respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r EvalScoreRunPerPairFieldResult) RawJSON() string { return r.JSON.raw }
+func (r *EvalScoreRunPerPairFieldResult) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Counts across all pairs.
+type EvalScoreRunProgress struct {
+	Completed int64 `json:"completed" api:"required"`
+	Failed    int64 `json:"failed" api:"required"`
+	Total     int64 `json:"total" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Completed   respjson.Field
+		Failed      respjson.Field
+		Total       respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r EvalScoreRunProgress) RawJSON() string { return r.JSON.raw }
+func (r *EvalScoreRunProgress) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Aggregate accuracy metrics.
+type EvalScoreRunAggregate struct {
+	ExactMatches        int64   `json:"exactMatches" api:"required"`
+	Extras              int64   `json:"extras" api:"required"`
+	F1                  float64 `json:"f1" api:"required"`
+	FuzzyMatches        int64   `json:"fuzzyMatches" api:"required"`
+	Misses              int64   `json:"misses" api:"required"`
+	Precision           float64 `json:"precision" api:"required"`
+	Recall              float64 `json:"recall" api:"required"`
+	TotalFieldsActual   int64   `json:"totalFieldsActual" api:"required"`
+	TotalFieldsExpected int64   `json:"totalFieldsExpected" api:"required"`
+	WithinTolerance     int64   `json:"withinTolerance" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		ExactMatches        respjson.Field
+		Extras              respjson.Field
+		F1                  respjson.Field
+		FuzzyMatches        respjson.Field
+		Misses              respjson.Field
+		Precision           respjson.Field
+		Recall              respjson.Field
+		TotalFieldsActual   respjson.Field
+		TotalFieldsExpected respjson.Field
+		WithinTolerance     respjson.Field
+		ExtraFields         map[string]respjson.Field
+		raw                 string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r EvalScoreRunAggregate) RawJSON() string { return r.JSON.raw }
+func (r *EvalScoreRunAggregate) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Status values for an eval-score run.
+type EvalScoreRunStatus string
+
+const (
+	EvalScoreRunStatusPending      EvalScoreRunStatus = "pending"
+	EvalScoreRunStatusInitializing EvalScoreRunStatus = "initializing"
+	EvalScoreRunStatusRunning      EvalScoreRunStatus = "running"
+	EvalScoreRunStatusCompleted    EvalScoreRunStatus = "completed"
+	EvalScoreRunStatusError        EvalScoreRunStatus = "error"
+	EvalScoreRunStatusCancelled    EvalScoreRunStatus = "cancelled"
+)
+
+// A single file input with base64-encoded content.
+//
+// When using the Bem CLI, use `@path/to/file` in the `inputContent` field to
+// automatically read and base64-encode the file:
+// `--input.single-file '{"inputContent": "@file.pdf", "inputType": "pdf"}' --wait`
+//
+// The properties InputContent, InputType are required.
+type FileInputParam struct {
+	// Base64-encoded file content. In the Bem CLI, use `@path/to/file` to embed file
+	// contents automatically.
+	InputContent string `json:"inputContent" api:"required"`
+	// The input type of the content you're sending for transformation.
+	//
+	// Any of "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a",
+	// "mov", "mp3", "mp4", "pdf", "png", "pptx", "text", "wav", "webp", "xls", "xlsx",
+	// "xml".
+	InputType InputType `json:"inputType,omitzero" api:"required"`
+	paramObj
+}
+
+func (r FileInputParam) MarshalJSON() (data []byte, err error) {
+	type shadow FileInputParam
+	return param.MarshalObject(r, (*shadow)(&r))
+}
+func (r *FileInputParam) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
 // Returned by `POST /v3/eval/score`.
 type EvalScoreNewResponse struct {
 	// Run identifier. Use with `GET /v3/eval/score/{scoreRunID}`.
@@ -136,7 +433,7 @@ type EvalScoreNewResponse struct {
 	// Status values for an eval-score run.
 	//
 	// Any of "pending", "initializing", "running", "completed", "error", "cancelled".
-	Status EvalScoreNewResponseStatus `json:"status" api:"required"`
+	Status EvalScoreRunStatus `json:"status" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		ScoreRunID  respjson.Field
@@ -152,442 +449,6 @@ func (r *EvalScoreNewResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Status values for an eval-score run.
-type EvalScoreNewResponseStatus string
-
-const (
-	EvalScoreNewResponseStatusPending      EvalScoreNewResponseStatus = "pending"
-	EvalScoreNewResponseStatusInitializing EvalScoreNewResponseStatus = "initializing"
-	EvalScoreNewResponseStatusRunning      EvalScoreNewResponseStatus = "running"
-	EvalScoreNewResponseStatusCompleted    EvalScoreNewResponseStatus = "completed"
-	EvalScoreNewResponseStatusError        EvalScoreNewResponseStatus = "error"
-	EvalScoreNewResponseStatusCancelled    EvalScoreNewResponseStatus = "cancelled"
-)
-
-// Full status payload returned by `GET /v3/eval/score/{scoreRunID}`.
-type EvalScoreGetResponse struct {
-	FunctionName       string `json:"functionName" api:"required"`
-	FunctionVersionNum int64  `json:"functionVersionNum" api:"required"`
-	// Comparator configuration. All fields optional; conservative defaults.
-	MatchConfig EvalScoreGetResponseMatchConfig `json:"matchConfig" api:"required"`
-	// Per-pair results. `fieldResults` appears once a pair has been compared.
-	PerPair []EvalScoreGetResponsePerPair `json:"perPair" api:"required"`
-	// Counts across all pairs.
-	Progress   EvalScoreGetResponseProgress `json:"progress" api:"required"`
-	ScoreRunID string                       `json:"scoreRunID" api:"required"`
-	// Status values for an eval-score run.
-	//
-	// Any of "pending", "initializing", "running", "completed", "error", "cancelled".
-	Status EvalScoreGetResponseStatus `json:"status" api:"required"`
-	// Aggregate accuracy metrics.
-	Aggregate EvalScoreGetResponseAggregate `json:"aggregate"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		FunctionName       respjson.Field
-		FunctionVersionNum respjson.Field
-		MatchConfig        respjson.Field
-		PerPair            respjson.Field
-		Progress           respjson.Field
-		ScoreRunID         respjson.Field
-		Status             respjson.Field
-		Aggregate          respjson.Field
-		ExtraFields        map[string]respjson.Field
-		raw                string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EvalScoreGetResponse) RawJSON() string { return r.JSON.raw }
-func (r *EvalScoreGetResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Comparator configuration. All fields optional; conservative defaults.
-type EvalScoreGetResponseMatchConfig struct {
-	// P0 supports only `by-index`.
-	//
-	// Any of "by-index".
-	ArrayMatch string `json:"arrayMatch"`
-	// Levenshtein-ratio threshold used when `stringMatch == "fuzzy"`. Range `[0, 1]`.
-	// Default `0.85`.
-	FuzzyThreshold float64 `json:"fuzzyThreshold"`
-	// JSON Pointer paths to skip during comparison. The asterisk character matches
-	// arbitrary object keys / array indices.
-	//
-	// Example values: /metadata, /lineItems with asterisk segment, etc.
-	IgnorePaths []string `json:"ignorePaths"`
-	// Relative tolerance for numeric fields. `0` (default) means exact equality;
-	// `0.01` means ±1%.
-	NumericTolerance float64 `json:"numericTolerance"`
-	// `exact` (default) or `fuzzy`.
-	//
-	// Any of "exact", "fuzzy".
-	StringMatch string `json:"stringMatch"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		ArrayMatch       respjson.Field
-		FuzzyThreshold   respjson.Field
-		IgnorePaths      respjson.Field
-		NumericTolerance respjson.Field
-		StringMatch      respjson.Field
-		ExtraFields      map[string]respjson.Field
-		raw              string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EvalScoreGetResponseMatchConfig) RawJSON() string { return r.JSON.raw }
-func (r *EvalScoreGetResponseMatchConfig) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Per-pair result.
-type EvalScoreGetResponsePerPair struct {
-	PairIndex int64 `json:"pairIndex" api:"required"`
-	// Per-pair status.
-	//
-	// Any of "pending", "running", "completed", "failed".
-	Status string `json:"status" api:"required"`
-	// The function call that produced the actual output, if any.
-	CallID string `json:"callID"`
-	// Error message if the underlying function call failed.
-	ErrorMessage string `json:"errorMessage"`
-	// Per-leaf comparator output. Present only after the pair has been compared.
-	FieldResults []EvalScoreGetResponsePerPairFieldResult `json:"fieldResults"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		PairIndex    respjson.Field
-		Status       respjson.Field
-		CallID       respjson.Field
-		ErrorMessage respjson.Field
-		FieldResults respjson.Field
-		ExtraFields  map[string]respjson.Field
-		raw          string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EvalScoreGetResponsePerPair) RawJSON() string { return r.JSON.raw }
-func (r *EvalScoreGetResponsePerPair) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// One leaf in `expected ∪ actual`.
-type EvalScoreGetResponsePerPairFieldResult struct {
-	// Classification:
-	//
-	// - `exact`: both present and deep-equal
-	// - `within_tolerance`: both numbers, within configured tolerance
-	// - `fuzzy_match`: both strings, Levenshtein ratio above threshold
-	// - `miss`: expected present, actual absent or different
-	// - `extra`: actual present, expected absent
-	//
-	// Any of "exact", "within_tolerance", "fuzzy_match", "miss", "extra".
-	Match string `json:"match" api:"required"`
-	// JSON Pointer to the leaf.
-	Path   string `json:"path" api:"required"`
-	Actual any    `json:"actual"`
-	// Populated for numeric comparisons; `actual - expected`.
-	Delta    float64 `json:"delta"`
-	Expected any     `json:"expected"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Match       respjson.Field
-		Path        respjson.Field
-		Actual      respjson.Field
-		Delta       respjson.Field
-		Expected    respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EvalScoreGetResponsePerPairFieldResult) RawJSON() string { return r.JSON.raw }
-func (r *EvalScoreGetResponsePerPairFieldResult) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Counts across all pairs.
-type EvalScoreGetResponseProgress struct {
-	Completed int64 `json:"completed" api:"required"`
-	Failed    int64 `json:"failed" api:"required"`
-	Total     int64 `json:"total" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Completed   respjson.Field
-		Failed      respjson.Field
-		Total       respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EvalScoreGetResponseProgress) RawJSON() string { return r.JSON.raw }
-func (r *EvalScoreGetResponseProgress) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Status values for an eval-score run.
-type EvalScoreGetResponseStatus string
-
-const (
-	EvalScoreGetResponseStatusPending      EvalScoreGetResponseStatus = "pending"
-	EvalScoreGetResponseStatusInitializing EvalScoreGetResponseStatus = "initializing"
-	EvalScoreGetResponseStatusRunning      EvalScoreGetResponseStatus = "running"
-	EvalScoreGetResponseStatusCompleted    EvalScoreGetResponseStatus = "completed"
-	EvalScoreGetResponseStatusError        EvalScoreGetResponseStatus = "error"
-	EvalScoreGetResponseStatusCancelled    EvalScoreGetResponseStatus = "cancelled"
-)
-
-// Aggregate accuracy metrics.
-type EvalScoreGetResponseAggregate struct {
-	ExactMatches        int64   `json:"exactMatches" api:"required"`
-	Extras              int64   `json:"extras" api:"required"`
-	F1                  float64 `json:"f1" api:"required"`
-	FuzzyMatches        int64   `json:"fuzzyMatches" api:"required"`
-	Misses              int64   `json:"misses" api:"required"`
-	Precision           float64 `json:"precision" api:"required"`
-	Recall              float64 `json:"recall" api:"required"`
-	TotalFieldsActual   int64   `json:"totalFieldsActual" api:"required"`
-	TotalFieldsExpected int64   `json:"totalFieldsExpected" api:"required"`
-	WithinTolerance     int64   `json:"withinTolerance" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		ExactMatches        respjson.Field
-		Extras              respjson.Field
-		F1                  respjson.Field
-		FuzzyMatches        respjson.Field
-		Misses              respjson.Field
-		Precision           respjson.Field
-		Recall              respjson.Field
-		TotalFieldsActual   respjson.Field
-		TotalFieldsExpected respjson.Field
-		WithinTolerance     respjson.Field
-		ExtraFields         map[string]respjson.Field
-		raw                 string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EvalScoreGetResponseAggregate) RawJSON() string { return r.JSON.raw }
-func (r *EvalScoreGetResponseAggregate) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Full status payload returned by `GET /v3/eval/score/{scoreRunID}`.
-type EvalScoreCancelResponse struct {
-	FunctionName       string `json:"functionName" api:"required"`
-	FunctionVersionNum int64  `json:"functionVersionNum" api:"required"`
-	// Comparator configuration. All fields optional; conservative defaults.
-	MatchConfig EvalScoreCancelResponseMatchConfig `json:"matchConfig" api:"required"`
-	// Per-pair results. `fieldResults` appears once a pair has been compared.
-	PerPair []EvalScoreCancelResponsePerPair `json:"perPair" api:"required"`
-	// Counts across all pairs.
-	Progress   EvalScoreCancelResponseProgress `json:"progress" api:"required"`
-	ScoreRunID string                          `json:"scoreRunID" api:"required"`
-	// Status values for an eval-score run.
-	//
-	// Any of "pending", "initializing", "running", "completed", "error", "cancelled".
-	Status EvalScoreCancelResponseStatus `json:"status" api:"required"`
-	// Aggregate accuracy metrics.
-	Aggregate EvalScoreCancelResponseAggregate `json:"aggregate"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		FunctionName       respjson.Field
-		FunctionVersionNum respjson.Field
-		MatchConfig        respjson.Field
-		PerPair            respjson.Field
-		Progress           respjson.Field
-		ScoreRunID         respjson.Field
-		Status             respjson.Field
-		Aggregate          respjson.Field
-		ExtraFields        map[string]respjson.Field
-		raw                string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EvalScoreCancelResponse) RawJSON() string { return r.JSON.raw }
-func (r *EvalScoreCancelResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Comparator configuration. All fields optional; conservative defaults.
-type EvalScoreCancelResponseMatchConfig struct {
-	// P0 supports only `by-index`.
-	//
-	// Any of "by-index".
-	ArrayMatch string `json:"arrayMatch"`
-	// Levenshtein-ratio threshold used when `stringMatch == "fuzzy"`. Range `[0, 1]`.
-	// Default `0.85`.
-	FuzzyThreshold float64 `json:"fuzzyThreshold"`
-	// JSON Pointer paths to skip during comparison. The asterisk character matches
-	// arbitrary object keys / array indices.
-	//
-	// Example values: /metadata, /lineItems with asterisk segment, etc.
-	IgnorePaths []string `json:"ignorePaths"`
-	// Relative tolerance for numeric fields. `0` (default) means exact equality;
-	// `0.01` means ±1%.
-	NumericTolerance float64 `json:"numericTolerance"`
-	// `exact` (default) or `fuzzy`.
-	//
-	// Any of "exact", "fuzzy".
-	StringMatch string `json:"stringMatch"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		ArrayMatch       respjson.Field
-		FuzzyThreshold   respjson.Field
-		IgnorePaths      respjson.Field
-		NumericTolerance respjson.Field
-		StringMatch      respjson.Field
-		ExtraFields      map[string]respjson.Field
-		raw              string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EvalScoreCancelResponseMatchConfig) RawJSON() string { return r.JSON.raw }
-func (r *EvalScoreCancelResponseMatchConfig) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Per-pair result.
-type EvalScoreCancelResponsePerPair struct {
-	PairIndex int64 `json:"pairIndex" api:"required"`
-	// Per-pair status.
-	//
-	// Any of "pending", "running", "completed", "failed".
-	Status string `json:"status" api:"required"`
-	// The function call that produced the actual output, if any.
-	CallID string `json:"callID"`
-	// Error message if the underlying function call failed.
-	ErrorMessage string `json:"errorMessage"`
-	// Per-leaf comparator output. Present only after the pair has been compared.
-	FieldResults []EvalScoreCancelResponsePerPairFieldResult `json:"fieldResults"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		PairIndex    respjson.Field
-		Status       respjson.Field
-		CallID       respjson.Field
-		ErrorMessage respjson.Field
-		FieldResults respjson.Field
-		ExtraFields  map[string]respjson.Field
-		raw          string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EvalScoreCancelResponsePerPair) RawJSON() string { return r.JSON.raw }
-func (r *EvalScoreCancelResponsePerPair) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// One leaf in `expected ∪ actual`.
-type EvalScoreCancelResponsePerPairFieldResult struct {
-	// Classification:
-	//
-	// - `exact`: both present and deep-equal
-	// - `within_tolerance`: both numbers, within configured tolerance
-	// - `fuzzy_match`: both strings, Levenshtein ratio above threshold
-	// - `miss`: expected present, actual absent or different
-	// - `extra`: actual present, expected absent
-	//
-	// Any of "exact", "within_tolerance", "fuzzy_match", "miss", "extra".
-	Match string `json:"match" api:"required"`
-	// JSON Pointer to the leaf.
-	Path   string `json:"path" api:"required"`
-	Actual any    `json:"actual"`
-	// Populated for numeric comparisons; `actual - expected`.
-	Delta    float64 `json:"delta"`
-	Expected any     `json:"expected"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Match       respjson.Field
-		Path        respjson.Field
-		Actual      respjson.Field
-		Delta       respjson.Field
-		Expected    respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EvalScoreCancelResponsePerPairFieldResult) RawJSON() string { return r.JSON.raw }
-func (r *EvalScoreCancelResponsePerPairFieldResult) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Counts across all pairs.
-type EvalScoreCancelResponseProgress struct {
-	Completed int64 `json:"completed" api:"required"`
-	Failed    int64 `json:"failed" api:"required"`
-	Total     int64 `json:"total" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Completed   respjson.Field
-		Failed      respjson.Field
-		Total       respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EvalScoreCancelResponseProgress) RawJSON() string { return r.JSON.raw }
-func (r *EvalScoreCancelResponseProgress) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Status values for an eval-score run.
-type EvalScoreCancelResponseStatus string
-
-const (
-	EvalScoreCancelResponseStatusPending      EvalScoreCancelResponseStatus = "pending"
-	EvalScoreCancelResponseStatusInitializing EvalScoreCancelResponseStatus = "initializing"
-	EvalScoreCancelResponseStatusRunning      EvalScoreCancelResponseStatus = "running"
-	EvalScoreCancelResponseStatusCompleted    EvalScoreCancelResponseStatus = "completed"
-	EvalScoreCancelResponseStatusError        EvalScoreCancelResponseStatus = "error"
-	EvalScoreCancelResponseStatusCancelled    EvalScoreCancelResponseStatus = "cancelled"
-)
-
-// Aggregate accuracy metrics.
-type EvalScoreCancelResponseAggregate struct {
-	ExactMatches        int64   `json:"exactMatches" api:"required"`
-	Extras              int64   `json:"extras" api:"required"`
-	F1                  float64 `json:"f1" api:"required"`
-	FuzzyMatches        int64   `json:"fuzzyMatches" api:"required"`
-	Misses              int64   `json:"misses" api:"required"`
-	Precision           float64 `json:"precision" api:"required"`
-	Recall              float64 `json:"recall" api:"required"`
-	TotalFieldsActual   int64   `json:"totalFieldsActual" api:"required"`
-	TotalFieldsExpected int64   `json:"totalFieldsExpected" api:"required"`
-	WithinTolerance     int64   `json:"withinTolerance" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		ExactMatches        respjson.Field
-		Extras              respjson.Field
-		F1                  respjson.Field
-		FuzzyMatches        respjson.Field
-		Misses              respjson.Field
-		Precision           respjson.Field
-		Recall              respjson.Field
-		TotalFieldsActual   respjson.Field
-		TotalFieldsExpected respjson.Field
-		WithinTolerance     respjson.Field
-		ExtraFields         map[string]respjson.Field
-		raw                 string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EvalScoreCancelResponseAggregate) RawJSON() string { return r.JSON.raw }
-func (r *EvalScoreCancelResponseAggregate) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 type EvalScoreNewParams struct {
 	// Name of the function to score. Must be of type extract, transform, or analyze.
 	FunctionName string `json:"functionName" api:"required"`
@@ -597,7 +458,7 @@ type EvalScoreNewParams struct {
 	// version is accepted; passing a different version returns 422.
 	FunctionVersionNum param.Opt[int64] `json:"functionVersionNum,omitzero"`
 	// Comparator configuration. All fields optional; conservative defaults.
-	MatchConfig EvalScoreNewParamsMatchConfig `json:"matchConfig,omitzero"`
+	MatchConfig EvalMatchConfigParam `json:"matchConfig,omitzero"`
 	paramObj
 }
 
@@ -621,7 +482,7 @@ type EvalScoreNewParamsPair struct {
 	// When using the Bem CLI, use `@path/to/file` in the `inputContent` field to
 	// automatically read and base64-encode the file:
 	// `--input.single-file '{"inputContent": "@file.pdf", "inputType": "pdf"}' --wait`
-	Input EvalScoreNewParamsPairInput `json:"input,omitzero" api:"required"`
+	Input FileInputParam `json:"input,omitzero" api:"required"`
 	paramObj
 }
 
@@ -631,72 +492,4 @@ func (r EvalScoreNewParamsPair) MarshalJSON() (data []byte, err error) {
 }
 func (r *EvalScoreNewParamsPair) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
-}
-
-// A single file input with base64-encoded content.
-//
-// When using the Bem CLI, use `@path/to/file` in the `inputContent` field to
-// automatically read and base64-encode the file:
-// `--input.single-file '{"inputContent": "@file.pdf", "inputType": "pdf"}' --wait`
-//
-// The properties InputContent, InputType are required.
-type EvalScoreNewParamsPairInput struct {
-	// Base64-encoded file content. In the Bem CLI, use `@path/to/file` to embed file
-	// contents automatically.
-	InputContent string `json:"inputContent" api:"required"`
-	// The input type of the content you're sending for transformation.
-	//
-	// Any of "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a",
-	// "mov", "mp3", "mp4", "pdf", "png", "text", "wav", "webp", "xls", "xlsx", "xml".
-	InputType InputType `json:"inputType,omitzero" api:"required"`
-	paramObj
-}
-
-func (r EvalScoreNewParamsPairInput) MarshalJSON() (data []byte, err error) {
-	type shadow EvalScoreNewParamsPairInput
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *EvalScoreNewParamsPairInput) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Comparator configuration. All fields optional; conservative defaults.
-type EvalScoreNewParamsMatchConfig struct {
-	// Levenshtein-ratio threshold used when `stringMatch == "fuzzy"`. Range `[0, 1]`.
-	// Default `0.85`.
-	FuzzyThreshold param.Opt[float64] `json:"fuzzyThreshold,omitzero"`
-	// Relative tolerance for numeric fields. `0` (default) means exact equality;
-	// `0.01` means ±1%.
-	NumericTolerance param.Opt[float64] `json:"numericTolerance,omitzero"`
-	// P0 supports only `by-index`.
-	//
-	// Any of "by-index".
-	ArrayMatch string `json:"arrayMatch,omitzero"`
-	// JSON Pointer paths to skip during comparison. The asterisk character matches
-	// arbitrary object keys / array indices.
-	//
-	// Example values: /metadata, /lineItems with asterisk segment, etc.
-	IgnorePaths []string `json:"ignorePaths,omitzero"`
-	// `exact` (default) or `fuzzy`.
-	//
-	// Any of "exact", "fuzzy".
-	StringMatch string `json:"stringMatch,omitzero"`
-	paramObj
-}
-
-func (r EvalScoreNewParamsMatchConfig) MarshalJSON() (data []byte, err error) {
-	type shadow EvalScoreNewParamsMatchConfig
-	return param.MarshalObject(r, (*shadow)(&r))
-}
-func (r *EvalScoreNewParamsMatchConfig) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-func init() {
-	apijson.RegisterFieldValidator[EvalScoreNewParamsMatchConfig](
-		"arrayMatch", "by-index",
-	)
-	apijson.RegisterFieldValidator[EvalScoreNewParamsMatchConfig](
-		"stringMatch", "exact", "fuzzy",
-	)
 }

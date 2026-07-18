@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.24.0 (2026-07-18)
+
+Full Changelog: [v0.23.0...v0.24.0](https://github.com/bem-team/bem-go-sdk/compare/v0.23.0...v0.24.0)
+
+### Features
+
+* **api:** api update ([2c25d79](https://github.com/bem-team/bem-go-sdk/commit/2c25d79a01cd4fe1712bce327d6fac618cde10f9))
+* **stlc:** configurable CI runner and private-production-repo support in workflow templates ([763384f](https://github.com/bem-team/bem-go-sdk/commit/763384fd7a30241777b71d00af991b2337701cbc))
+
 ## 0.23.0 (2026-07-13)
 
 Full Changelog: [v0.22.0...v0.23.0](https://github.com/bem-team/bem-go-sdk/compare/v0.22.0...v0.23.0)

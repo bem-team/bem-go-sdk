@@ -661,6 +661,10 @@ type CreateFunctionClassifyParam struct {
 	Description param.Opt[string] `json:"description,omitzero"`
 	// Display name of function. Human-readable name to help you identify the function.
 	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// When true, image and PDF inputs are sent directly to the model for routing
+	// instead of being OCR'd to text first. Defaults to true for new classify
+	// functions and false for the legacy route type.
+	NativeVisualInput param.Opt[bool] `json:"nativeVisualInput,omitzero"`
 	// List of classifications a classify function can produce. Shares the underlying
 	// route list shape.
 	Classifications []ClassificationListItemParam `json:"classifications,omitzero"`
@@ -1724,6 +1728,8 @@ type FunctionUnion struct {
 	// This field is from variant [FunctionClassify].
 	Classifications []ClassificationListItem `json:"classifications"`
 	Description     string                   `json:"description"`
+	// This field is from variant [FunctionClassify].
+	NativeVisualInput bool `json:"nativeVisualInput"`
 	// This field is from variant [FunctionSend].
 	DestinationType SendDestinationType `json:"destinationType"`
 	// This field is from variant [FunctionSend].
@@ -1771,6 +1777,7 @@ type FunctionUnion struct {
 		PreCount                respjson.Field
 		Classifications         respjson.Field
 		Description             respjson.Field
+		NativeVisualInput       respjson.Field
 		DestinationType         respjson.Field
 		GoogleDriveFolderID     respjson.Field
 		S3Bucket                respjson.Field
@@ -2095,25 +2102,30 @@ type FunctionClassify struct {
 	Audit FunctionAudit `json:"audit"`
 	// Display name of function. Human-readable name to help you identify the function.
 	DisplayName string `json:"displayName"`
+	// When true, image and PDF inputs are sent directly to the model for routing
+	// instead of being OCR'd to text first. Defaults to true for new classify
+	// functions and false for the legacy route type.
+	NativeVisualInput bool `json:"nativeVisualInput"`
 	// Array of tags to categorize and organize functions.
 	Tags []string `json:"tags"`
 	// List of workflows that use this function.
 	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		Classifications respjson.Field
-		Description     respjson.Field
-		EmailAddress    respjson.Field
-		FunctionID      respjson.Field
-		FunctionName    respjson.Field
-		Type            respjson.Field
-		VersionNum      respjson.Field
-		Audit           respjson.Field
-		DisplayName     respjson.Field
-		Tags            respjson.Field
-		UsedInWorkflows respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
+		Classifications   respjson.Field
+		Description       respjson.Field
+		EmailAddress      respjson.Field
+		FunctionID        respjson.Field
+		FunctionName      respjson.Field
+		Type              respjson.Field
+		VersionNum        respjson.Field
+		Audit             respjson.Field
+		DisplayName       respjson.Field
+		NativeVisualInput respjson.Field
+		Tags              respjson.Field
+		UsedInWorkflows   respjson.Field
+		ExtraFields       map[string]respjson.Field
+		raw               string
 	} `json:"-"`
 }
 
@@ -3256,6 +3268,10 @@ type UpdateFunctionClassifyParam struct {
 	DisplayName param.Opt[string] `json:"displayName,omitzero"`
 	// Name of function. Must be UNIQUE on a per-environment basis.
 	FunctionName param.Opt[string] `json:"functionName,omitzero"`
+	// When true, image and PDF inputs are sent directly to the model for routing
+	// instead of being OCR'd to text first. Defaults to true for new classify
+	// functions and false for the legacy route type.
+	NativeVisualInput param.Opt[bool] `json:"nativeVisualInput,omitzero"`
 	// List of classifications a classify function can produce. Shares the underlying
 	// route list shape.
 	Classifications []ClassificationListItemParam `json:"classifications,omitzero"`

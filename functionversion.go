@@ -125,6 +125,8 @@ type FunctionVersionUnion struct {
 	// This field is from variant [FunctionVersionClassify].
 	Classifications []ClassificationListItem `json:"classifications"`
 	Description     string                   `json:"description"`
+	// This field is from variant [FunctionVersionClassify].
+	NativeVisualInput bool `json:"nativeVisualInput"`
 	// This field is from variant [FunctionVersionSend].
 	DestinationType SendDestinationType `json:"destinationType"`
 	// This field is from variant [FunctionVersionSend].
@@ -173,6 +175,7 @@ type FunctionVersionUnion struct {
 		PreCount                respjson.Field
 		Classifications         respjson.Field
 		Description             respjson.Field
+		NativeVisualInput       respjson.Field
 		DestinationType         respjson.Field
 		GoogleDriveFolderID     respjson.Field
 		S3Bucket                respjson.Field
@@ -509,26 +512,31 @@ type FunctionVersionClassify struct {
 	CreatedAt time.Time `json:"createdAt" format:"date-time"`
 	// Display name of function. Human-readable name to help you identify the function.
 	DisplayName string `json:"displayName"`
+	// When true, image and PDF inputs are sent directly to the model for routing
+	// instead of being OCR'd to text first. Defaults to true for new classify
+	// functions and false for the legacy route type.
+	NativeVisualInput bool `json:"nativeVisualInput"`
 	// Array of tags to categorize and organize functions.
 	Tags []string `json:"tags"`
 	// List of workflows that use this function.
 	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		Classifications respjson.Field
-		Description     respjson.Field
-		EmailAddress    respjson.Field
-		FunctionID      respjson.Field
-		FunctionName    respjson.Field
-		Type            respjson.Field
-		VersionNum      respjson.Field
-		Audit           respjson.Field
-		CreatedAt       respjson.Field
-		DisplayName     respjson.Field
-		Tags            respjson.Field
-		UsedInWorkflows respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
+		Classifications   respjson.Field
+		Description       respjson.Field
+		EmailAddress      respjson.Field
+		FunctionID        respjson.Field
+		FunctionName      respjson.Field
+		Type              respjson.Field
+		VersionNum        respjson.Field
+		Audit             respjson.Field
+		CreatedAt         respjson.Field
+		DisplayName       respjson.Field
+		NativeVisualInput respjson.Field
+		Tags              respjson.Field
+		UsedInWorkflows   respjson.Field
+		ExtraFields       map[string]respjson.Field
+		raw               string
 	} `json:"-"`
 }
 

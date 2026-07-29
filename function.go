@@ -661,6 +661,10 @@ type CreateFunctionClassifyParam struct {
 	Description param.Opt[string] `json:"description,omitzero"`
 	// Display name of function. Human-readable name to help you identify the function.
 	DisplayName param.Opt[string] `json:"displayName,omitzero"`
+	// When true, image and PDF inputs are sent directly to the model for routing
+	// instead of being OCR'd to text first. Defaults to true for new classify
+	// functions and false for the legacy route type.
+	NativeVisualInput param.Opt[bool] `json:"nativeVisualInput,omitzero"`
 	// List of classifications a classify function can produce. Shares the underlying
 	// route list shape.
 	Classifications []ClassificationListItemParam `json:"classifications,omitzero"`
@@ -1354,7 +1358,7 @@ func init() {
 //   - Re-ranking uses a fixed, built-in instruction to the LLM (rank the candidates
 //     by how well each matches the source value); it is not configurable per step
 //   - Array of matches, best first:
-//     `[{ data, rank, confidence?, reasoning?, score?, scoreType?, cosine_distance?, hybrid_score? }, ...]`
+//     `[{ data, rank, confidence?, reasoning?, score?, scoreType? }, ...]`
 //   - `rank` is 1-based (1 = best)
 //   - `confidence` is the LLM's 0–1 score. It is present only for entries the LLM
 //     ranked and **omitted** for backfilled entries (see below) — a missing
@@ -1362,9 +1366,6 @@ func init() {
 //   - `score` is the original retrieval score and `scoreType` says which metric it
 //     is (`"cosineDistance"` for semantic search, `"hybridScore"` for hybrid); both
 //     included only when `includeScore` is set
-//   - `cosine_distance` (semantic) and `hybrid_score` (hybrid) are **deprecated**
-//     (use `score` + `scoreType`): each mirrors `score` under the pre-rerank field
-//     name for backward compatibility; exactly one is present, matching `scoreType`
 //   - Length is `min(candidates surviving the scoreThreshold filter, topK)`. The LLM
 //     re-orders the survivors; if it ranks fewer than that length, the remaining
 //     survivors are backfilled in retrieval (score) order with `confidence` omitted
@@ -1398,8 +1399,9 @@ type EnrichStep struct {
 	// from 0.0 (perfect match) to 2.0 (completely dissimilar). Lower scores indicate
 	// better semantic similarity.
 	//
-	// When enabled, each result includes a `cosine_distance` field (semantic mode) or
-	// a `hybrid_score` field (hybrid mode).
+	// When enabled, each result includes a `score` field with `scoreType` identifying
+	// the metric (`"cosineDistance"` for semantic mode, `"hybridScore"` for hybrid
+	// mode).
 	IncludeScore bool `json:"includeScore"`
 	// When true, searches all collections under the hierarchical path. For example,
 	// "customers" will match "customers", "customers.premium", etc.
@@ -1572,7 +1574,7 @@ const (
 //   - Re-ranking uses a fixed, built-in instruction to the LLM (rank the candidates
 //     by how well each matches the source value); it is not configurable per step
 //   - Array of matches, best first:
-//     `[{ data, rank, confidence?, reasoning?, score?, scoreType?, cosine_distance?, hybrid_score? }, ...]`
+//     `[{ data, rank, confidence?, reasoning?, score?, scoreType? }, ...]`
 //   - `rank` is 1-based (1 = best)
 //   - `confidence` is the LLM's 0–1 score. It is present only for entries the LLM
 //     ranked and **omitted** for backfilled entries (see below) — a missing
@@ -1580,9 +1582,6 @@ const (
 //   - `score` is the original retrieval score and `scoreType` says which metric it
 //     is (`"cosineDistance"` for semantic search, `"hybridScore"` for hybrid); both
 //     included only when `includeScore` is set
-//   - `cosine_distance` (semantic) and `hybrid_score` (hybrid) are **deprecated**
-//     (use `score` + `scoreType`): each mirrors `score` under the pre-rerank field
-//     name for backward compatibility; exactly one is present, matching `scoreType`
 //   - Length is `min(candidates surviving the scoreThreshold filter, topK)`. The LLM
 //     re-orders the survivors; if it ranks fewer than that length, the remaining
 //     survivors are backfilled in retrieval (score) order with `confidence` omitted
@@ -1618,8 +1617,9 @@ type EnrichStepParam struct {
 	// from 0.0 (perfect match) to 2.0 (completely dissimilar). Lower scores indicate
 	// better semantic similarity.
 	//
-	// When enabled, each result includes a `cosine_distance` field (semantic mode) or
-	// a `hybrid_score` field (hybrid mode).
+	// When enabled, each result includes a `score` field with `scoreType` identifying
+	// the metric (`"cosineDistance"` for semantic mode, `"hybridScore"` for hybrid
+	// mode).
 	IncludeScore param.Opt[bool] `json:"includeScore,omitzero"`
 	// When true, searches all collections under the hierarchical path. For example,
 	// "customers" will match "customers", "customers.premium", etc.
@@ -1724,6 +1724,8 @@ type FunctionUnion struct {
 	// This field is from variant [FunctionClassify].
 	Classifications []ClassificationListItem `json:"classifications"`
 	Description     string                   `json:"description"`
+	// This field is from variant [FunctionClassify].
+	NativeVisualInput bool `json:"nativeVisualInput"`
 	// This field is from variant [FunctionSend].
 	DestinationType SendDestinationType `json:"destinationType"`
 	// This field is from variant [FunctionSend].
@@ -1771,6 +1773,7 @@ type FunctionUnion struct {
 		PreCount                respjson.Field
 		Classifications         respjson.Field
 		Description             respjson.Field
+		NativeVisualInput       respjson.Field
 		DestinationType         respjson.Field
 		GoogleDriveFolderID     respjson.Field
 		S3Bucket                respjson.Field
@@ -2095,25 +2098,30 @@ type FunctionClassify struct {
 	Audit FunctionAudit `json:"audit"`
 	// Display name of function. Human-readable name to help you identify the function.
 	DisplayName string `json:"displayName"`
+	// When true, image and PDF inputs are sent directly to the model for routing
+	// instead of being OCR'd to text first. Defaults to true for new classify
+	// functions and false for the legacy route type.
+	NativeVisualInput bool `json:"nativeVisualInput"`
 	// Array of tags to categorize and organize functions.
 	Tags []string `json:"tags"`
 	// List of workflows that use this function.
 	UsedInWorkflows []WorkflowUsageInfo `json:"usedInWorkflows"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
-		Classifications respjson.Field
-		Description     respjson.Field
-		EmailAddress    respjson.Field
-		FunctionID      respjson.Field
-		FunctionName    respjson.Field
-		Type            respjson.Field
-		VersionNum      respjson.Field
-		Audit           respjson.Field
-		DisplayName     respjson.Field
-		Tags            respjson.Field
-		UsedInWorkflows respjson.Field
-		ExtraFields     map[string]respjson.Field
-		raw             string
+		Classifications   respjson.Field
+		Description       respjson.Field
+		EmailAddress      respjson.Field
+		FunctionID        respjson.Field
+		FunctionName      respjson.Field
+		Type              respjson.Field
+		VersionNum        respjson.Field
+		Audit             respjson.Field
+		DisplayName       respjson.Field
+		NativeVisualInput respjson.Field
+		Tags              respjson.Field
+		UsedInWorkflows   respjson.Field
+		ExtraFields       map[string]respjson.Field
+		raw               string
 	} `json:"-"`
 }
 
@@ -3256,6 +3264,10 @@ type UpdateFunctionClassifyParam struct {
 	DisplayName param.Opt[string] `json:"displayName,omitzero"`
 	// Name of function. Must be UNIQUE on a per-environment basis.
 	FunctionName param.Opt[string] `json:"functionName,omitzero"`
+	// When true, image and PDF inputs are sent directly to the model for routing
+	// instead of being OCR'd to text first. Defaults to true for new classify
+	// functions and false for the legacy route type.
+	NativeVisualInput param.Opt[bool] `json:"nativeVisualInput,omitzero"`
 	// List of classifications a classify function can produce. Shares the underlying
 	// route list shape.
 	Classifications []ClassificationListItemParam `json:"classifications,omitzero"`

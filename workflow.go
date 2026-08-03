@@ -330,8 +330,9 @@ func (r *WorkflowService) Delete(ctx context.Context, workflowName string, opts 
 // **not** use `--wait true` (with a space) — the `true` will be parsed as an
 // unexpected positional argument.
 //
-// Supported `inputType` values: csv, docx, email, heic, heif, html, jpeg, json,
-// m4a, mp3, pdf, png, text, wav, webp, xls, xlsx, xml.
+// Supported `inputType` values: csv, docx, email, heic, heif, html, jfif, jpeg,
+// json, m4a, mp3, mov, mp4, pdf, png, pptx, text, wav, webp, xls, xlsx, xml.
+// `jfif` (and `jpg`) are normalized to `jpeg`.
 func (r *WorkflowService) Call(ctx context.Context, workflowName string, params WorkflowCallParams, opts ...option.RequestOption) (res *CallGetResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if workflowName == "" {
@@ -1041,9 +1042,14 @@ type WorkflowCallParamsInputBatchFilesInput struct {
 	InputContent string `json:"inputContent" api:"required"`
 	// The input type of the content you're sending for transformation.
 	//
-	// Any of "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a",
-	// "mov", "mp3", "mp4", "pdf", "png", "pptx", "text", "wav", "webp", "xls", "xlsx",
-	// "xml".
+	// `jfif` is accepted as an alias for `jpeg` — JFIF is the same format under a
+	// different extension — and is normalized to `jpeg`, so responses and webhooks
+	// report `jpeg` for a JFIF upload. The undeclared alias `jpg` behaves the same
+	// way.
+	//
+	// Any of "csv", "docx", "email", "heic", "html", "jfif", "jpeg", "json", "heif",
+	// "m4a", "mov", "mp3", "mp4", "pdf", "png", "pptx", "text", "wav", "webp", "xls",
+	// "xlsx", "xml".
 	InputType       InputType         `json:"inputType,omitzero" api:"required"`
 	ItemReferenceID param.Opt[string] `json:"itemReferenceID,omitzero"`
 	paramObj

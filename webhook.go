@@ -96,9 +96,14 @@ type ExtractWebhookEvent struct {
 	Inputs []ExtractWebhookEventInput `json:"inputs" api:"nullable"`
 	// The input type of the content you're sending for transformation.
 	//
-	// Any of "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a",
-	// "mov", "mp3", "mp4", "pdf", "png", "pptx", "text", "wav", "webp", "xls", "xlsx",
-	// "xml".
+	// `jfif` is accepted as an alias for `jpeg` — JFIF is the same format under a
+	// different extension — and is normalized to `jpeg`, so responses and webhooks
+	// report `jpeg` for a JFIF upload. The undeclared alias `jpg` behaves the same
+	// way.
+	//
+	// Any of "csv", "docx", "email", "heic", "html", "jfif", "jpeg", "json", "heif",
+	// "m4a", "mov", "mp3", "mp4", "pdf", "png", "pptx", "text", "wav", "webp", "xls",
+	// "xlsx", "xml".
 	InputType InputType `json:"inputType"`
 	// List of properties that were invalid in the input.
 	InvalidProperties []string                    `json:"invalidProperties"`
@@ -415,9 +420,14 @@ type ParseWebhookEvent struct {
 	Inputs []ParseWebhookEventInput `json:"inputs" api:"nullable"`
 	// The input type of the content you're sending for transformation.
 	//
-	// Any of "csv", "docx", "email", "heic", "html", "jpeg", "json", "heif", "m4a",
-	// "mov", "mp3", "mp4", "pdf", "png", "pptx", "text", "wav", "webp", "xls", "xlsx",
-	// "xml".
+	// `jfif` is accepted as an alias for `jpeg` — JFIF is the same format under a
+	// different extension — and is normalized to `jpeg`, so responses and webhooks
+	// report `jpeg` for a JFIF upload. The undeclared alias `jpg` behaves the same
+	// way.
+	//
+	// Any of "csv", "docx", "email", "heic", "html", "jfif", "jpeg", "json", "heif",
+	// "m4a", "mov", "mp3", "mp4", "pdf", "png", "pptx", "text", "wav", "webp", "xls",
+	// "xlsx", "xml".
 	InputType InputType `json:"inputType"`
 	// List of properties that were invalid in the input.
 	InvalidProperties []string                  `json:"invalidProperties"`

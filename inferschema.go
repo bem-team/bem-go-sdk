@@ -60,8 +60,8 @@ func NewInferSchemaService(opts ...option.RequestOption) (r InferSchemaService) 
 //
 // ## Supported file types
 //
-// PDF, PNG, JPEG, HEIC, HEIF, WebP, CSV, XLS, XLSX, DOCX, JSON, HTML, XML, EML,
-// plain text, WAV, MP3, M4A, MP4.
+// PDF, PNG, JPEG (including JFIF), HEIC, HEIF, WebP, CSV, XLS, XLSX, DOCX, JSON,
+// HTML, XML, EML, plain text, WAV, MP3, M4A, MP4.
 //
 // ## File size limit
 //

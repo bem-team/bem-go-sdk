@@ -27,14 +27,8 @@ func TestEvalScoreNewWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.Eval.Score.New(context.TODO(), bem.EvalScoreNewParams{
-		FunctionName: "functionName",
-		Pairs: []bem.EvalScoreNewParamsPair{{
-			Expected: map[string]any{},
-			Input: bem.FileInputParam{
-				InputContent: "inputContent",
-				InputType:    bem.InputTypeCsv,
-			},
-		}},
+		FunctionName:       "functionName",
+		DatasetID:          bem.String("datasetID"),
 		FunctionVersionNum: bem.Int(0),
 		MatchConfig: bem.EvalMatchConfigParam{
 			ArrayMatch:       bem.EvalMatchConfigArrayMatchByIndex,
@@ -43,6 +37,13 @@ func TestEvalScoreNewWithOptionalParams(t *testing.T) {
 			NumericTolerance: bem.Float(0),
 			StringMatch:      bem.EvalMatchConfigStringMatchExact,
 		},
+		Pairs: []bem.EvalScoreNewParamsPair{{
+			Expected: map[string]any{},
+			Input: bem.FileInputParam{
+				InputContent: "inputContent",
+				InputType:    bem.InputTypeCsv,
+			},
+		}},
 	})
 	if err != nil {
 		var apierr *bem.Error

@@ -457,13 +457,20 @@ func (r *EvalScoreNewResponse) UnmarshalJSON(data []byte) error {
 type EvalScoreNewParams struct {
 	// Name of the function to score. Must be of type extract, transform, or analyze.
 	FunctionName string `json:"functionName" api:"required"`
-	// Up to 1000 pairs per request.
-	Pairs []EvalScoreNewParamsPair `json:"pairs,omitzero" api:"required"`
+	// A saved Golden Data Set (`gds_…`) to score against. Mutually exclusive with
+	// `pairs`; provide exactly one. Its input / corrected / schema columns are
+	// resolved by column role. When it carries a `schema`-role column, scoring types
+	// each row against that ground-truth schema instead of the function's own schema —
+	// so results hold up as functions/schemas evolve.
+	DatasetID param.Opt[string] `json:"datasetID,omitzero"`
 	// Optional version number to score against. P0: only the function's current
 	// version is accepted; passing a different version returns 422.
 	FunctionVersionNum param.Opt[int64] `json:"functionVersionNum,omitzero"`
 	// Comparator configuration. All fields optional; conservative defaults.
 	MatchConfig EvalMatchConfigParam `json:"matchConfig,omitzero"`
+	// Inline `(input, expected)` pairs to score, up to 1000 per request. Mutually
+	// exclusive with `datasetID`; provide exactly one.
+	Pairs []EvalScoreNewParamsPair `json:"pairs,omitzero"`
 	paramObj
 }
 

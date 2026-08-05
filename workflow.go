@@ -431,6 +431,12 @@ type Workflow struct {
 	Name string `json:"name" api:"required"`
 	// All call-site nodes in this workflow version's DAG.
 	Nodes []WorkflowNodeResponse `json:"nodes" api:"required"`
+	// Whether this workflow is hidden from other members of the account in the bem web
+	// app. When true, only account owners and admins and explicitly granted users see
+	// the workflow and its calls, outputs, and errors in the app. This is a
+	// UI-visibility control: API keys are not scoped to workflows, so an environment
+	// API key still reads a restricted workflow and its data.
+	Restricted bool `json:"restricted" api:"required"`
 	// The date and time the workflow was last updated.
 	UpdatedAt time.Time `json:"updatedAt" api:"required" format:"date-time"`
 	// Version number of this workflow version.
@@ -452,6 +458,7 @@ type Workflow struct {
 		MainNodeName respjson.Field
 		Name         respjson.Field
 		Nodes        respjson.Field
+		Restricted   respjson.Field
 		UpdatedAt    respjson.Field
 		VersionNum   respjson.Field
 		Audit        respjson.Field

@@ -1105,6 +1105,9 @@ type EnrichWebhookEvent struct {
 	FunctionCallTryNumber int64 `json:"functionCallTryNumber"`
 	// Version number of function that this event is associated with.
 	FunctionVersionNum int64 `json:"functionVersionNum"`
+	// The client-submitted ground-truth re-ranking of this output's candidates, if any
+	// (see `POST /v3/events/{eventID}/enrich-feedback`). Omitted when not set.
+	GroundTruth any `json:"groundTruth"`
 	// The inbound email that triggered this event.
 	InboundEmail InboundEmailEvent          `json:"inboundEmail"`
 	Metadata     EnrichWebhookEventMetadata `json:"metadata"`
@@ -1127,6 +1130,7 @@ type EnrichWebhookEvent struct {
 		FunctionCallID        respjson.Field
 		FunctionCallTryNumber respjson.Field
 		FunctionVersionNum    respjson.Field
+		GroundTruth           respjson.Field
 		InboundEmail          respjson.Field
 		Metadata              respjson.Field
 		WorkflowID            respjson.Field
@@ -1706,6 +1710,8 @@ type UnwrapWebhookEventUnion struct {
 	JoinType JoinWebhookEventJoinType `json:"joinType"`
 	// This field is from variant [EnrichWebhookEvent].
 	EnrichedContent any `json:"enrichedContent"`
+	// This field is from variant [EnrichWebhookEvent].
+	GroundTruth any `json:"groundTruth"`
 	// This field is from variant [SendWebhookEvent].
 	DeliveryStatus SendWebhookEventDeliveryStatus `json:"deliveryStatus"`
 	// This field is from variant [SendWebhookEvent].
@@ -1775,6 +1781,7 @@ type UnwrapWebhookEventUnion struct {
 		Items                 respjson.Field
 		JoinType              respjson.Field
 		EnrichedContent       respjson.Field
+		GroundTruth           respjson.Field
 		DeliveryStatus        respjson.Field
 		DestinationType       respjson.Field
 		DeliveredContent      respjson.Field

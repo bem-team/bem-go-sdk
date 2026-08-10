@@ -54,7 +54,8 @@ func NewEventService(opts ...option.RequestOption) (r EventService) {
 //
 // Submitting feedback again for the same event overwrites the previous correction.
 //
-// Unsupported function types (split, enrich) return `400`.
+// Unsupported function types (split) return `400`. Enrich events use
+// `POST /v3/events/{eventID}/enrich-feedback` instead.
 func (r *EventService) SubmitFeedback(ctx context.Context, eventID string, body EventSubmitFeedbackParams, opts ...option.RequestOption) (res *EventSubmitFeedbackResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if eventID == "" {

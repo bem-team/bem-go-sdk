@@ -256,6 +256,8 @@ type EventUnion struct {
 	JoinType string `json:"joinType"`
 	// This field is from variant [EventEnrich].
 	EnrichedContent any `json:"enrichedContent"`
+	// This field is from variant [EventEnrich].
+	GroundTruth any `json:"groundTruth"`
 	// This field is from variant [EventEvaluation].
 	EvaluationVersion string `json:"evaluationVersion"`
 	// This field is from variant [EventEvaluation].
@@ -335,6 +337,7 @@ type EventUnion struct {
 		Items                 respjson.Field
 		JoinType              respjson.Field
 		EnrichedContent       respjson.Field
+		GroundTruth           respjson.Field
 		EvaluationVersion     respjson.Field
 		Result                respjson.Field
 		Status                respjson.Field
@@ -2180,6 +2183,9 @@ type EventEnrich struct {
 	FunctionCallTryNumber int64 `json:"functionCallTryNumber"`
 	// Version number of function that this event is associated with.
 	FunctionVersionNum int64 `json:"functionVersionNum"`
+	// The client-submitted ground-truth re-ranking of this output's candidates, if any
+	// (see `POST /v3/events/{eventID}/enrich-feedback`). Omitted when not set.
+	GroundTruth any `json:"groundTruth"`
 	// The inbound email that triggered this event.
 	InboundEmail InboundEmailEvent   `json:"inboundEmail"`
 	Metadata     EventEnrichMetadata `json:"metadata"`
@@ -2202,6 +2208,7 @@ type EventEnrich struct {
 		FunctionCallID        respjson.Field
 		FunctionCallTryNumber respjson.Field
 		FunctionVersionNum    respjson.Field
+		GroundTruth           respjson.Field
 		InboundEmail          respjson.Field
 		Metadata              respjson.Field
 		WorkflowID            respjson.Field

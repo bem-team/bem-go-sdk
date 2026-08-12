@@ -30,13 +30,6 @@ func TestEvalScoreNewWithOptionalParams(t *testing.T) {
 		FunctionName:       "functionName",
 		DatasetID:          bem.String("datasetID"),
 		FunctionVersionNum: bem.Int(0),
-		MatchConfig: bem.EvalMatchConfigParam{
-			ArrayMatch:       bem.EvalMatchConfigArrayMatchByIndex,
-			FuzzyThreshold:   bem.Float(0),
-			IgnorePaths:      []string{"string"},
-			NumericTolerance: bem.Float(0),
-			StringMatch:      bem.EvalMatchConfigStringMatchExact,
-		},
 		Pairs: []bem.EvalScoreNewParamsPair{{
 			Expected: map[string]any{},
 			Input: bem.FileInputParam{

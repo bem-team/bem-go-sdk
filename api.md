@@ -278,12 +278,10 @@ Methods:
 
 Params Types:
 
-- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalMatchConfigParam">EvalMatchConfigParam</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#FileInputParam">FileInputParam</a>
 
 Response Types:
 
-- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalMatchConfig">EvalMatchConfig</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalScoreRun">EvalScoreRun</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalScoreRunStatus">EvalScoreRunStatus</a>
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EvalScoreNewResponse">EvalScoreNewResponse</a>

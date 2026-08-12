@@ -1351,14 +1351,21 @@ func init() {
 // **Result Format (collection source, exact mode — no re-ranking):**
 //
 // - Always an array sorted by relevance (best match first)
-// - Each element: `{ data, cosine_distance? }` or `{ data, hybrid_score? }`
+// - Each element: `{ id, data }`
 //
 // **Result Format (collection source, semantic/hybrid — re-ranking always on):**
 //
 //   - Re-ranking uses a fixed, built-in instruction to the LLM (rank the candidates
 //     by how well each matches the source value); it is not configurable per step
 //   - Array of matches, best first:
-//     `[{ data, rank, confidence?, reasoning?, score?, scoreType? }, ...]`
+//     `[{ id, data, rank, confidence?, reasoning?, score?, scoreType? }, ...]`
+//   - `id` is the collection item the match came from (e.g. `"clitm_…"`) — a durable
+//     handle that survives edits to the item's data, and joins directly against the
+//     collection. Where the same payload spans several rows (results are
+//     de-duplicated by payload, and the uniqueness constraint is per collection +
+//     embedding model), the oldest is the representative. It is how a candidate is
+//     referenced when submitting ground-truth re-rankings via
+//     `POST /v3/events/{eventID}/enrich-feedback`
 //   - `rank` is 1-based (1 = best)
 //   - `confidence` is the LLM's 0–1 score. It is present only for entries the LLM
 //     ranked and **omitted** for backfilled entries (see below) — a missing
@@ -1376,13 +1383,20 @@ func init() {
 //
 // **Result Format (endpoint source, no matchInstructions):**
 //
-// - Always an array; the raw fetched value is the single element
+//   - Always an array; the raw fetched value is the single element
+//   - These elements are the raw fetched values, so they carry no `id`. Ground-truth
+//     re-ranking references candidates by `id`, so a field enriched this way cannot
+//     be re-ranked
 //
 // **Result Format (endpoint source, with matchInstructions):**
 //
 //   - Array of LLM-ranked matches, best first:
-//     `[{ data, rank, confidence, reasoning? }, ...]`
+//     `[{ id, data, rank, confidence, reasoning? }, ...]`
 //   - `rank` is 1-based (1 = best); `confidence` is the LLM's 0–1 score
+//   - `id` is a content hash of `data` (e.g. `"h_a5fef997ef9f8992"`) — identical
+//     data always yields the same id. Endpoint candidates have no collection item to
+//     name, so unlike collection matches they are identified by content; the `h_`
+//     prefix tells the two apart
 //   - Length capped by `enrichEndpoint.matchTopK` (default 1)
 type EnrichStep struct {
 	// JMESPath expression to extract source data. Can extract a single value or an
@@ -1582,14 +1596,21 @@ const (
 // **Result Format (collection source, exact mode — no re-ranking):**
 //
 // - Always an array sorted by relevance (best match first)
-// - Each element: `{ data, cosine_distance? }` or `{ data, hybrid_score? }`
+// - Each element: `{ id, data }`
 //
 // **Result Format (collection source, semantic/hybrid — re-ranking always on):**
 //
 //   - Re-ranking uses a fixed, built-in instruction to the LLM (rank the candidates
 //     by how well each matches the source value); it is not configurable per step
 //   - Array of matches, best first:
-//     `[{ data, rank, confidence?, reasoning?, score?, scoreType? }, ...]`
+//     `[{ id, data, rank, confidence?, reasoning?, score?, scoreType? }, ...]`
+//   - `id` is the collection item the match came from (e.g. `"clitm_…"`) — a durable
+//     handle that survives edits to the item's data, and joins directly against the
+//     collection. Where the same payload spans several rows (results are
+//     de-duplicated by payload, and the uniqueness constraint is per collection +
+//     embedding model), the oldest is the representative. It is how a candidate is
+//     referenced when submitting ground-truth re-rankings via
+//     `POST /v3/events/{eventID}/enrich-feedback`
 //   - `rank` is 1-based (1 = best)
 //   - `confidence` is the LLM's 0–1 score. It is present only for entries the LLM
 //     ranked and **omitted** for backfilled entries (see below) — a missing
@@ -1607,13 +1628,20 @@ const (
 //
 // **Result Format (endpoint source, no matchInstructions):**
 //
-// - Always an array; the raw fetched value is the single element
+//   - Always an array; the raw fetched value is the single element
+//   - These elements are the raw fetched values, so they carry no `id`. Ground-truth
+//     re-ranking references candidates by `id`, so a field enriched this way cannot
+//     be re-ranked
 //
 // **Result Format (endpoint source, with matchInstructions):**
 //
 //   - Array of LLM-ranked matches, best first:
-//     `[{ data, rank, confidence, reasoning? }, ...]`
+//     `[{ id, data, rank, confidence, reasoning? }, ...]`
 //   - `rank` is 1-based (1 = best); `confidence` is the LLM's 0–1 score
+//   - `id` is a content hash of `data` (e.g. `"h_a5fef997ef9f8992"`) — identical
+//     data always yields the same id. Endpoint candidates have no collection item to
+//     name, so unlike collection matches they are identified by content; the `h_`
+//     prefix tells the two apart
 //   - Length capped by `enrichEndpoint.matchTopK` (default 1)
 //
 // The properties SourceField, TargetField are required.

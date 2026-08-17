@@ -49,7 +49,7 @@ func TestFunctionNewWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestFunctionGet(t *testing.T) {
+func TestFunctionGetWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -62,7 +62,13 @@ func TestFunctionGet(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	_, err := client.Functions.Get(context.TODO(), "functionName")
+	_, err := client.Functions.Get(
+		context.TODO(),
+		"functionName",
+		bem.FunctionGetParams{
+			IncludeExtraSettings: bem.Bool(true),
+		},
+	)
 	if err != nil {
 		var apierr *bem.Error
 		if errors.As(err, &apierr) {
@@ -126,17 +132,20 @@ func TestFunctionListWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.Functions.List(context.TODO(), bem.FunctionListParams{
-		DisplayName:   bem.String("displayName"),
-		EndingBefore:  bem.String("endingBefore"),
-		FunctionIDs:   []string{"string"},
-		FunctionNames: []string{"string"},
-		Limit:         bem.Int(1),
-		SortOrder:     bem.FunctionListParamsSortOrderAsc,
-		StartingAfter: bem.String("startingAfter"),
-		Tags:          []string{"string"},
-		Types:         []bem.FunctionType{bem.FunctionTypeTransform},
-		WorkflowIDs:   []string{"string"},
-		WorkflowNames: []string{"string"},
+		DisplayName:             bem.String("displayName"),
+		EndingBefore:            bem.String("endingBefore"),
+		FunctionIDs:             []string{"string"},
+		FunctionNames:           []string{"string"},
+		IncludeExtraSettings:    bem.Bool(true),
+		Limit:                   bem.Int(1),
+		SortOrder:               bem.FunctionListParamsSortOrderAsc,
+		StartingAfter:           bem.String("startingAfter"),
+		Tags:                    []string{"string"},
+		Types:                   []bem.FunctionType{bem.FunctionTypeTransform},
+		WorkflowIDs:             []string{"string"},
+		WorkflowIDVersionNums:   []string{"string"},
+		WorkflowNames:           []string{"string"},
+		WorkflowNameVersionNums: []string{"string"},
 	})
 	if err != nil {
 		var apierr *bem.Error
@@ -246,13 +255,19 @@ func TestFunctionGetMetricsWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.Functions.GetMetrics(context.TODO(), bem.FunctionGetMetricsParams{
-		EndingBefore:  bem.String("endingBefore"),
-		FunctionIDs:   []string{"string"},
-		FunctionNames: []string{"string"},
-		Limit:         bem.Int(1),
-		SortOrder:     bem.FunctionGetMetricsParamsSortOrderAsc,
-		StartingAfter: bem.String("startingAfter"),
-		Types:         []bem.FunctionType{bem.FunctionTypeTransform},
+		DisplayName:             bem.String("displayName"),
+		EndingBefore:            bem.String("endingBefore"),
+		FunctionIDs:             []string{"string"},
+		FunctionNames:           []string{"string"},
+		Limit:                   bem.Int(1),
+		SortOrder:               bem.FunctionGetMetricsParamsSortOrderAsc,
+		StartingAfter:           bem.String("startingAfter"),
+		Tags:                    []string{"string"},
+		Types:                   []bem.FunctionType{bem.FunctionTypeTransform},
+		WorkflowIDs:             []string{"string"},
+		WorkflowIDVersionNums:   []string{"string"},
+		WorkflowNames:           []string{"string"},
+		WorkflowNameVersionNums: []string{"string"},
 	})
 	if err != nil {
 		var apierr *bem.Error

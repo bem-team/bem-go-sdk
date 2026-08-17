@@ -30,6 +30,7 @@ func TestEntityUpdateWithOptionalParams(t *testing.T) {
 		context.TODO(),
 		"id",
 		bem.EntityUpdateParams{
+			Bucket:           bem.String("bucket"),
 			AddSynonyms:      []string{"string"},
 			AssignedTypeID:   bem.String("assignedTypeID"),
 			Canonical:        bem.String("canonical"),
@@ -82,7 +83,7 @@ func TestEntityBulkNewWithOptionalParams(t *testing.T) {
 	}
 }
 
-func TestEntityBulkValidate(t *testing.T) {
+func TestEntityBulkValidateWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -98,6 +99,7 @@ func TestEntityBulkValidate(t *testing.T) {
 	_, err := client.Entities.BulkValidate(context.TODO(), bem.EntityBulkValidateParams{
 		EntityIDs: []string{"ent_2abc", "ent_2def"},
 		Status:    bem.EntityBulkValidateParamsStatusApproved,
+		Bucket:    bem.String("bucket"),
 	})
 	if err != nil {
 		var apierr *bem.Error

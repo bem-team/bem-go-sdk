@@ -162,14 +162,14 @@ func (r *FunctionService) New(ctx context.Context, body FunctionNewParams, opts 
 // Returns the function record with its `currentVersionNum` and the configuration
 // of that version. To inspect a historical version, use
 // `GET /v3/functions/{functionName}/versions/{versionNum}`.
-func (r *FunctionService) Get(ctx context.Context, functionName string, opts ...option.RequestOption) (res *FunctionResponse, err error) {
+func (r *FunctionService) Get(ctx context.Context, functionName string, query FunctionGetParams, opts ...option.RequestOption) (res *FunctionResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if functionName == "" {
 		err = errors.New("missing required functionName parameter")
 		return nil, err
 	}
 	path := fmt.Sprintf("v3/functions/%s", url.PathEscape(functionName))
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return res, err
 }
 
@@ -220,6 +220,8 @@ func (r *FunctionService) Update(ctx context.Context, pathFunctionName string, b
 //   - `workflowIDs` / `workflowNames`: returns only functions referenced by the
 //     named workflows. Useful for "what functions does this workflow depend on?"
 //     lookups.
+//   - `workflowIDVersionNums` / `workflowNameVersionNums`: the same lookup pinned to
+//     a specific workflow version.
 //
 // ## Pagination
 //
@@ -258,6 +260,8 @@ func (r *FunctionService) List(ctx context.Context, query FunctionListParams, op
 //   - `workflowIDs` / `workflowNames`: returns only functions referenced by the
 //     named workflows. Useful for "what functions does this workflow depend on?"
 //     lookups.
+//   - `workflowIDVersionNums` / `workflowNameVersionNums`: the same lookup pinned to
+//     a specific workflow version.
 //
 // ## Pagination
 //
@@ -4102,6 +4106,21 @@ func (r *FunctionNewParams) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
+type FunctionGetParams struct {
+	// Populate the function's `extraConfig` block. Omitted or `false` by default, in
+	// which case `extraConfig` is absent from the response.
+	IncludeExtraSettings param.Opt[bool] `query:"includeExtraSettings,omitzero" json:"-"`
+	paramObj
+}
+
+// URLQuery serializes [FunctionGetParams]'s query parameters as `url.Values`.
+func (r FunctionGetParams) URLQuery() (v url.Values, err error) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
 type FunctionUpdateParams struct {
 	// V3 create/update variants of the shared function payloads.
 	//
@@ -4129,18 +4148,28 @@ func (r *FunctionUpdateParams) UnmarshalJSON(data []byte) error {
 }
 
 type FunctionListParams struct {
-	DisplayName   param.Opt[string] `query:"displayName,omitzero" json:"-"`
-	EndingBefore  param.Opt[string] `query:"endingBefore,omitzero" json:"-"`
-	Limit         param.Opt[int64]  `query:"limit,omitzero" json:"-"`
-	StartingAfter param.Opt[string] `query:"startingAfter,omitzero" json:"-"`
-	FunctionIDs   []string          `query:"functionIDs,omitzero" json:"-"`
-	FunctionNames []string          `query:"functionNames,omitzero" json:"-"`
+	DisplayName  param.Opt[string] `query:"displayName,omitzero" json:"-"`
+	EndingBefore param.Opt[string] `query:"endingBefore,omitzero" json:"-"`
+	// Populate each function's `extraConfig` block. Omitted or `false` by default, in
+	// which case `extraConfig` is absent from the response.
+	IncludeExtraSettings param.Opt[bool]   `query:"includeExtraSettings,omitzero" json:"-"`
+	Limit                param.Opt[int64]  `query:"limit,omitzero" json:"-"`
+	StartingAfter        param.Opt[string] `query:"startingAfter,omitzero" json:"-"`
+	FunctionIDs          []string          `query:"functionIDs,omitzero" json:"-"`
+	FunctionNames        []string          `query:"functionNames,omitzero" json:"-"`
 	// Any of "asc", "desc".
-	SortOrder     FunctionListParamsSortOrder `query:"sortOrder,omitzero" json:"-"`
-	Tags          []string                    `query:"tags,omitzero" json:"-"`
-	Types         []FunctionType              `query:"types,omitzero" json:"-"`
-	WorkflowIDs   []string                    `query:"workflowIDs,omitzero" json:"-"`
-	WorkflowNames []string                    `query:"workflowNames,omitzero" json:"-"`
+	SortOrder   FunctionListParamsSortOrder `query:"sortOrder,omitzero" json:"-"`
+	Tags        []string                    `query:"tags,omitzero" json:"-"`
+	Types       []FunctionType              `query:"types,omitzero" json:"-"`
+	WorkflowIDs []string                    `query:"workflowIDs,omitzero" json:"-"`
+	// Return only functions referenced by a specific workflow version. Each entry is
+	// `<workflowID>.<versionNum>` — for example `wf_2c9AXIj48cUYJtCuv1gsQtHGDzK.3`.
+	WorkflowIDVersionNums []string `query:"workflowIDVersionNums,omitzero" json:"-"`
+	WorkflowNames         []string `query:"workflowNames,omitzero" json:"-"`
+	// Return only functions referenced by a specific workflow version, keyed by
+	// workflow name. Each entry is `<workflowName>.<versionNum>` — for example
+	// `invoice-pipeline.3`.
+	WorkflowNameVersionNums []string `query:"workflowNameVersionNums,omitzero" json:"-"`
 	paramObj
 }
 
@@ -4248,6 +4277,8 @@ const (
 )
 
 type FunctionGetMetricsParams struct {
+	// Case-insensitive substring match on the function display name.
+	DisplayName param.Opt[string] `query:"displayName,omitzero" json:"-"`
 	// Cursor — a `functionID` defining your place in the list.
 	EndingBefore param.Opt[string] `query:"endingBefore,omitzero" json:"-"`
 	Limit        param.Opt[int64]  `query:"limit,omitzero" json:"-"`
@@ -4260,7 +4291,19 @@ type FunctionGetMetricsParams struct {
 	//
 	// Any of "asc", "desc".
 	SortOrder FunctionGetMetricsParamsSortOrder `query:"sortOrder,omitzero" json:"-"`
-	Types     []FunctionType                    `query:"types,omitzero" json:"-"`
+	// Returns metrics for functions tagged with any of the supplied tags.
+	Tags  []string       `query:"tags,omitzero" json:"-"`
+	Types []FunctionType `query:"types,omitzero" json:"-"`
+	// Returns metrics only for functions referenced by the named workflows.
+	WorkflowIDs []string `query:"workflowIDs,omitzero" json:"-"`
+	// Narrow the workflow filter to a specific workflow version. Each entry is
+	// `<workflowID>.<versionNum>`.
+	WorkflowIDVersionNums []string `query:"workflowIDVersionNums,omitzero" json:"-"`
+	// Returns metrics only for functions referenced by the named workflows.
+	WorkflowNames []string `query:"workflowNames,omitzero" json:"-"`
+	// Narrow the workflow filter to a specific workflow version, keyed by workflow
+	// name. Each entry is `<workflowName>.<versionNum>`.
+	WorkflowNameVersionNums []string `query:"workflowNameVersionNums,omitzero" json:"-"`
 	paramObj
 }
 

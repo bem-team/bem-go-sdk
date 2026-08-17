@@ -13,7 +13,7 @@ import (
 	"github.com/bem-team/bem-go-sdk/option"
 )
 
-func TestFunctionVersionGet(t *testing.T) {
+func TestFunctionVersionGetWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -30,7 +30,8 @@ func TestFunctionVersionGet(t *testing.T) {
 		context.TODO(),
 		0,
 		bem.FunctionVersionGetParams{
-			FunctionName: "functionName",
+			FunctionName:         "functionName",
+			IncludeExtraSettings: bem.Bool(true),
 		},
 	)
 	if err != nil {
@@ -42,7 +43,7 @@ func TestFunctionVersionGet(t *testing.T) {
 	}
 }
 
-func TestFunctionVersionList(t *testing.T) {
+func TestFunctionVersionListWithOptionalParams(t *testing.T) {
 	t.Skip("Mock server tests are disabled")
 	baseURL := "http://localhost:4010"
 	if envURL, ok := os.LookupEnv("TEST_API_BASE_URL"); ok {
@@ -55,7 +56,16 @@ func TestFunctionVersionList(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	_, err := client.Functions.Versions.List(context.TODO(), "functionName")
+	_, err := client.Functions.Versions.List(
+		context.TODO(),
+		"functionName",
+		bem.FunctionVersionListParams{
+			EndingBefore:  bem.Int(0),
+			Limit:         bem.Int(1),
+			SortOrder:     bem.FunctionVersionListParamsSortOrderAsc,
+			StartingAfter: bem.Int(0),
+		},
+	)
 	if err != nil {
 		var apierr *bem.Error
 		if errors.As(err, &apierr) {

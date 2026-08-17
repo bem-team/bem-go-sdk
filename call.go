@@ -94,6 +94,8 @@ func (r *CallService) Get(ctx context.Context, callID string, opts ...option.Req
 // - `callIDs`: Specific call identifiers
 // - `referenceIDs`: Your custom reference IDs
 // - `workflowIDs` / `workflowNames`: Filter by workflow
+// - `functionIDs` / `functionNames`: Filter by function (function calls only)
+// - `callTypes`: Restrict to workflow calls or to function calls
 //
 // ## Pagination
 //
@@ -124,6 +126,8 @@ func (r *CallService) List(ctx context.Context, query CallListParams, opts ...op
 // - `callIDs`: Specific call identifiers
 // - `referenceIDs`: Your custom reference IDs
 // - `workflowIDs` / `workflowNames`: Filter by workflow
+// - `functionIDs` / `functionNames`: Filter by function (function calls only)
+// - `callTypes`: Restrict to workflow calls or to function calls
 //
 // ## Pagination
 //
@@ -161,20 +165,32 @@ func (r *CallService) GetTrace(ctx context.Context, callID string, opts ...optio
 	return res, err
 }
 
-// A workflow call returned by the V3 API.
+// A call returned by the V3 API.
 //
 // Compared to the V2 `Call` model:
 //
 //   - Terminal outputs are split into `outputs` (non-error events) and `errors`
 //     (error events)
-//   - `callType` and function-scoped fields are removed — V3 calls are always
-//     workflow calls
 //   - The deprecated `functionCalls` field is removed (use
 //     `GET /v3/calls/{callID}/trace`)
 //   - `url` and `traceUrl` hint fields are included for resource discovery
+//
+// Most calls are workflow calls, and `POST /v3/workflows/{workflowName}/call` only
+// ever creates those. `GET /v3/calls` and `GET /v3/calls/{callID}` also return
+// direct and adhoc function calls, which carry the function-scoped fields instead
+// of the workflow-scoped ones — read `callType` to tell them apart.
 type Call struct {
 	// Unique identifier of the call.
 	CallID string `json:"callID" api:"required"`
+	// What kind of call this is. Always present.
+	//
+	//   - `workflow` — created by `POST /v3/workflows/{workflowName}/call`; carries the
+	//     `workflow*` fields.
+	//   - `direct_function` / `adhoc_function` — a call against a single function;
+	//     carries the `function*` fields instead.
+	//
+	// Any of "workflow", "direct_function", "adhoc_function".
+	CallType CallCallType `json:"callType" api:"required"`
 	// The date and time the call was created.
 	CreatedAt time.Time `json:"createdAt" api:"required" format:"date-time"`
 	// Terminal error events of this call. Workflow calls are not atomic — `errors` and
@@ -200,21 +216,33 @@ type Call struct {
 	// The date and time the call finished. Only set once status is `completed` or
 	// `failed`.
 	FinishedAt time.Time `json:"finishedAt" format:"date-time"`
+	// Unique identifier of the function. Only set for function calls.
+	FunctionID string `json:"functionID"`
+	// Name of the function. Only set for function calls.
+	FunctionName string `json:"functionName"`
+	// The type of the function.
+	//
+	// Any of "transform", "extract", "route", "classify", "send", "split", "join",
+	// "analyze", "payload_shaping", "enrich", "parse", "render".
+	FunctionType FunctionType `json:"functionType"`
+	// Version number of the function. Only set for function calls.
+	FunctionVersionNum int64 `json:"functionVersionNum"`
 	// Input to the main function call.
 	Input CallInput `json:"input"`
 	// Status of call.
 	//
 	// Any of "pending", "running", "completed", "failed".
 	Status CallStatus `json:"status"`
-	// Unique identifier of the workflow.
+	// Unique identifier of the workflow. Only set when `callType` is `workflow`.
 	WorkflowID string `json:"workflowID"`
-	// Name of the workflow.
+	// Name of the workflow. Only set when `callType` is `workflow`.
 	WorkflowName string `json:"workflowName"`
-	// Version number of the workflow.
+	// Version number of the workflow. Only set when `callType` is `workflow`.
 	WorkflowVersionNum int64 `json:"workflowVersionNum"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		CallID             respjson.Field
+		CallType           respjson.Field
 		CreatedAt          respjson.Field
 		Errors             respjson.Field
 		Outputs            respjson.Field
@@ -222,6 +250,10 @@ type Call struct {
 		URL                respjson.Field
 		CallReferenceID    respjson.Field
 		FinishedAt         respjson.Field
+		FunctionID         respjson.Field
+		FunctionName       respjson.Field
+		FunctionType       respjson.Field
+		FunctionVersionNum respjson.Field
 		Input              respjson.Field
 		Status             respjson.Field
 		WorkflowID         respjson.Field
@@ -237,6 +269,20 @@ func (r Call) RawJSON() string { return r.JSON.raw }
 func (r *Call) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
+
+// What kind of call this is. Always present.
+//
+//   - `workflow` — created by `POST /v3/workflows/{workflowName}/call`; carries the
+//     `workflow*` fields.
+//   - `direct_function` / `adhoc_function` — a call against a single function;
+//     carries the `function*` fields instead.
+type CallCallType string
+
+const (
+	CallCallTypeWorkflow       CallCallType = "workflow"
+	CallCallTypeDirectFunction CallCallType = "direct_function"
+	CallCallTypeAdhocFunction  CallCallType = "adhoc_function"
+)
 
 // Input to the main function call.
 type CallInput struct {
@@ -327,17 +373,20 @@ const (
 )
 
 type CallGetResponse struct {
-	// A workflow call returned by the V3 API.
+	// A call returned by the V3 API.
 	//
 	// Compared to the V2 `Call` model:
 	//
 	//   - Terminal outputs are split into `outputs` (non-error events) and `errors`
 	//     (error events)
-	//   - `callType` and function-scoped fields are removed — V3 calls are always
-	//     workflow calls
 	//   - The deprecated `functionCalls` field is removed (use
 	//     `GET /v3/calls/{callID}/trace`)
 	//   - `url` and `traceUrl` hint fields are included for resource discovery
+	//
+	// Most calls are workflow calls, and `POST /v3/workflows/{workflowName}/call` only
+	// ever creates those. `GET /v3/calls` and `GET /v3/calls/{callID}` also return
+	// direct and adhoc function calls, which carry the function-scoped fields instead
+	// of the workflow-scoped ones — read `callType` to tell them apart.
 	Call Call `json:"call"`
 	// Error message if the call retrieval failed, or if the call itself failed when
 	// using `wait=true`.
@@ -532,7 +581,16 @@ type CallListParams struct {
 	ReferenceIDSubstring param.Opt[string] `query:"referenceIDSubstring,omitzero" json:"-"`
 	StartingAfter        param.Opt[string] `query:"startingAfter,omitzero" json:"-"`
 	CallIDs              []string          `query:"callIDs,omitzero" json:"-"`
-	ReferenceIDs         []string          `query:"referenceIDs,omitzero" json:"-"`
+	// Filter by call type. Omit to return every call regardless of type.
+	//
+	// Any of "workflow", "direct_function", "adhoc_function".
+	CallTypes []string `query:"callTypes,omitzero" json:"-"`
+	// Filter by function API ID. Only matches function calls — workflow calls carry no
+	// function reference of their own.
+	FunctionIDs []string `query:"functionIDs,omitzero" json:"-"`
+	// Filter by function name. Only matches function calls.
+	FunctionNames []string `query:"functionNames,omitzero" json:"-"`
+	ReferenceIDs  []string `query:"referenceIDs,omitzero" json:"-"`
 	// Any of "asc", "desc".
 	SortOrder CallListParamsSortOrder `query:"sortOrder,omitzero" json:"-"`
 	// Filter by one or more statuses.

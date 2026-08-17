@@ -423,17 +423,13 @@ Methods:
 Response Types:
 
 - <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EntityType">EntityType</a>
-- <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EntityTypeListResponse">EntityTypeListResponse</a>
 
 Methods:
 
 - <code title="post /v3/entity-types">client.EntityTypes.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EntityTypeService.New">New</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, body <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EntityTypeNewParams">EntityTypeNewParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EntityType">EntityType</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="get /v3/entity-types/{typeID}">client.EntityTypes.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EntityTypeService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, typeID <a href="https://pkg.go.dev/builtin#string">string</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EntityType">EntityType</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="patch /v3/entity-types/{typeID}">client.EntityTypes.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EntityTypeService.Update">Update</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, typeID <a href="https://pkg.go.dev/builtin#string">string</a>, body <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EntityTypeUpdateParams">EntityTypeUpdateParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EntityType">EntityType</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
-- <code title="get /v3/entity-types">client.EntityTypes.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EntityTypeService.List">List</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EntityTypeListParams">EntityTypeListParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EntityTypeListResponse">EntityTypeListResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
 - <code title="delete /v3/entity-types/{typeID}">client.EntityTypes.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#EntityTypeService.Delete">Delete</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, typeID <a href="https://pkg.go.dev/builtin#string">string</a>) <a href="https://pkg.go.dev/builtin#error">error</a></code>
-
-## Reviewers
 
 # KnowledgeGraph
 
@@ -444,7 +440,3 @@ Response Types:
 Methods:
 
 - <code title="get /v3/knowledge-graph">client.KnowledgeGraph.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#KnowledgeGraphService.Get">Get</a>(ctx <a href="https://pkg.go.dev/context">context</a>.<a href="https://pkg.go.dev/context#Context">Context</a>, query <a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#KnowledgeGraphGetParams">KnowledgeGraphGetParams</a>) (\*<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk">bem</a>.<a href="https://pkg.go.dev/github.com/bem-team/bem-go-sdk#KnowledgeGraphGetResponse">KnowledgeGraphGetResponse</a>, <a href="https://pkg.go.dev/builtin#error">error</a>)</code>
-
-# ReviewQueue
-
-# Users

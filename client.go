@@ -390,8 +390,6 @@ type Client struct {
 	// Both endpoints take an optional `bucket` (`bkt_...`) to scope the read to a
 	// single bucket; omit it for the unscoped account+environment view.
 	KnowledgeGraph KnowledgeGraphService
-	ReviewQueue    ReviewQueueService
-	Users          UserService
 }
 
 // DefaultClientOptions read from the environment (BEM_API_KEY, BEM_BASE_URL). This
@@ -443,8 +441,6 @@ func NewClient(opts ...option.RequestOption) (r Client) {
 	r.Entities = NewEntityService(opts...)
 	r.EntityTypes = NewEntityTypeService(opts...)
 	r.KnowledgeGraph = NewKnowledgeGraphService(opts...)
-	r.ReviewQueue = NewReviewQueueService(opts...)
-	r.Users = NewUserService(opts...)
 
 	return
 }

@@ -184,6 +184,8 @@ func (r *WorkflowService) Update(ctx context.Context, workflowName string, body 
 //   - `functionIDs` / `functionNames`: returns only workflows that reference the
 //     named functions in any node. Useful for "which workflows depend on this
 //     function?" lookups before changing or deleting a function.
+//   - `functionIDVersionNums` / `functionNameVersionNums`: the same lookup narrowed
+//     to nodes pinned to a specific function version.
 //
 // ## Pagination
 //
@@ -219,6 +221,8 @@ func (r *WorkflowService) List(ctx context.Context, query WorkflowListParams, op
 //   - `functionIDs` / `functionNames`: returns only workflows that reference the
 //     named functions in any node. Useful for "which workflows depend on this
 //     function?" lookups before changing or deleting a function.
+//   - `functionIDVersionNums` / `functionNameVersionNums`: the same lookup narrowed
+//     to nodes pinned to a specific function version.
 //
 // ## Pagination
 //
@@ -236,16 +240,20 @@ func (r *WorkflowService) ListAutoPaging(ctx context.Context, query WorkflowList
 //
 // Functions referenced by the deleted workflow are not removed — they remain
 // available to other workflows or for direct reference.
-func (r *WorkflowService) Delete(ctx context.Context, workflowName string, opts ...option.RequestOption) (err error) {
+//
+// Any connectors attached to the workflow are torn down first. Teardown is
+// best-effort: per-connector failures are reported in `connectorErrors` but do not
+// block the deletion, so check that array rather than relying on the status code
+// alone.
+func (r *WorkflowService) Delete(ctx context.Context, workflowName string, opts ...option.RequestOption) (res *WorkflowDeleteResponse, err error) {
 	opts = slices.Concat(r.options, opts)
-	opts = append([]option.RequestOption{option.WithHeader("Accept", "*/*")}, opts...)
 	if workflowName == "" {
 		err = errors.New("missing required workflowName parameter")
-		return err
+		return nil, err
 	}
 	path := fmt.Sprintf("v3/workflows/%s", url.PathEscape(workflowName))
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, nil, opts...)
-	return err
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodDelete, path, nil, &res, opts...)
+	return res, err
 }
 
 // **Invoke a workflow.**
@@ -790,6 +798,59 @@ func (r *WorkflowUpdateResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
+type WorkflowDeleteResponse struct {
+	// Per-connector failures from tearing down the deleted workflow's connectors.
+	// Connector teardown is best-effort: a failure here is reported but does not block
+	// the deletion, so a `200` response with a non-empty `connectorErrors` means the
+	// workflow is gone while one or more of its connectors may still need manual
+	// cleanup. Empty or omitted when all teardowns succeeded.
+	ConnectorErrors []WorkflowConnectorError `json:"connectorErrors"`
+	// Error message if the workflow deletion failed.
+	Error string `json:"error"`
+	// Identifies the workflow that was deleted, pinned to the version number it was on
+	// at deletion time.
+	Workflow WorkflowDeleteResponseWorkflow `json:"workflow"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		ConnectorErrors respjson.Field
+		Error           respjson.Field
+		Workflow        respjson.Field
+		ExtraFields     map[string]respjson.Field
+		raw             string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r WorkflowDeleteResponse) RawJSON() string { return r.JSON.raw }
+func (r *WorkflowDeleteResponse) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// Identifies the workflow that was deleted, pinned to the version number it was on
+// at deletion time.
+type WorkflowDeleteResponseWorkflow struct {
+	// Unique identifier of workflow.
+	ID string `json:"id" api:"required"`
+	// Unique name of workflow. Must be UNIQUE on a per-environment basis.
+	Name string `json:"name" api:"required"`
+	// Version number of workflow version.
+	VersionNum int64 `json:"versionNum" api:"required"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		ID          respjson.Field
+		Name        respjson.Field
+		VersionNum  respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+}
+
+// Returns the unmodified JSON received from the API
+func (r WorkflowDeleteResponseWorkflow) RawJSON() string { return r.JSON.raw }
+func (r *WorkflowDeleteResponseWorkflow) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
 type WorkflowCopyResponse struct {
 	// Functions that were copied when copying to a different environment. Empty when
 	// copying within the same environment.
@@ -935,7 +996,15 @@ type WorkflowListParams struct {
 	Limit         param.Opt[int64]  `query:"limit,omitzero" json:"-"`
 	StartingAfter param.Opt[string] `query:"startingAfter,omitzero" json:"-"`
 	FunctionIDs   []string          `query:"functionIDs,omitzero" json:"-"`
-	FunctionNames []string          `query:"functionNames,omitzero" json:"-"`
+	// Return only workflows with a node pinned to a specific function version. Each
+	// entry is `<functionID>.<versionNum>` — for example
+	// `fn_2c9AXIj48cUYJtCuv1gsQtHGDzK.4`.
+	FunctionIDVersionNums []string `query:"functionIDVersionNums,omitzero" json:"-"`
+	FunctionNames         []string `query:"functionNames,omitzero" json:"-"`
+	// Return only workflows with a node pinned to a specific function version, keyed
+	// by function name. Each entry is `<functionName>.<versionNum>` — for example
+	// `invoice-extract.4`.
+	FunctionNameVersionNums []string `query:"functionNameVersionNums,omitzero" json:"-"`
 	// Any of "asc", "desc".
 	SortOrder     WorkflowListParamsSortOrder `query:"sortOrder,omitzero" json:"-"`
 	Tags          []string                    `query:"tags,omitzero" json:"-"`

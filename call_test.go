@@ -51,7 +51,10 @@ func TestCallListWithOptionalParams(t *testing.T) {
 	)
 	_, err := client.Calls.List(context.TODO(), bem.CallListParams{
 		CallIDs:              []string{"string"},
+		CallTypes:            []string{"workflow"},
 		EndingBefore:         bem.String("endingBefore"),
+		FunctionIDs:          []string{"string"},
+		FunctionNames:        []string{"string"},
 		Limit:                bem.Int(1),
 		ReferenceIDs:         []string{"string"},
 		ReferenceIDSubstring: bem.String("referenceIDSubstring"),

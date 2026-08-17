@@ -13,8 +13,10 @@ import (
 	"time"
 
 	"github.com/bem-team/bem-go-sdk/internal/apijson"
+	"github.com/bem-team/bem-go-sdk/internal/apiquery"
 	"github.com/bem-team/bem-go-sdk/internal/requestconfig"
 	"github.com/bem-team/bem-go-sdk/option"
+	"github.com/bem-team/bem-go-sdk/packages/param"
 	"github.com/bem-team/bem-go-sdk/packages/respjson"
 	"github.com/bem-team/bem-go-sdk/shared/constant"
 )
@@ -66,14 +68,14 @@ func NewFunctionVersionService(opts ...option.RequestOption) (r FunctionVersionS
 // Versions are immutable. Use this endpoint to inspect what a function looked like
 // at the moment a particular call was made — every event and transformation
 // records the function version it ran against.
-func (r *FunctionVersionService) Get(ctx context.Context, versionNum int64, query FunctionVersionGetParams, opts ...option.RequestOption) (res *FunctionVersionGetResponse, err error) {
+func (r *FunctionVersionService) Get(ctx context.Context, versionNum int64, params FunctionVersionGetParams, opts ...option.RequestOption) (res *FunctionVersionGetResponse, err error) {
 	opts = slices.Concat(r.options, opts)
-	if query.FunctionName == "" {
+	if params.FunctionName == "" {
 		err = errors.New("missing required functionName parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v3/functions/%s/versions/%v", url.PathEscape(query.FunctionName), versionNum)
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	path := fmt.Sprintf("v3/functions/%s/versions/%v", url.PathEscape(params.FunctionName), versionNum)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, params, &res, opts...)
 	return res, err
 }
 
@@ -83,14 +85,14 @@ func (r *FunctionVersionService) Get(ctx context.Context, versionNum int64, quer
 // configuration the function had between updates. Useful for audits ("when did
 // this schema change?") and for diffing two versions before promoting an update to
 // production.
-func (r *FunctionVersionService) List(ctx context.Context, functionName string, opts ...option.RequestOption) (res *ListFunctionVersionsResponse, err error) {
+func (r *FunctionVersionService) List(ctx context.Context, functionName string, query FunctionVersionListParams, opts ...option.RequestOption) (res *ListFunctionVersionsResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if functionName == "" {
 		err = errors.New("missing required functionName parameter")
 		return nil, err
 	}
 	path := fmt.Sprintf("v3/functions/%s/versions", url.PathEscape(functionName))
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, nil, &res, opts...)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return res, err
 }
 
@@ -1003,5 +1005,42 @@ func (r *FunctionVersionGetResponse) UnmarshalJSON(data []byte) error {
 
 type FunctionVersionGetParams struct {
 	FunctionName string `path:"functionName" api:"required" json:"-"`
+	// Populate the version's `extraConfig` block. Omitted or `false` by default, in
+	// which case `extraConfig` is absent from the response.
+	IncludeExtraSettings param.Opt[bool] `query:"includeExtraSettings,omitzero" json:"-"`
 	paramObj
 }
+
+// URLQuery serializes [FunctionVersionGetParams]'s query parameters as
+// `url.Values`.
+func (r FunctionVersionGetParams) URLQuery() (v url.Values, err error) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+type FunctionVersionListParams struct {
+	EndingBefore  param.Opt[int64] `query:"endingBefore,omitzero" json:"-"`
+	Limit         param.Opt[int64] `query:"limit,omitzero" json:"-"`
+	StartingAfter param.Opt[int64] `query:"startingAfter,omitzero" json:"-"`
+	// Any of "asc", "desc".
+	SortOrder FunctionVersionListParamsSortOrder `query:"sortOrder,omitzero" json:"-"`
+	paramObj
+}
+
+// URLQuery serializes [FunctionVersionListParams]'s query parameters as
+// `url.Values`.
+func (r FunctionVersionListParams) URLQuery() (v url.Values, err error) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
+}
+
+type FunctionVersionListParamsSortOrder string
+
+const (
+	FunctionVersionListParamsSortOrderAsc  FunctionVersionListParamsSortOrder = "asc"
+	FunctionVersionListParamsSortOrderDesc FunctionVersionListParamsSortOrder = "desc"
+)

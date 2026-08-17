@@ -390,39 +390,6 @@ type Client struct {
 	// Both endpoints take an optional `bucket` (`bkt_...`) to scope the read to a
 	// single bucket; omit it for the unscoped account+environment view.
 	KnowledgeGraph KnowledgeGraphService
-	// The reviewer-facing read surface for entity curation, available on the dashboard
-	// (JWT) only.
-	//
-	//   - **`GET /v3/review-queue`** returns a cursor-paginated set of entities awaiting
-	//     curation, scoped to your account+environment (and optional `bucket`). Each row
-	//     is a full entity plus a small preview (up to 2) of its first mentions, so a
-	//     reviewer can triage without opening every entity.
-	//
-	// Filters AND together. `status` (repeatable) defaults to the pre-terminal states
-	// `extracted` + `proposed` when omitted. `type` (repeatable `ety_…` IDs) matches
-	// the entity's _effective_ type — its assigned type id, or, for entities with no
-	// assigned type, its bem-inferred type name. `assignedTo` (`me` or a `usr_…` ID)
-	// restricts to entities whose effective type the user reviews. `since` (RFC3339)
-	// filters by creation time. Pagination is cursor-based on `entityID` ascending;
-	// default limit 50, maximum 200.
-	ReviewQueue ReviewQueueService
-	// Reviewer assignments link users to the entity types they are responsible for
-	// reviewing, scoped to an account+environment. These are dashboard-only endpoints:
-	// an assignment needs a user identity, which only the dashboard (JWT) surface
-	// carries.
-	//
-	//   - **`POST /v3/entity-types/{typeID}/reviewers`** assigns a user as a reviewer of
-	//     the type. The assignment is idempotent: re-assigning an existing reviewer
-	//     returns the existing assignment. Requires the `admin` role.
-	//   - **`GET /v3/entity-types/{typeID}/reviewers`** lists the users assigned to
-	//     review the type, with each user's email and role. Requires the `operator`
-	//     role.
-	//   - **`DELETE /v3/entity-types/{typeID}/reviewers/{userID}`** removes an
-	//     assignment. Requires the `admin` role.
-	//   - **`GET /v3/users/{userID}/reviewer-assignments`** is the reverse lookup: the
-	//     entity types a user reviews. A user may read their own assignments; reading
-	//     another user's assignments requires the `admin` role.
-	Users UserService
 }
 
 // DefaultClientOptions read from the environment (BEM_API_KEY, BEM_BASE_URL). This
@@ -474,8 +441,6 @@ func NewClient(opts ...option.RequestOption) (r Client) {
 	r.Entities = NewEntityService(opts...)
 	r.EntityTypes = NewEntityTypeService(opts...)
 	r.KnowledgeGraph = NewKnowledgeGraphService(opts...)
-	r.ReviewQueue = NewReviewQueueService(opts...)
-	r.Users = NewUserService(opts...)
 
 	return
 }

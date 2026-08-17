@@ -319,12 +319,6 @@ type SubscriptionListParams struct {
 	StartingAfter param.Opt[string] `query:"startingAfter,omitzero" json:"-"`
 	// Filters to subscriptions linked to included array of function names.
 	FunctionNames []string `query:"functionNames,omitzero" json:"-"`
-	// Specifies sorting behavior. The two options are `asc` and `desc` to sort
-	// ascending and descending respectively, with default sort being ascending. Paging
-	// works in both directions.
-	//
-	// Any of "asc", "desc".
-	SortOrder SubscriptionListParamsSortOrder `query:"sortOrder,omitzero" json:"-"`
 	paramObj
 }
 
@@ -335,13 +329,3 @@ func (r SubscriptionListParams) URLQuery() (v url.Values, err error) {
 		NestedFormat: apiquery.NestedQueryFormatBrackets,
 	})
 }
-
-// Specifies sorting behavior. The two options are `asc` and `desc` to sort
-// ascending and descending respectively, with default sort being ascending. Paging
-// works in both directions.
-type SubscriptionListParamsSortOrder string
-
-const (
-	SubscriptionListParamsSortOrderAsc  SubscriptionListParamsSortOrder = "asc"
-	SubscriptionListParamsSortOrderDesc SubscriptionListParamsSortOrder = "desc"
-)

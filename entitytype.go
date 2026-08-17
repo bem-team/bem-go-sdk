@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/bem-team/bem-go-sdk/internal/apijson"
-	"github.com/bem-team/bem-go-sdk/internal/apiquery"
 	"github.com/bem-team/bem-go-sdk/internal/requestconfig"
 	"github.com/bem-team/bem-go-sdk/option"
 	"github.com/bem-team/bem-go-sdk/packages/param"
@@ -44,8 +43,7 @@ import (
 // automatically. You should not instantiate this service directly, and instead use
 // the [NewEntityTypeService] method instead.
 type EntityTypeService struct {
-	options   []option.RequestOption
-	Reviewers EntityTypeReviewerService
+	options []option.RequestOption
 }
 
 // NewEntityTypeService generates a new service that applies the given options to
@@ -54,7 +52,6 @@ type EntityTypeService struct {
 func NewEntityTypeService(opts ...option.RequestOption) (r EntityTypeService) {
 	r = EntityTypeService{}
 	r.options = opts
-	r.Reviewers = NewEntityTypeReviewerService(opts...)
 	return
 }
 
@@ -87,14 +84,6 @@ func (r *EntityTypeService) Update(ctx context.Context, typeID string, body Enti
 	}
 	path := fmt.Sprintf("v3/entity-types/%s", url.PathEscape(typeID))
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
-	return res, err
-}
-
-// List Entity Types
-func (r *EntityTypeService) List(ctx context.Context, query EntityTypeListParams, opts ...option.RequestOption) (res *EntityTypeListResponse, err error) {
-	opts = slices.Concat(r.options, opts)
-	path := "v3/entity-types"
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
 	return res, err
 }
 
@@ -152,26 +141,6 @@ func (r *EntityType) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Response body for listing entity types.
-type EntityTypeListResponse struct {
-	EntityTypes []EntityType `json:"entityTypes" api:"required"`
-	// Total number of entity types matching the query, ignoring pagination.
-	TotalCount int64 `json:"totalCount" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		EntityTypes respjson.Field
-		TotalCount  respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r EntityTypeListResponse) RawJSON() string { return r.JSON.raw }
-func (r *EntityTypeListResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 type EntityTypeNewParams struct {
 	// Type name. Required and unique within the account+environment.
 	Name string `json:"name" api:"required"`
@@ -211,26 +180,4 @@ func (r EntityTypeUpdateParams) MarshalJSON() (data []byte, err error) {
 }
 func (r *EntityTypeUpdateParams) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
-}
-
-type EntityTypeListParams struct {
-	// Cursor: return types whose `typeID` sorts before this value.
-	EndingBefore param.Opt[string] `query:"endingBefore,omitzero" json:"-"`
-	// Maximum number of entity types to return (default 50, max 200).
-	Limit param.Opt[int64] `query:"limit,omitzero" json:"-"`
-	// Case-insensitive substring match on the entity type name.
-	Name param.Opt[string] `query:"name,omitzero" json:"-"`
-	// Filter to the direct children of this parent type (`ety_...`).
-	ParentTypeID param.Opt[string] `query:"parentTypeId,omitzero" json:"-"`
-	// Cursor: return types whose `typeID` sorts after this value.
-	StartingAfter param.Opt[string] `query:"startingAfter,omitzero" json:"-"`
-	paramObj
-}
-
-// URLQuery serializes [EntityTypeListParams]'s query parameters as `url.Values`.
-func (r EntityTypeListParams) URLQuery() (v url.Values, err error) {
-	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
-		ArrayFormat:  apiquery.ArrayQueryFormatComma,
-		NestedFormat: apiquery.NestedQueryFormatBrackets,
-	})
 }

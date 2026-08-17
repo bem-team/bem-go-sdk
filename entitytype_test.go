@@ -111,6 +111,7 @@ func TestEntityTypeListWithOptionalParams(t *testing.T) {
 	_, err := client.EntityTypes.List(context.TODO(), bem.EntityTypeListParams{
 		EndingBefore:  bem.String("endingBefore"),
 		Limit:         bem.Int(0),
+		Name:          bem.String("name"),
 		ParentTypeID:  bem.String("parentTypeId"),
 		StartingAfter: bem.String("startingAfter"),
 	})

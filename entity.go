@@ -55,14 +55,14 @@ func NewEntityService(opts ...option.RequestOption) (r EntityService) {
 }
 
 // Update Entity
-func (r *EntityService) Update(ctx context.Context, id string, body EntityUpdateParams, opts ...option.RequestOption) (res *EntityUpdateResponse, err error) {
+func (r *EntityService) Update(ctx context.Context, id string, params EntityUpdateParams, opts ...option.RequestOption) (res *EntityUpdateResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	if id == "" {
 		err = errors.New("missing required id parameter")
 		return nil, err
 	}
 	path := fmt.Sprintf("v3/entities/%s", url.PathEscape(id))
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, params, &res, opts...)
 	return res, err
 }
 
@@ -75,10 +75,10 @@ func (r *EntityService) BulkNew(ctx context.Context, body EntityBulkNewParams, o
 }
 
 // Bulk Validate Entities
-func (r *EntityService) BulkValidate(ctx context.Context, body EntityBulkValidateParams, opts ...option.RequestOption) (res *EntityBulkValidateResponse, err error) {
+func (r *EntityService) BulkValidate(ctx context.Context, params EntityBulkValidateParams, opts ...option.RequestOption) (res *EntityBulkValidateResponse, err error) {
 	opts = slices.Concat(r.options, opts)
 	path := "v3/entities/bulk-validate"
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, body, &res, opts...)
+	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPost, path, params, &res, opts...)
 	return res, err
 }
 
@@ -491,6 +491,9 @@ const (
 )
 
 type EntityUpdateParams struct {
+	// Optional bucket public ID (`bkt_...`) to scope the lookup to. Omit for the
+	// default bucket.
+	Bucket param.Opt[string] `query:"bucket,omitzero" json:"-"`
 	// The `ety_...` public ID of the type to assign (overriding the bem-inferred
 	// type). The empty string clears the assignment. Omit to leave unchanged.
 	AssignedTypeID param.Opt[string] `json:"assignedTypeID,omitzero"`
@@ -518,6 +521,14 @@ func (r EntityUpdateParams) MarshalJSON() (data []byte, err error) {
 }
 func (r *EntityUpdateParams) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
+}
+
+// URLQuery serializes [EntityUpdateParams]'s query parameters as `url.Values`.
+func (r EntityUpdateParams) URLQuery() (v url.Values, err error) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
 }
 
 // Transition the entity's curation status. Only `approved` or `rejected` are
@@ -599,6 +610,9 @@ type EntityBulkValidateParams struct {
 	//
 	// Any of "approved", "rejected".
 	Status EntityBulkValidateParamsStatus `json:"status,omitzero" api:"required"`
+	// Optional bucket public ID (`bkt_...`) to scope the lookup to. Omit for the
+	// default bucket.
+	Bucket param.Opt[string] `query:"bucket,omitzero" json:"-"`
 	paramObj
 }
 
@@ -608,6 +622,15 @@ func (r EntityBulkValidateParams) MarshalJSON() (data []byte, err error) {
 }
 func (r *EntityBulkValidateParams) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
+}
+
+// URLQuery serializes [EntityBulkValidateParams]'s query parameters as
+// `url.Values`.
+func (r EntityBulkValidateParams) URLQuery() (v url.Values, err error) {
+	return apiquery.MarshalWithSettings(r, apiquery.QuerySettings{
+		ArrayFormat:  apiquery.ArrayQueryFormatComma,
+		NestedFormat: apiquery.NestedQueryFormatBrackets,
+	})
 }
 
 // Terminal status to apply to every entity.

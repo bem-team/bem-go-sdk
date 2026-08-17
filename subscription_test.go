@@ -124,7 +124,6 @@ func TestSubscriptionListWithOptionalParams(t *testing.T) {
 		EndingBefore:  bem.String("endingBefore"),
 		FunctionNames: []string{"string"},
 		Limit:         bem.Int(1),
-		SortOrder:     bem.SubscriptionListParamsSortOrderAsc,
 		StartingAfter: bem.String("startingAfter"),
 	})
 	if err != nil {

@@ -158,16 +158,18 @@ func TestWorkflowListWithOptionalParams(t *testing.T) {
 		option.WithAPIKey("My API Key"),
 	)
 	_, err := client.Workflows.List(context.TODO(), bem.WorkflowListParams{
-		DisplayName:   bem.String("displayName"),
-		EndingBefore:  bem.String("endingBefore"),
-		FunctionIDs:   []string{"string"},
-		FunctionNames: []string{"string"},
-		Limit:         bem.Int(1),
-		SortOrder:     bem.WorkflowListParamsSortOrderAsc,
-		StartingAfter: bem.String("startingAfter"),
-		Tags:          []string{"string"},
-		WorkflowIDs:   []string{"string"},
-		WorkflowNames: []string{"string"},
+		DisplayName:             bem.String("displayName"),
+		EndingBefore:            bem.String("endingBefore"),
+		FunctionIDs:             []string{"string"},
+		FunctionIDVersionNums:   []string{"string"},
+		FunctionNames:           []string{"string"},
+		FunctionNameVersionNums: []string{"string"},
+		Limit:                   bem.Int(1),
+		SortOrder:               bem.WorkflowListParamsSortOrderAsc,
+		StartingAfter:           bem.String("startingAfter"),
+		Tags:                    []string{"string"},
+		WorkflowIDs:             []string{"string"},
+		WorkflowNames:           []string{"string"},
 	})
 	if err != nil {
 		var apierr *bem.Error
@@ -191,7 +193,7 @@ func TestWorkflowDelete(t *testing.T) {
 		option.WithBaseURL(baseURL),
 		option.WithAPIKey("My API Key"),
 	)
-	err := client.Workflows.Delete(context.TODO(), "workflowName")
+	_, err := client.Workflows.Delete(context.TODO(), "workflowName")
 	if err != nil {
 		var apierr *bem.Error
 		if errors.As(err, &apierr) {

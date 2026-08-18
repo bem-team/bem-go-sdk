@@ -3,6 +3,8 @@
 package pagination
 
 import (
+	"context"
+	"fmt"
 	"net/http"
 	"reflect"
 
@@ -616,5 +618,306 @@ func (r *WorkflowVersionsPageAutoPager[T]) Err() error {
 }
 
 func (r *WorkflowVersionsPageAutoPager[T]) Index() int {
+	return r.run
+}
+
+type ViewsPage[T any] struct {
+	Views []T `json:"views"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Views       respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+	cfg *requestconfig.RequestConfig
+	res *http.Response
+}
+
+// Returns the unmodified JSON received from the API
+func (r ViewsPage[T]) RawJSON() string { return r.JSON.raw }
+func (r *ViewsPage[T]) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// GetNextPage returns the next page as defined by this pagination style. When
+// there is no next page, this function will return a 'nil' for the page value, but
+// will not return an error
+func (r *ViewsPage[T]) GetNextPage() (res *ViewsPage[T], err error) {
+	if len(r.Views) == 0 {
+		return nil, nil
+	}
+	items := r.Views
+	if items == nil || len(items) == 0 {
+		return nil, nil
+	}
+	cfg := r.cfg.Clone(r.cfg.Context)
+	value := reflect.ValueOf(items[len(items)-1])
+	field := value.FieldByName("ViewID")
+	err = cfg.Apply(option.WithQuery("startingAfter", field.Interface().(string)))
+	if err != nil {
+		return nil, err
+	}
+	var raw *http.Response
+	cfg.ResponseInto = &raw
+	cfg.ResponseBodyInto = &res
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+func (r *ViewsPage[T]) SetPageConfig(cfg *requestconfig.RequestConfig, res *http.Response) {
+	if r == nil {
+		r = &ViewsPage[T]{}
+	}
+	r.cfg = cfg
+	r.res = res
+}
+
+type ViewsPageAutoPager[T any] struct {
+	page *ViewsPage[T]
+	cur  T
+	idx  int
+	run  int
+	err  error
+	paramObj
+}
+
+func NewViewsPageAutoPager[T any](page *ViewsPage[T], err error) *ViewsPageAutoPager[T] {
+	return &ViewsPageAutoPager[T]{
+		page: page,
+		err:  err,
+	}
+}
+
+func (r *ViewsPageAutoPager[T]) Next() bool {
+	if r.page == nil || len(r.page.Views) == 0 {
+		return false
+	}
+	if r.idx >= len(r.page.Views) {
+		r.idx = 0
+		r.page, r.err = r.page.GetNextPage()
+		if r.err != nil || r.page == nil || len(r.page.Views) == 0 {
+			return false
+		}
+	}
+	r.cur = r.page.Views[r.idx]
+	r.run += 1
+	r.idx += 1
+	return true
+}
+
+func (r *ViewsPageAutoPager[T]) Current() T {
+	return r.cur
+}
+
+func (r *ViewsPageAutoPager[T]) Err() error {
+	return r.err
+}
+
+func (r *ViewsPageAutoPager[T]) Index() int {
+	return r.run
+}
+
+type BucketsPage[T any] struct {
+	Buckets []T `json:"buckets"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Buckets     respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+	cfg *requestconfig.RequestConfig
+	res *http.Response
+}
+
+// Returns the unmodified JSON received from the API
+func (r BucketsPage[T]) RawJSON() string { return r.JSON.raw }
+func (r *BucketsPage[T]) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// GetNextPage returns the next page as defined by this pagination style. When
+// there is no next page, this function will return a 'nil' for the page value, but
+// will not return an error
+func (r *BucketsPage[T]) GetNextPage() (res *BucketsPage[T], err error) {
+	if len(r.Buckets) == 0 {
+		return nil, nil
+	}
+	items := r.Buckets
+	if items == nil || len(items) == 0 {
+		return nil, nil
+	}
+	cfg := r.cfg.Clone(r.cfg.Context)
+	value := reflect.ValueOf(items[len(items)-1])
+	field := value.FieldByName("BucketID")
+	err = cfg.Apply(option.WithQuery("startingAfter", field.Interface().(string)))
+	if err != nil {
+		return nil, err
+	}
+	var raw *http.Response
+	cfg.ResponseInto = &raw
+	cfg.ResponseBodyInto = &res
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+func (r *BucketsPage[T]) SetPageConfig(cfg *requestconfig.RequestConfig, res *http.Response) {
+	if r == nil {
+		r = &BucketsPage[T]{}
+	}
+	r.cfg = cfg
+	r.res = res
+}
+
+type BucketsPageAutoPager[T any] struct {
+	page *BucketsPage[T]
+	cur  T
+	idx  int
+	run  int
+	err  error
+	paramObj
+}
+
+func NewBucketsPageAutoPager[T any](page *BucketsPage[T], err error) *BucketsPageAutoPager[T] {
+	return &BucketsPageAutoPager[T]{
+		page: page,
+		err:  err,
+	}
+}
+
+func (r *BucketsPageAutoPager[T]) Next() bool {
+	if r.page == nil || len(r.page.Buckets) == 0 {
+		return false
+	}
+	if r.idx >= len(r.page.Buckets) {
+		r.idx = 0
+		r.page, r.err = r.page.GetNextPage()
+		if r.err != nil || r.page == nil || len(r.page.Buckets) == 0 {
+			return false
+		}
+	}
+	r.cur = r.page.Buckets[r.idx]
+	r.run += 1
+	r.idx += 1
+	return true
+}
+
+func (r *BucketsPageAutoPager[T]) Current() T {
+	return r.cur
+}
+
+func (r *BucketsPageAutoPager[T]) Err() error {
+	return r.err
+}
+
+func (r *BucketsPageAutoPager[T]) Index() int {
+	return r.run
+}
+
+type CollectionsPage[T any] struct {
+	Collections []T   `json:"collections"`
+	Page        int64 `json:"page"`
+	TotalPages  int64 `json:"totalPages"`
+	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
+	JSON struct {
+		Collections respjson.Field
+		Page        respjson.Field
+		TotalPages  respjson.Field
+		ExtraFields map[string]respjson.Field
+		raw         string
+	} `json:"-"`
+	cfg *requestconfig.RequestConfig
+	res *http.Response
+}
+
+// Returns the unmodified JSON received from the API
+func (r CollectionsPage[T]) RawJSON() string { return r.JSON.raw }
+func (r *CollectionsPage[T]) UnmarshalJSON(data []byte) error {
+	return apijson.UnmarshalRoot(data, r)
+}
+
+// GetNextPage returns the next page as defined by this pagination style. When
+// there is no next page, this function will return a 'nil' for the page value, but
+// will not return an error
+func (r *CollectionsPage[T]) GetNextPage() (res *CollectionsPage[T], err error) {
+	if len(r.Collections) == 0 {
+		return nil, nil
+	}
+	currentPage := r.Page
+	if r.TotalPages > 0 && currentPage >= r.TotalPages {
+		return nil, nil
+	}
+	cfg := r.cfg.Clone(context.Background())
+	query := cfg.Request.URL.Query()
+	query.Set("page", fmt.Sprintf("%d", currentPage+1))
+	cfg.Request.URL.RawQuery = query.Encode()
+	var raw *http.Response
+	cfg.ResponseInto = &raw
+	cfg.ResponseBodyInto = &res
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+func (r *CollectionsPage[T]) SetPageConfig(cfg *requestconfig.RequestConfig, res *http.Response) {
+	if r == nil {
+		r = &CollectionsPage[T]{}
+	}
+	r.cfg = cfg
+	r.res = res
+}
+
+type CollectionsPageAutoPager[T any] struct {
+	page *CollectionsPage[T]
+	cur  T
+	idx  int
+	run  int
+	err  error
+	paramObj
+}
+
+func NewCollectionsPageAutoPager[T any](page *CollectionsPage[T], err error) *CollectionsPageAutoPager[T] {
+	return &CollectionsPageAutoPager[T]{
+		page: page,
+		err:  err,
+	}
+}
+
+func (r *CollectionsPageAutoPager[T]) Next() bool {
+	if r.page == nil || len(r.page.Collections) == 0 {
+		return false
+	}
+	if r.idx >= len(r.page.Collections) {
+		r.idx = 0
+		r.page, r.err = r.page.GetNextPage()
+		if r.err != nil || r.page == nil || len(r.page.Collections) == 0 {
+			return false
+		}
+	}
+	r.cur = r.page.Collections[r.idx]
+	r.run += 1
+	r.idx += 1
+	return true
+}
+
+func (r *CollectionsPageAutoPager[T]) Current() T {
+	return r.cur
+}
+
+func (r *CollectionsPageAutoPager[T]) Err() error {
+	return r.err
+}
+
+func (r *CollectionsPageAutoPager[T]) Index() int {
 	return r.run
 }

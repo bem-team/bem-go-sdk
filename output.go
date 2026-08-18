@@ -874,7 +874,7 @@ func (r *EventTransformCorrectedContentUnion) UnmarshalJSON(data []byte) error {
 }
 
 type EventTransformCorrectedContentOutput struct {
-	Output []AnyTypeUnion `json:"output"`
+	Output []AnyTypeUnion `json:"output" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Output      respjson.Field
@@ -1171,7 +1171,7 @@ func (r *EventExtractCorrectedContentUnion) UnmarshalJSON(data []byte) error {
 }
 
 type EventExtractCorrectedContentOutput struct {
-	Output []AnyTypeUnion `json:"output"`
+	Output []AnyTypeUnion `json:"output" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Output      respjson.Field
@@ -1401,7 +1401,7 @@ func (r *EventParseCorrectedContentUnion) UnmarshalJSON(data []byte) error {
 }
 
 type EventParseCorrectedContentOutput struct {
-	Output []AnyTypeUnion `json:"output"`
+	Output []AnyTypeUnion `json:"output" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Output      respjson.Field

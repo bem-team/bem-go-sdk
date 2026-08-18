@@ -17,6 +17,7 @@ import (
 	shimjson "github.com/bem-team/bem-go-sdk/internal/encoding/json"
 	"github.com/bem-team/bem-go-sdk/internal/requestconfig"
 	"github.com/bem-team/bem-go-sdk/option"
+	"github.com/bem-team/bem-go-sdk/packages/pagination"
 	"github.com/bem-team/bem-go-sdk/packages/param"
 	"github.com/bem-team/bem-go-sdk/packages/respjson"
 )
@@ -134,11 +135,35 @@ func (r *ViewService) Update(ctx context.Context, viewID string, body ViewUpdate
 //
 // Filters AND together when combined. Pagination is cursor-based on `viewID`;
 // default limit is 50, maximum 100.
-func (r *ViewService) List(ctx context.Context, query ViewListParams, opts ...option.RequestOption) (res *ViewListResponse, err error) {
+func (r *ViewService) List(ctx context.Context, query ViewListParams, opts ...option.RequestOption) (res *pagination.ViewsPage[View], err error) {
+	var raw *http.Response
 	opts = slices.Concat(r.options, opts)
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	path := "v3/views"
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return res, err
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+// **List views in the current environment, optionally filtered by the functions
+// they read from.**
+//
+// Views are tabular projections over `transformations` rows: each view names one
+// or more functions and a list of columns (JSON-pointer paths into
+// `extractedJson`), and produces a uniform table that can be filtered, paginated,
+// and aggregated.
+//
+// Filters AND together when combined. Pagination is cursor-based on `viewID`;
+// default limit is 50, maximum 100.
+func (r *ViewService) ListAutoPaging(ctx context.Context, query ViewListParams, opts ...option.RequestOption) *pagination.ViewsPageAutoPager[View] {
+	return pagination.NewViewsPageAutoPager(r.List(ctx, query, opts...))
 }
 
 // **Delete a view and every one of its versions.**
@@ -555,27 +580,6 @@ func (r ViewFilterParam) MarshalJSON() (data []byte, err error) {
 	return param.MarshalObject(r, (*shadow)(&r))
 }
 func (r *ViewFilterParam) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Response containing a list of views
-type ViewListResponse struct {
-	// Total number of views matching the query
-	TotalCount int64 `json:"totalCount" api:"required"`
-	// Array of views
-	Views []View `json:"views" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		TotalCount  respjson.Field
-		Views       respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r ViewListResponse) RawJSON() string { return r.JSON.raw }
-func (r *ViewListResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

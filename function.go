@@ -3845,21 +3845,21 @@ type FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrix struct {
 	// Accuracy confidence intervals for samples above threshold, by confidence level.
 	// Keys are confidence levels as strings ("90", "95", "99"). Values contain
 	// statistical confidence intervals.
-	AccuracyAboveThreshold FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixAccuracyAboveThreshold `json:"accuracyAboveThreshold"`
+	AccuracyAboveThreshold map[string]RateConfidenceInterval `json:"accuracyAboveThreshold"`
 	// False Discovery Rate confidence intervals by confidence level. Keys are
 	// confidence levels as strings ("90", "95", "99"). Values contain statistical
 	// confidence intervals.
-	FalseDiscoveryRate FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalseDiscoveryRate `json:"falseDiscoveryRate"`
+	FalseDiscoveryRate map[string]RateConfidenceInterval `json:"falseDiscoveryRate"`
 	// False Positive Rate confidence intervals by confidence level. Keys are
 	// confidence levels as strings ("90", "95", "99"). Values contain statistical
 	// confidence intervals.
-	FalsePositiveRate FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalsePositiveRate `json:"falsePositiveRate"`
+	FalsePositiveRate map[string]RateConfidenceInterval `json:"falsePositiveRate"`
 	// Precision confidence intervals by confidence level. Keys are confidence levels
 	// as strings ("90", "95", "99"). Values contain statistical confidence intervals.
-	Precision FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixPrecision `json:"precision"`
+	Precision map[string]RateConfidenceInterval `json:"precision"`
 	// Recall confidence intervals by confidence level. Keys are confidence levels as
 	// strings ("90", "95", "99"). Values contain statistical confidence intervals.
-	Recall FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixRecall `json:"recall"`
+	Recall map[string]RateConfidenceInterval `json:"recall"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Fn                     respjson.Field
@@ -3882,139 +3882,6 @@ func (r FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrix) RawJS
 	return r.JSON.raw
 }
 func (r *FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrix) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Accuracy confidence intervals for samples above threshold, by confidence level.
-// Keys are confidence levels as strings ("90", "95", "99"). Values contain
-// statistical confidence intervals.
-type FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixAccuracyAboveThreshold struct {
-	// Confidence interval for a rate/proportion using Wald (normal approximation)
-	// method by default.
-	//
-	// Wald confidence intervals use the normal approximation to the binomial
-	// distribution. For extreme rates or small sample sizes, Wilson confidence
-	// intervals may be more appropriate.
-	Number95 RateConfidenceInterval `json:"95"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Number95    respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixAccuracyAboveThreshold) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixAccuracyAboveThreshold) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// False Discovery Rate confidence intervals by confidence level. Keys are
-// confidence levels as strings ("90", "95", "99"). Values contain statistical
-// confidence intervals.
-type FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalseDiscoveryRate struct {
-	// Confidence interval for a rate/proportion using Wald (normal approximation)
-	// method by default.
-	//
-	// Wald confidence intervals use the normal approximation to the binomial
-	// distribution. For extreme rates or small sample sizes, Wilson confidence
-	// intervals may be more appropriate.
-	Number95 RateConfidenceInterval `json:"95"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Number95    respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalseDiscoveryRate) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalseDiscoveryRate) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// False Positive Rate confidence intervals by confidence level. Keys are
-// confidence levels as strings ("90", "95", "99"). Values contain statistical
-// confidence intervals.
-type FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalsePositiveRate struct {
-	// Confidence interval for a rate/proportion using Wald (normal approximation)
-	// method by default.
-	//
-	// Wald confidence intervals use the normal approximation to the binomial
-	// distribution. For extreme rates or small sample sizes, Wilson confidence
-	// intervals may be more appropriate.
-	Number95 RateConfidenceInterval `json:"95"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Number95    respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalsePositiveRate) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixFalsePositiveRate) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Precision confidence intervals by confidence level. Keys are confidence levels
-// as strings ("90", "95", "99"). Values contain statistical confidence intervals.
-type FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixPrecision struct {
-	// Confidence interval for a rate/proportion using Wald (normal approximation)
-	// method by default.
-	//
-	// Wald confidence intervals use the normal approximation to the binomial
-	// distribution. For extreme rates or small sample sizes, Wilson confidence
-	// intervals may be more appropriate.
-	Number95 RateConfidenceInterval `json:"95"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Number95    respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixPrecision) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixPrecision) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Recall confidence intervals by confidence level. Keys are confidence levels as
-// strings ("90", "95", "99"). Values contain statistical confidence intervals.
-type FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixRecall struct {
-	// Confidence interval for a rate/proportion using Wald (normal approximation)
-	// method by default.
-	//
-	// Wald confidence intervals use the normal approximation to the binomial
-	// distribution. For extreme rates or small sample sizes, Wilson confidence
-	// intervals may be more appropriate.
-	Number95 RateConfidenceInterval `json:"95"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Number95    respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixRecall) RawJSON() string {
-	return r.JSON.raw
-}
-func (r *FunctionEstimateReviewRequirementsResponseEstimateThresholdMatrixRecall) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

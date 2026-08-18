@@ -13,6 +13,7 @@ import (
 	"github.com/bem-team/bem-go-sdk/internal/apiquery"
 	"github.com/bem-team/bem-go-sdk/internal/requestconfig"
 	"github.com/bem-team/bem-go-sdk/option"
+	"github.com/bem-team/bem-go-sdk/packages/pagination"
 	"github.com/bem-team/bem-go-sdk/packages/param"
 	"github.com/bem-team/bem-go-sdk/packages/respjson"
 )
@@ -104,11 +105,26 @@ func (r *CollectionService) New(ctx context.Context, body CollectionNewParams, o
 }
 
 // List Collections
-func (r *CollectionService) List(ctx context.Context, query CollectionListParams, opts ...option.RequestOption) (res *CollectionListResponse, err error) {
+func (r *CollectionService) List(ctx context.Context, query CollectionListParams, opts ...option.RequestOption) (res *pagination.CollectionsPage[CollectionListResponse], err error) {
+	var raw *http.Response
 	opts = slices.Concat(r.options, opts)
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	path := "v3/collections"
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return res, err
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+// List Collections
+func (r *CollectionService) ListAutoPaging(ctx context.Context, query CollectionListParams, opts ...option.RequestOption) *pagination.CollectionsPageAutoPager[CollectionListResponse] {
+	return pagination.NewCollectionsPageAutoPager(r.List(ctx, query, opts...))
 }
 
 // Delete a Collection
@@ -200,38 +216,8 @@ func (r *CollectionItem) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Response for listing collections
-type CollectionListResponse struct {
-	// List of collections
-	Collections []CollectionListResponseCollection `json:"collections" api:"required"`
-	// Number of collections per page
-	Limit int64 `json:"limit" api:"required"`
-	// Current page number
-	Page int64 `json:"page" api:"required"`
-	// Total number of collections
-	TotalCount int64 `json:"totalCount" api:"required"`
-	// Total number of pages
-	TotalPages int64 `json:"totalPages" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Collections respjson.Field
-		Limit       respjson.Field
-		Page        respjson.Field
-		TotalCount  respjson.Field
-		TotalPages  respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r CollectionListResponse) RawJSON() string { return r.JSON.raw }
-func (r *CollectionListResponse) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
 // Collection metadata without items
-type CollectionListResponseCollection struct {
+type CollectionListResponse struct {
 	// Unique identifier for the collection
 	CollectionID string `json:"collectionID" api:"required"`
 	// The collection name/path. Only letters, digits, underscores, and dots are
@@ -256,8 +242,8 @@ type CollectionListResponseCollection struct {
 }
 
 // Returns the unmodified JSON received from the API
-func (r CollectionListResponseCollection) RawJSON() string { return r.JSON.raw }
-func (r *CollectionListResponseCollection) UnmarshalJSON(data []byte) error {
+func (r CollectionListResponse) RawJSON() string { return r.JSON.raw }
+func (r *CollectionListResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

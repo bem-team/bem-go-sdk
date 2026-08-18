@@ -15,6 +15,7 @@ import (
 	"github.com/bem-team/bem-go-sdk/internal/apiquery"
 	"github.com/bem-team/bem-go-sdk/internal/requestconfig"
 	"github.com/bem-team/bem-go-sdk/option"
+	"github.com/bem-team/bem-go-sdk/packages/pagination"
 	"github.com/bem-team/bem-go-sdk/packages/param"
 	"github.com/bem-team/bem-go-sdk/packages/respjson"
 )
@@ -89,11 +90,26 @@ func (r *BucketService) Update(ctx context.Context, bucketID string, body Bucket
 }
 
 // List Buckets
-func (r *BucketService) List(ctx context.Context, query BucketListParams, opts ...option.RequestOption) (res *BucketListResponse, err error) {
+func (r *BucketService) List(ctx context.Context, query BucketListParams, opts ...option.RequestOption) (res *pagination.BucketsPage[BucketV3], err error) {
+	var raw *http.Response
 	opts = slices.Concat(r.options, opts)
+	opts = append([]option.RequestOption{option.WithResponseInto(&raw)}, opts...)
 	path := "v3/buckets"
-	err = requestconfig.ExecuteNewRequest(ctx, http.MethodGet, path, query, &res, opts...)
-	return res, err
+	cfg, err := requestconfig.NewRequestConfig(ctx, http.MethodGet, path, query, &res, opts...)
+	if err != nil {
+		return nil, err
+	}
+	err = cfg.Execute()
+	if err != nil {
+		return nil, err
+	}
+	res.SetPageConfig(cfg, raw)
+	return res, nil
+}
+
+// List Buckets
+func (r *BucketService) ListAutoPaging(ctx context.Context, query BucketListParams, opts ...option.RequestOption) *pagination.BucketsPageAutoPager[BucketV3] {
+	return pagination.NewBucketsPageAutoPager(r.List(ctx, query, opts...))
 }
 
 // Delete a Bucket
@@ -144,26 +160,6 @@ type BucketV3 struct {
 // Returns the unmodified JSON received from the API
 func (r BucketV3) RawJSON() string { return r.JSON.raw }
 func (r *BucketV3) UnmarshalJSON(data []byte) error {
-	return apijson.UnmarshalRoot(data, r)
-}
-
-// Response body for listing buckets.
-type BucketListResponse struct {
-	Buckets []BucketV3 `json:"buckets" api:"required"`
-	// Total number of buckets matching the query, ignoring pagination.
-	TotalCount int64 `json:"totalCount" api:"required"`
-	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
-	JSON struct {
-		Buckets     respjson.Field
-		TotalCount  respjson.Field
-		ExtraFields map[string]respjson.Field
-		raw         string
-	} `json:"-"`
-}
-
-// Returns the unmodified JSON received from the API
-func (r BucketListResponse) RawJSON() string { return r.JSON.raw }
-func (r *BucketListResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 

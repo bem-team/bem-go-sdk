@@ -221,7 +221,7 @@ func (r *ExtractWebhookEventCorrectedContentUnion) UnmarshalJSON(data []byte) er
 }
 
 type ExtractWebhookEventCorrectedContentOutput struct {
-	Output []AnyTypeUnion `json:"output"`
+	Output []AnyTypeUnion `json:"output" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Output      respjson.Field
@@ -545,7 +545,7 @@ func (r *ParseWebhookEventCorrectedContentUnion) UnmarshalJSON(data []byte) erro
 }
 
 type ParseWebhookEventCorrectedContentOutput struct {
-	Output []AnyTypeUnion `json:"output"`
+	Output []AnyTypeUnion `json:"output" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
 		Output      respjson.Field

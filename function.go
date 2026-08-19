@@ -193,13 +193,13 @@ func (r *FunctionService) Get(ctx context.Context, functionName string, query Fu
 //     so the version history is a complete record of every change.
 //   - To revert, fetch the previous version and re-submit its configuration as a new
 //     update — versions themselves are immutable.
-func (r *FunctionService) Update(ctx context.Context, pathFunctionName string, body FunctionUpdateParams, opts ...option.RequestOption) (res *FunctionResponse, err error) {
+func (r *FunctionService) Update(ctx context.Context, functionName string, body FunctionUpdateParams, opts ...option.RequestOption) (res *FunctionResponse, err error) {
 	opts = slices.Concat(r.options, opts)
-	if pathFunctionName == "" {
-		err = errors.New("missing required path_function_name parameter")
+	if functionName == "" {
+		err = errors.New("missing required functionName parameter")
 		return nil, err
 	}
-	path := fmt.Sprintf("v3/functions/%s", url.PathEscape(pathFunctionName))
+	path := fmt.Sprintf("v3/functions/%s", url.PathEscape(functionName))
 	err = requestconfig.ExecuteNewRequest(ctx, http.MethodPatch, path, body, &res, opts...)
 	return res, err
 }
@@ -706,7 +706,7 @@ type CreateFunctionSendParam struct {
 	WebhookSigningEnabled param.Opt[bool] `json:"webhookSigningEnabled,omitzero"`
 	// Webhook URL to POST the payload to. Required when destinationType is webhook.
 	WebhookURL param.Opt[string] `json:"webhookUrl,omitzero"`
-	// Destination type for a Send function.
+	// Where the payload is delivered.
 	//
 	// Any of "webhook", "s3", "google_drive".
 	DestinationType SendDestinationType `json:"destinationType,omitzero"`
@@ -936,11 +936,9 @@ func (r *CreateFunctionParseParam) UnmarshalJSON(data []byte) error {
 type CreateFunctionRenderParam struct {
 	// Name of function. Must be UNIQUE on a per-environment basis.
 	FunctionName string `json:"functionName" api:"required"`
-	// Request-side render configuration. Carries the template document as
-	// base64-encoded `.docx` bytes: the server validates them, stores the template,
-	// and derives the placeholder/style-id contract at create/update time, so clients
-	// never submit `placeholders` or `styleIds`. The response shape (`RenderConfig`)
-	// returns the derived contract.
+	// Render configuration. Required at create time — a Render function without a
+	// template has nothing to bind data to. Update bodies may omit this for partial
+	// edits.
 	RenderConfig RenderConfigInputParam `json:"renderConfig,omitzero" api:"required"`
 	// Display name of function. Human-readable name to help you identify the function.
 	DisplayName param.Opt[string] `json:"displayName,omitzero"`
@@ -2195,7 +2193,7 @@ func (r *FunctionClassify) UnmarshalJSON(data []byte) error {
 // functions receive the output of an upstream workflow node and forward it to a
 // webhook, S3 bucket, or Google Drive folder.
 type FunctionSend struct {
-	// Destination type for a Send function.
+	// Where the payload is delivered.
 	//
 	// Any of "webhook", "s3", "google_drive".
 	DestinationType SendDestinationType `json:"destinationType" api:"required"`
@@ -2781,7 +2779,7 @@ func (r *MetricsComparison) UnmarshalJSON(data []byte) error {
 
 // Detailed performance metrics and analysis
 type MetricsDetails struct {
-	// Comprehensive performance metrics
+	// Aggregate confusion matrix metrics across all fields
 	AggregateMetrics Metrics `json:"aggregateMetrics"`
 	// Enhanced field metrics with comprehensive analytics
 	FieldMetrics []MetricsDetailsFieldMetric `json:"fieldMetrics"`
@@ -3050,16 +3048,8 @@ type RenderConfigTemplate struct {
 	// Original filename of the uploaded template (e.g. `contract.docx`), echoed back
 	// for display. Absent on templates uploaded before the filename was captured.
 	Name string `json:"name"`
-	// The placeholder contract a Render template declares, grouped by how each
-	// placeholder is filled. Derived from the template at create/update time by
-	// scanning its `docxtpl` tags; not user-supplied.
-	//
-	//   - `stringKeys`: bare string placeholders (`{{ key }}`) filled with a single
-	//     value.
-	//   - `blockKeys`: wrapped-primitive placeholders (`{{p key }}`) — bind one core
-	//     primitive (paragraph, table, image, or list). The placeholder's own paragraph
-	//     dissolves and is replaced by the rendered subdocument's blocks, rather than
-	//     substituting text inline.
+	// The placeholder contract derived from the template at create/update time. Absent
+	// on configs created before create/update-time validation existed.
 	Placeholders RenderConfigTemplatePlaceholders `json:"placeholders"`
 	// Paragraph/character style IDs the uploaded template defines and the rendered
 	// output can reference. Derived from the template's `styles.xml` at create/update
@@ -3088,16 +3078,8 @@ func (r *RenderConfigTemplate) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// The placeholder contract a Render template declares, grouped by how each
-// placeholder is filled. Derived from the template at create/update time by
-// scanning its `docxtpl` tags; not user-supplied.
-//
-//   - `stringKeys`: bare string placeholders (`{{ key }}`) filled with a single
-//     value.
-//   - `blockKeys`: wrapped-primitive placeholders (`{{p key }}`) — bind one core
-//     primitive (paragraph, table, image, or list). The placeholder's own paragraph
-//     dissolves and is replaced by the rendered subdocument's blocks, rather than
-//     substituting text inline.
+// The placeholder contract derived from the template at create/update time. Absent
+// on configs created before create/update-time validation existed.
 type RenderConfigTemplatePlaceholders struct {
 	BlockKeys  []string `json:"blockKeys" api:"required"`
 	StringKeys []string `json:"stringKeys" api:"required"`
@@ -3365,7 +3347,7 @@ type UpdateFunctionSendParam struct {
 	WebhookSigningEnabled param.Opt[bool] `json:"webhookSigningEnabled,omitzero"`
 	// Webhook URL to POST the payload to. Required when destinationType is webhook.
 	WebhookURL param.Opt[string] `json:"webhookUrl,omitzero"`
-	// Destination type for a Send function.
+	// Where the payload is delivered.
 	//
 	// Any of "webhook", "s3", "google_drive".
 	DestinationType SendDestinationType `json:"destinationType,omitzero"`

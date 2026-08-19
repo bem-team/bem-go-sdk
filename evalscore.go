@@ -152,7 +152,7 @@ type EvalScoreRun struct {
 	//
 	// Any of "pending", "initializing", "running", "completed", "error", "cancelled".
 	Status EvalScoreRunStatus `json:"status" api:"required"`
-	// Aggregate accuracy metrics.
+	// Populated once `status` is `completed` or `error`.
 	Aggregate EvalScoreRunAggregate `json:"aggregate"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -269,7 +269,7 @@ func (r *EvalScoreRunProgress) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Aggregate accuracy metrics.
+// Populated once `status` is `completed` or `error`.
 type EvalScoreRunAggregate struct {
 	Extras              int64   `json:"extras" api:"required"`
 	F1                  float64 `json:"f1" api:"required"`
@@ -327,10 +327,7 @@ type FileInputParam struct {
 	InputContent string `json:"inputContent" api:"required"`
 	// The input type of the content you're sending for transformation.
 	//
-	// `jfif` is accepted as an alias for `jpeg` — JFIF is the same format under a
-	// different extension — and is normalized to `jpeg`, so responses and webhooks
-	// report `jpeg` for a JFIF upload. The undeclared alias `jpg` behaves the same
-	// way.
+	// Must match the actual file format. See `InputType` for allowed values.
 	//
 	// Any of "csv", "docx", "email", "heic", "html", "jfif", "jpeg", "json", "heif",
 	// "m4a", "mov", "mp3", "mp4", "pdf", "png", "pptx", "text", "wav", "webp", "xls",
@@ -403,11 +400,7 @@ type EvalScoreNewParamsPair struct {
 	// Expected output for this input, as a JSON value. The comparator walks
 	// `expected ∪ actual` and produces a per-leaf classification.
 	Expected any `json:"expected,omitzero" api:"required"`
-	// A single file input with base64-encoded content.
-	//
-	// When using the Bem CLI, use `@path/to/file` in the `inputContent` field to
-	// automatically read and base64-encode the file:
-	// `--input.single-file '{"inputContent": "@file.pdf", "inputType": "pdf"}' --wait`
+	// The file input to feed into the function.
 	Input FileInputParam `json:"input,omitzero" api:"required"`
 	paramObj
 }

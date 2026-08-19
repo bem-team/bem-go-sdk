@@ -490,11 +490,11 @@ type WorkflowConnector struct {
 	ConnectorID string `json:"connectorID" api:"required"`
 	// Human-friendly connector name.
 	Name string `json:"name" api:"required"`
-	// Discriminator for a workflow connector. V3 supports `paragon` only.
+	// Connector type.
 	//
 	// Any of "paragon".
 	Type WorkflowConnectorType `json:"type" api:"required"`
-	// Paragon-integration configuration on a workflow connector.
+	// Paragon configuration. Present iff `type == "paragon"`.
 	Paragon WorkflowConnectorParagon `json:"paragon"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -513,7 +513,7 @@ func (r *WorkflowConnector) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Paragon-integration configuration on a workflow connector.
+// Paragon configuration. Present iff `type == "paragon"`.
 type WorkflowConnectorParagon struct {
 	// Opaque per-integration configuration (e.g. `{"folderId": "..."}`).
 	Configuration any `json:"configuration" api:"required"`
@@ -566,14 +566,13 @@ func (r *WorkflowAudit) UnmarshalJSON(data []byte) error {
 type WorkflowConnectorParam struct {
 	// Human-friendly connector name.
 	Name string `json:"name" api:"required"`
-	// Discriminator for a workflow connector. V3 supports `paragon` only.
+	// Connector type. Must match stored type on update.
 	//
 	// Any of "paragon".
 	Type WorkflowConnectorType `json:"type,omitzero" api:"required"`
 	// Present → update. Absent → create.
 	ConnectorID param.Opt[string] `json:"connectorID,omitzero"`
-	// Request-side config block for a Paragon connector. Fields absent on update are
-	// unchanged.
+	// Paragon configuration. Required on create for `type: "paragon"`.
 	Paragon WorkflowConnectorParagonParam `json:"paragon,omitzero"`
 	paramObj
 }
@@ -586,8 +585,7 @@ func (r *WorkflowConnectorParam) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Request-side config block for a Paragon connector. Fields absent on update are
-// unchanged.
+// Paragon configuration. Required on create for `type: "paragon"`.
 type WorkflowConnectorParagonParam struct {
 	// Paragon integration key. Required on create.
 	Integration param.Opt[string] `json:"integration,omitzero"`
@@ -859,7 +857,7 @@ type WorkflowCopyResponse struct {
 	Environment string `json:"environment"`
 	// Error message if the workflow copy failed.
 	Error string `json:"error"`
-	// V3 read representation of a workflow version.
+	// The newly created workflow.
 	Workflow Workflow `json:"workflow"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -1029,11 +1027,16 @@ const (
 )
 
 type WorkflowCallParams struct {
-	// Input file(s) for a call. Provide exactly one of `singleFile` or `batchFiles`.
+	// Input file(s) for the workflow. Use nested flags to specify a single file or
+	// batch:
 	//
-	// In the CLI, use the nested flags `--input.single-file` or `--input.batch-files`
-	// with `@path/to/file` for automatic file embedding:
-	// `--input.single-file '{"inputContent": "@invoice.pdf", "inputType": "pdf"}' --wait`
+	// Single file:
+	// `--input.single-file '{"inputContent": "@file.pdf", "inputType": "pdf"}'` Batch
+	// files:
+	// `--input.batch-files '{"inputs": [{"inputContent": "@a.pdf", "inputType": "pdf"}]}'`
+	//
+	// The `@path/to/file` syntax reads and base64-encodes the file automatically.
+	// Provide exactly one of `singleFile` or `batchFiles`.
 	Input WorkflowCallParamsInput `json:"input,omitzero" api:"required"`
 	// Block until the call completes (up to 30 seconds) and return the finished call
 	// object. Default: `false`. This is a boolean flag — use `--wait` or
@@ -1070,20 +1073,23 @@ func (r WorkflowCallParams) URLQuery() (v url.Values, err error) {
 	})
 }
 
-// Input file(s) for a call. Provide exactly one of `singleFile` or `batchFiles`.
+// Input file(s) for the workflow. Use nested flags to specify a single file or
+// batch:
 //
-// In the CLI, use the nested flags `--input.single-file` or `--input.batch-files`
-// with `@path/to/file` for automatic file embedding:
-// `--input.single-file '{"inputContent": "@invoice.pdf", "inputType": "pdf"}' --wait`
+// Single file:
+// `--input.single-file '{"inputContent": "@file.pdf", "inputType": "pdf"}'` Batch
+// files:
+// `--input.batch-files '{"inputs": [{"inputContent": "@a.pdf", "inputType": "pdf"}]}'`
+//
+// The `@path/to/file` syntax reads and base64-encodes the file automatically.
+// Provide exactly one of `singleFile` or `batchFiles`.
 type WorkflowCallParamsInput struct {
 	// Multiple files to process in one call. Each item in the `inputs` array has its
 	// own `inputContent` and `inputType`.
 	BatchFiles WorkflowCallParamsInputBatchFiles `json:"batchFiles,omitzero"`
-	// A single file input with base64-encoded content.
-	//
-	// When using the Bem CLI, use `@path/to/file` in the `inputContent` field to
-	// automatically read and base64-encode the file:
-	// `--input.single-file '{"inputContent": "@file.pdf", "inputType": "pdf"}' --wait`
+	// A single file to process. Use
+	// `--input.single-file '{"inputContent": "@file.pdf", "inputType": "pdf"}'` in the
+	// CLI.
 	SingleFile FileInputParam `json:"singleFile,omitzero"`
 	paramObj
 }
@@ -1118,10 +1124,7 @@ type WorkflowCallParamsInputBatchFilesInput struct {
 	InputContent string `json:"inputContent" api:"required"`
 	// The input type of the content you're sending for transformation.
 	//
-	// `jfif` is accepted as an alias for `jpeg` — JFIF is the same format under a
-	// different extension — and is normalized to `jpeg`, so responses and webhooks
-	// report `jpeg` for a JFIF upload. The undeclared alias `jpg` behaves the same
-	// way.
+	// Must match the actual file format. See `InputType` for allowed values.
 	//
 	// Any of "csv", "docx", "email", "heic", "html", "jfif", "jpeg", "json", "heif",
 	// "m4a", "mov", "mp3", "mp4", "pdf", "png", "pptx", "text", "wav", "webp", "xls",

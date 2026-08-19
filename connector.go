@@ -103,7 +103,7 @@ type Connector struct {
 	ParagonIntegration string `json:"paragonIntegration" api:"required"`
 	// Paragon sync ID.
 	ParagonSyncID string `json:"paragonSyncID" api:"required"`
-	// Connector type.
+	// The connector type.
 	//
 	// Any of "box", "paragon".
 	Type ConnectorType `json:"type" api:"required"`
@@ -164,7 +164,7 @@ func (r *ConnectorListResponse) UnmarshalJSON(data []byte) error {
 type ConnectorNewParams struct {
 	// Human-friendly name for this connector.
 	Name string `json:"name" api:"required"`
-	// Connector type.
+	// The connector type.
 	//
 	// Any of "box", "paragon".
 	Type ConnectorType `json:"type,omitzero" api:"required"`

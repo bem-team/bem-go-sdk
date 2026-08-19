@@ -93,7 +93,7 @@ func (r *InferSchemaService) New(ctx context.Context, body InferSchemaNewParams,
 
 // Response from the infer-schema endpoint.
 type InferSchemaNewResponse struct {
-	// Analysis result returned by the infer-schema endpoint.
+	// Full analysis result including description, schema, and document classification.
 	Analysis InferSchemaNewResponseAnalysis `json:"analysis" api:"required"`
 	// Original filename of the uploaded file.
 	Filename string `json:"filename" api:"required"`
@@ -112,7 +112,7 @@ func (r *InferSchemaNewResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Analysis result returned by the infer-schema endpoint.
+// Full analysis result including description, schema, and document classification.
 type InferSchemaNewResponseAnalysis struct {
 	// Classification of the primary content. One of: `textual`, `visual`, `audio`,
 	// `video`, `mixed`.

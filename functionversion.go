@@ -549,7 +549,7 @@ func (r *FunctionVersionClassify) UnmarshalJSON(data []byte) error {
 }
 
 type FunctionVersionSend struct {
-	// Destination type for a Send function.
+	// Where the payload is delivered.
 	//
 	// Any of "webhook", "s3", "google_drive".
 	DestinationType SendDestinationType `json:"destinationType" api:"required"`

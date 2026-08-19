@@ -220,7 +220,7 @@ type Call struct {
 	FunctionID string `json:"functionID"`
 	// Name of the function. Only set for function calls.
 	FunctionName string `json:"functionName"`
-	// The type of the function.
+	// Type of the function. Only set for function calls.
 	//
 	// Any of "transform", "extract", "route", "classify", "send", "split", "join",
 	// "analyze", "payload_shaping", "enrich", "parse", "render".

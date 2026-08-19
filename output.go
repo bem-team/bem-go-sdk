@@ -2496,11 +2496,11 @@ func (r *EventCollectionProcessingMetadata) UnmarshalJSON(data []byte) error {
 }
 
 type EventSend struct {
-	// Outcome of a Send function's delivery attempt.
+	// Whether the payload was successfully delivered or the send node was skipped.
 	//
 	// Any of "success", "skip".
 	DeliveryStatus string `json:"deliveryStatus" api:"required"`
-	// Destination type for a Send function.
+	// The type of destination the payload was sent to.
 	//
 	// Any of "webhook", "s3", "google_drive".
 	DestinationType SendDestinationType `json:"destinationType" api:"required"`
@@ -2530,14 +2530,14 @@ type EventSend struct {
 	FunctionCallTryNumber int64 `json:"functionCallTryNumber"`
 	// Version number of function that this event is associated with.
 	FunctionVersionNum int64 `json:"functionVersionNum"`
-	// Metadata returned when a Send function delivers to Google Drive.
+	// Populated when destinationType is "google_drive".
 	GoogleDriveOutput EventSendGoogleDriveOutput `json:"googleDriveOutput"`
 	// The inbound email that triggered this event.
 	InboundEmail InboundEmailEvent `json:"inboundEmail"`
 	Metadata     EventSendMetadata `json:"metadata"`
-	// Metadata returned when a Send function delivers to an S3 bucket.
+	// Populated when destinationType is "s3".
 	S3Output EventSendS3Output `json:"s3Output"`
-	// Metadata returned when a Send function delivers to a webhook.
+	// Populated when destinationType is "webhook".
 	WebhookOutput EventSendWebhookOutput `json:"webhookOutput"`
 	// Unique identifier of workflow that this event is associated with.
 	WorkflowID string `json:"workflowID"`
@@ -2579,7 +2579,7 @@ func (r *EventSend) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Metadata returned when a Send function delivers to Google Drive.
+// Populated when destinationType is "google_drive".
 type EventSendGoogleDriveOutput struct {
 	// Name of the file created in Google Drive.
 	FileName string `json:"fileName" api:"required"`
@@ -2616,7 +2616,7 @@ func (r *EventSendMetadata) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Metadata returned when a Send function delivers to an S3 bucket.
+// Populated when destinationType is "s3".
 type EventSendS3Output struct {
 	// Name of the S3 bucket the payload was written to.
 	BucketName string `json:"bucketName" api:"required"`
@@ -2637,7 +2637,7 @@ func (r *EventSendS3Output) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Metadata returned when a Send function delivers to a webhook.
+// Populated when destinationType is "webhook".
 type EventSendWebhookOutput struct {
 	// Raw HTTP response body returned by the webhook endpoint.
 	HTTPResponseBody string `json:"httpResponseBody" api:"required"`
@@ -2780,11 +2780,7 @@ const (
 )
 
 type OutputGetResponse struct {
-	// V3 read-side event union. Superset of the shared `Event` union: it contains
-	// every shared variant verbatim (backward compatible) and adds the V3-only
-	// `extract`, `parse`, `classify`, `analyze`, `payload_shaping`, and `evaluation`
-	// variants. This is also the union delivered as the body of outbound webhook
-	// payloads.
+	// The output event. Polymorphic by `eventType`.
 	Output EventUnion `json:"output" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {

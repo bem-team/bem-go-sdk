@@ -243,7 +243,7 @@ const (
 type EntityBulkNewResponse struct {
 	// Per-row outcomes, in request order.
 	Results []SeedRowResult `json:"results" api:"required"`
-	// Per-outcome tally across a batch.
+	// Aggregate counts.
 	Summary EntityBulkNewResponseSummary `json:"summary" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -260,7 +260,7 @@ func (r *EntityBulkNewResponse) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Per-outcome tally across a batch.
+// Aggregate counts.
 type EntityBulkNewResponseSummary struct {
 	// Number of rows that created a new entity.
 	Created int64 `json:"created" api:"required"`
@@ -288,7 +288,7 @@ func (r *EntityBulkNewResponseSummary) UnmarshalJSON(data []byte) error {
 type EntityBulkValidateResponse struct {
 	// Per-row outcomes, in request order.
 	Results []EntityBulkValidateResponseResult `json:"results" api:"required"`
-	// Per-outcome tally across a bulk-validate batch.
+	// Aggregate counts.
 	Summary EntityBulkValidateResponseSummary `json:"summary" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -332,7 +332,7 @@ func (r *EntityBulkValidateResponseResult) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Per-outcome tally across a bulk-validate batch.
+// Aggregate counts.
 type EntityBulkValidateResponseSummary struct {
 	// Rows whose transition was illegal.
 	RejectedRow int64 `json:"rejectedRow" api:"required"`
@@ -389,9 +389,7 @@ type EntityGetRelationsResponseInbound struct {
 	MentionCount int64 `json:"mentionCount" api:"required"`
 	// Free-form relation label (e.g. `author_of`, `affiliated_with`).
 	RelationType string `json:"relationType" api:"required"`
-	// A compact view of an entity sitting on the far end of a relation edge — the
-	// stable public id, the canonical name, and the effective type. The full entity is
-	// fetched separately via the entity detail / File System endpoints.
+	// The entity at the tail of the edge.
 	SourceEntity RelatedEntity `json:"sourceEntity" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {
@@ -418,9 +416,7 @@ type EntityGetRelationsResponseOutbound struct {
 	MentionCount int64 `json:"mentionCount" api:"required"`
 	// Free-form relation label (e.g. `author_of`, `affiliated_with`).
 	RelationType string `json:"relationType" api:"required"`
-	// A compact view of an entity sitting on the far end of a relation edge — the
-	// stable public id, the canonical name, and the effective type. The full entity is
-	// fetched separately via the entity detail / File System endpoints.
+	// The entity at the head of the edge.
 	TargetEntity RelatedEntity `json:"targetEntity" api:"required"`
 	// JSON contains metadata for fields, check presence with [respjson.Field.Valid].
 	JSON struct {

@@ -182,27 +182,7 @@ const (
 type FNavigateResponse struct {
 	// Op-specific payload. See per-op shapes below.
 	Data any `json:"data" api:"required"`
-	// Operations exposed by `POST /v3/fs`.
-	//
-	// The verbs and their flag names mirror Unix tools so an LLM agent's existing
-	// vocabulary maps directly:
-	//
-	// - `ls` — list parsed documents
-	// - `cat` — read one parsed doc (optionally sliced by range / projected by select)
-	// - `grep` — substring or regex search across parse outputs
-	// - `head` — first N sections of one doc
-	// - `stat` — metadata only (page count, section count, parsed at, ...)
-	// - `find` — list canonical entities (cross-doc memory)
-	// - `open` — entity + mentions
-	// - `xref` — entity → sections across docs that mention it
-	//
-	// Doc-level ops (ls, cat, grep, head, stat) work on every parsed document,
-	// regardless of how the parse function was configured.
-	//
-	// Memory-level ops (find, open, xref) operate on the global entities table which
-	// is only populated when the parse function had `linkAcrossDocuments: true`. On
-	// environments with no memory-linked docs they return empty data with a hint
-	// pointing at the toggle.
+	// The op echoed back.
 	//
 	// Any of "ls", "find", "open", "cat", "grep", "xref", "stat", "head".
 	Op FsOp `json:"op" api:"required"`
@@ -238,27 +218,7 @@ func (r *FNavigateResponse) UnmarshalJSON(data []byte) error {
 }
 
 type FNavigateParams struct {
-	// Operations exposed by `POST /v3/fs`.
-	//
-	// The verbs and their flag names mirror Unix tools so an LLM agent's existing
-	// vocabulary maps directly:
-	//
-	// - `ls` — list parsed documents
-	// - `cat` — read one parsed doc (optionally sliced by range / projected by select)
-	// - `grep` — substring or regex search across parse outputs
-	// - `head` — first N sections of one doc
-	// - `stat` — metadata only (page count, section count, parsed at, ...)
-	// - `find` — list canonical entities (cross-doc memory)
-	// - `open` — entity + mentions
-	// - `xref` — entity → sections across docs that mention it
-	//
-	// Doc-level ops (ls, cat, grep, head, stat) work on every parsed document,
-	// regardless of how the parse function was configured.
-	//
-	// Memory-level ops (find, open, xref) operate on the global entities table which
-	// is only populated when the parse function had `linkAcrossDocuments: true`. On
-	// environments with no memory-linked docs they return empty data with a hint
-	// pointing at the toggle.
+	// The operation to run. Required.
 	//
 	// Any of "ls", "find", "open", "cat", "grep", "xref", "stat", "head".
 	Op FsOp `json:"op,omitzero" api:"required"`
@@ -286,13 +246,13 @@ type FNavigateParams struct {
 	// Restricts grep to one part of the parse output. One of `"sections"`,
 	// `"entities"`, `"relationships"`, `"all"` (default).
 	Scope param.Opt[string] `json:"scope,omitzero"`
-	// Request-scoping concerns that are orthogonal to the op itself. Carried on a
-	// `context` object so future scoping hints (e.g. as-of timestamps, read
-	// consistency) can slot in without reshaping the op-specific fields.
+	// Request-scoping context (currently just the bucket scope). Optional; when
+	// omitted the request resolves against the account+environment default bucket. See
+	// `FSContext`.
 	Context FNavigateParamsContext `json:"context,omitzero"`
-	// Filter options for `op=ls` and `op=find`.
+	// Narrows results for `op=ls` and `op=find`.
 	Filter FNavigateParamsFilter `json:"filter,omitzero"`
-	// Slice the parse output along page or section dimensions. Used with `op=cat`.
+	// Slices the parse output for `op=cat`.
 	Range FNavigateParamsRange `json:"range,omitzero"`
 	// Project the parse output to specific dotted paths (e.g.
 	// `["sections.label", "sections.page"]`), letting an agent map a doc's structure
@@ -309,9 +269,9 @@ func (r *FNavigateParams) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Request-scoping concerns that are orthogonal to the op itself. Carried on a
-// `context` object so future scoping hints (e.g. as-of timestamps, read
-// consistency) can slot in without reshaping the op-specific fields.
+// Request-scoping context (currently just the bucket scope). Optional; when
+// omitted the request resolves against the account+environment default bucket. See
+// `FSContext`.
 type FNavigateParamsContext struct {
 	// Bucket KSUID (prefix `bkt_`) to scope the request to — a named partition of the
 	// knowledge graph within the caller's account+environment.
@@ -337,7 +297,7 @@ func (r *FNavigateParamsContext) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Filter options for `op=ls` and `op=find`.
+// Narrows results for `op=ls` and `op=find`.
 type FNavigateParamsFilter struct {
 	// Match a parsed doc's source function name exactly.
 	FunctionName param.Opt[string] `json:"functionName,omitzero"`
@@ -359,7 +319,7 @@ func (r *FNavigateParamsFilter) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Slice the parse output along page or section dimensions. Used with `op=cat`.
+// Slices the parse output for `op=cat`.
 type FNavigateParamsRange struct {
 	// Restrict sections to one page (1-indexed).
 	Page param.Opt[int64] `json:"page,omitzero"`

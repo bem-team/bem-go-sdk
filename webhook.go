@@ -1258,11 +1258,11 @@ func (r *PayloadShapingWebhookEventMetadata) UnmarshalJSON(data []byte) error {
 }
 
 type SendWebhookEvent struct {
-	// Outcome of a Send function's delivery attempt.
+	// Whether the payload was successfully delivered or the send node was skipped.
 	//
 	// Any of "success", "skip".
 	DeliveryStatus SendWebhookEventDeliveryStatus `json:"deliveryStatus" api:"required"`
-	// Destination type for a Send function.
+	// The type of destination the payload was sent to.
 	//
 	// Any of "webhook", "s3", "google_drive".
 	DestinationType SendDestinationType `json:"destinationType" api:"required"`
@@ -1292,14 +1292,14 @@ type SendWebhookEvent struct {
 	FunctionCallTryNumber int64 `json:"functionCallTryNumber"`
 	// Version number of function that this event is associated with.
 	FunctionVersionNum int64 `json:"functionVersionNum"`
-	// Metadata returned when a Send function delivers to Google Drive.
+	// Populated when destinationType is "google_drive".
 	GoogleDriveOutput SendWebhookEventGoogleDriveOutput `json:"googleDriveOutput"`
 	// The inbound email that triggered this event.
 	InboundEmail InboundEmailEvent        `json:"inboundEmail"`
 	Metadata     SendWebhookEventMetadata `json:"metadata"`
-	// Metadata returned when a Send function delivers to an S3 bucket.
+	// Populated when destinationType is "s3".
 	S3Output SendWebhookEventS3Output `json:"s3Output"`
-	// Metadata returned when a Send function delivers to a webhook.
+	// Populated when destinationType is "webhook".
 	WebhookOutput SendWebhookEventWebhookOutput `json:"webhookOutput"`
 	// Unique identifier of workflow that this event is associated with.
 	WorkflowID string `json:"workflowID"`
@@ -1341,7 +1341,7 @@ func (r *SendWebhookEvent) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Outcome of a Send function's delivery attempt.
+// Whether the payload was successfully delivered or the send node was skipped.
 type SendWebhookEventDeliveryStatus string
 
 const (
@@ -1355,7 +1355,7 @@ const (
 	SendWebhookEventEventTypeSend SendWebhookEventEventType = "send"
 )
 
-// Metadata returned when a Send function delivers to Google Drive.
+// Populated when destinationType is "google_drive".
 type SendWebhookEventGoogleDriveOutput struct {
 	// Name of the file created in Google Drive.
 	FileName string `json:"fileName" api:"required"`
@@ -1392,7 +1392,7 @@ func (r *SendWebhookEventMetadata) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Metadata returned when a Send function delivers to an S3 bucket.
+// Populated when destinationType is "s3".
 type SendWebhookEventS3Output struct {
 	// Name of the S3 bucket the payload was written to.
 	BucketName string `json:"bucketName" api:"required"`
@@ -1413,7 +1413,7 @@ func (r *SendWebhookEventS3Output) UnmarshalJSON(data []byte) error {
 	return apijson.UnmarshalRoot(data, r)
 }
 
-// Metadata returned when a Send function delivers to a webhook.
+// Populated when destinationType is "webhook".
 type SendWebhookEventWebhookOutput struct {
 	// Raw HTTP response body returned by the webhook endpoint.
 	HTTPResponseBody string `json:"httpResponseBody" api:"required"`

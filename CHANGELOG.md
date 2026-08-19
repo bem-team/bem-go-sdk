@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.29.0](https://github.com/bem-team/bem-go-sdk/compare/v0.28.0...v0.29.0) (2026-08-19)
+
+
+### Features
+
+* initial stlc build ([45b4546](https://github.com/bem-team/bem-go-sdk/commit/45b45463e8972b2f6d786e18fabcad7b61f88272))
+
 ## 0.28.0 (2026-08-17)
 
 Full Changelog: [v0.27.0...v0.28.0](https://github.com/bem-team/bem-go-sdk/compare/v0.27.0...v0.28.0)
